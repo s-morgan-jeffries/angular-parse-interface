@@ -3,7 +3,7 @@
 describe('Factory: awesomeThingsService', function () {
 
   // load the service's module
-  beforeEach(module('angular-parse-interface'));
+  beforeEach(module('angularParseInterface'));
 
   // instantiate service
   var _awesomeThingsService;

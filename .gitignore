@@ -2,3 +2,4 @@ node_modules
 .tmp
 dev_app/bower_components
 .test_env
+.idea
