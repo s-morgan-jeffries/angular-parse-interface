@@ -1,0 +1,44 @@
+{
+  "name": "angular-parse-interface",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/s-morgan-jeffries/angular-parse-interface.git"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-bump": "0.0.14",
+    "grunt-contrib-clean": "~0.5.0",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-connect": "~0.5.0",
+    "grunt-contrib-jshint": "~0.7.1",
+    "grunt-contrib-uglify": "~0.2.0",
+    "grunt-contrib-watch": "~0.5.2",
+    "grunt-env": "^0.4.1",
+    "grunt-karma": "^0.8.3",
+    "grunt-ngmin": "~0.0.2",
+    "grunt-protractor-runner": "^1.0.0",
+    "grunt-wiredep": "^1.7.0",
+    "jasmine-reporters": "^0.4.1",
+    "jshint-stylish": "~0.1.3",
+    "karma": "^0.12.16",
+    "karma-chrome-launcher": "^0.1.4",
+    "karma-firefox-launcher": "^0.1.3",
+    "karma-jasmine": "^0.1.5",
+    "karma-junit-reporter": "^0.2.2",
+    "karma-opera-launcher": "^0.1.0",
+    "karma-phantomjs-launcher": "^0.1.4",
+    "karma-safari-launcher": "^0.1.1",
+    "load-grunt-tasks": "~0.4.0",
+    "lodash": "^2.4.1",
+    "selenium-webdriver": "^2.42.0",
+    "time-grunt": "~0.2.1"
+  },
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "scripts": {
+    "test": "grunt test"
+  }
+}

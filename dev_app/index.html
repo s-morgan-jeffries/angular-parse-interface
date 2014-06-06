@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+    <!-- bower:css -->
+    <!-- endbower -->
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css" />
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body ng-app="devApp">
+
+    <!-- Add your site or application content here -->
+    <div class="container" ng-include="'views/main.html'" ng-controller="MainCtrl"></div>
+
+    <!-- bower:js -->
+    <script src="bower_components/angular/angular.js"></script>
+    <!-- endbower -->
+
+    <script src="/scripts/app.js"></script>
+    <script src="/scripts/controllers/main.js"></script>
+    <script src="/module.js"></script>
+    <script src="/awesomethings.js"></script>
+</body>
+</html>
