@@ -62,8 +62,9 @@ angular.module('angularParseInterface', [
           return fieldMetaData.type = dataType[0].toUpperCase() + dataType.slice(1);
         },
         _isBlacklisted: function (Resource, fieldName) {
-          return Resource._isBlacklistedField(fieldName);
+          return Resource._isRequestBlacklisted(fieldName);
         },
+        // Need to add Bytes, Pointer, and Relation
         _codecs: {
           Date: {
             encode: function (val) {
@@ -201,6 +202,36 @@ angular.module('angularParseInterface', [
               return (typeof obj === 'object') && !isInstance(obj);
             };
 
+            var find = function (ar, pred) {
+              for (var i = 0, len = ar.length; i<len; i++) {
+                if (pred(ar[i])) {
+                  return ar[i];
+                }
+              }
+            };
+
+            var findLast = function (ar, pred) {
+              return find(angular.copy(ar).reverse(), pred);
+            };
+
+            var defaults = function (dst, src) {
+              angular.forEach(src, function (val, key) {
+                dst[key] = dst[key] || src[key];
+              });
+              return dst;
+            };
+
+            var ownDataProps = function (obj) {
+              var objData = {};
+              angular.forEach(obj, function (val, key) {
+                if (!angular.isFunction(val)) {
+                  objData[key] = val;
+                }
+              });
+              return objData;
+            };
+            parseInterface._ownDataProps = ownDataProps;
+
             return function() {
               var args,
                 params,
@@ -213,35 +244,38 @@ angular.module('angularParseInterface', [
                 wrappedErrorFunc,
                 saveFunc;
 
+              // Turn arguments into an actual array
               args = [].slice.call(arguments);
               // Get the parameters we're saving (or an empty object)
-              params = _.find(args, isParams) || {};
-              // Figure out which argument is the object to be updated or make a new one
-              instance = _.find(args, isInstance) || new Resource(params);
-              // This is all the the own properties that aren't methods
-              originalInstanceProps = _.omit(_.pick(instance, _.keys(instance)), _.methods(instance));
-              // Those props updated with params
+              params = find(args, isParams) || {};
+              // Figure out which argument is the instance and create one if it doesn't exist
+              instance = find(args, isInstance) || new Resource(params);
+              // These are all the the own properties that aren't methods
+              originalInstanceProps = ownDataProps(instance);
+              // originalInstanceProps extended with the params (where there's a conflict, params will overwrite
+              // originalInstanceProps)
               updatedInstanceProps = angular.extend(originalInstanceProps, params);
-              // If there's an error, this gets invoked, and the shallowClearAndCopy thing never happens
-              errorFunc = _.findLast(args, angular.isFunction) || angular.noop;
-              // Conversely, this gets invoked after the shallowClearAndCopy.
-              successFunc = _.find(args, angular.isFunction) || angular.noop;
-              // This merges the instance props back into the instance
-              wrappedSuccessFunc = function(val, responseHeaders) {
-                _.defaults(val, updatedInstanceProps);
-                successFunc(val, responseHeaders);
-              };
-              // Delegate to the correct function depending on whether this is a creation or update
-              saveFunc = instance.isNew() ? create : update;
 
+              // The success function that was passed in, or a do-nothing function if there wasn't one
+              successFunc = find(args, angular.isFunction) || angular.noop;
+              // Provide updatedInstanceProps as default values to the new instance (if there are conflicting
+              // properties from the server, those will win)
+              wrappedSuccessFunc = function(newInstance, responseHeaders) {
+                defaults(newInstance, updatedInstanceProps);
+                successFunc(newInstance, responseHeaders);
+              };
+              // The error function that was passed in, or a do-nothing function if there wasn't one
+              errorFunc = findLast(args, angular.isFunction) || angular.noop;
               // If the error function is the same as the save function, set errorFunc to angular.noop
-              errorFunc = errorFunc === successFunc ? angular.noop : errorFunc;
+              errorFunc = (errorFunc === successFunc) ? angular.noop : errorFunc;
               // In case there's a problem, this basically resets the instance
               wrappedErrorFunc = function(response) {
                 angular.extend(instance, originalInstanceProps);
                 errorFunc(response);
               };
 
+              // Delegate to the correct function depending on whether this is a creation or update
+              saveFunc = instance.isNew() ? create : update;
               // Delegate to the original function...
               return saveFunc.call(this, params, instance, wrappedSuccessFunc, wrappedErrorFunc);
             };
@@ -286,24 +320,27 @@ angular.module('angularParseInterface', [
             this._setFieldMetaDataProp(fieldName, 'dataType', val);
           };
 
-          Resource._addBlacklistProp = function (fieldName) {
-            this._setFieldMetaDataProp(fieldName, 'isBlacklisted', true);
+          Resource._addRequestBlacklistProp = function (fieldName) {
+            this._setFieldMetaDataProp(fieldName, 'isRequestBlacklisted', true);
           };
 
-          Resource._addBlacklistProps = function () {
+          Resource._addRequestBlacklistProps = function () {
             var props = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
-            var addBlacklistProp = this._addBlacklistProp.bind(this);
+            var addBlacklistProp = this._addRequestBlacklistProp.bind(this);
             angular.forEach(props, addBlacklistProp);
           };
 
-          Resource._isBlacklistedField = function (fieldName) {
-            return !!this._getFieldMetaDataProp(fieldName, 'isBlacklisted');
+          Resource._isRequestBlacklisted = function (fieldName) {
+            return !!this._getFieldMetaDataProp(fieldName, 'isRequestBlacklisted');
           };
 
           // Instance methods
           Resource.prototype.isNew = function() {
             return !this.objectId;
           };
+
+          // Some stuff that angular adds to instances that shouldn't be persisted
+          Resource._addRequestBlacklistProps('$promise', '$resolved');
 
           return Resource;
 
@@ -317,7 +354,7 @@ angular.module('angularParseInterface', [
         return '/classes/' + className + '/:objectId';
       },
       objectDecorator: function (Resource, className) {
-        Resource._addBlacklistProps('createdAt', 'updatedAt');
+        Resource._addRequestBlacklistProps('createdAt', 'updatedAt');
         Resource._setMetaDataProp('className', className);
         Object.defineProperty(Resource.prototype, '_className', {
           get: function () {
@@ -360,7 +397,7 @@ angular.module('angularParseInterface', [
       _userDefaults: {root: 'users', objectId: '@objectId'},
       _userDecorator: function (objectDecorator, Resource, sessionState) {
         Resource = objectDecorator(Resource, '_User');
-        Resource._addBlacklistProps('sessionToken', 'emailVerified');
+        Resource._addRequestBlacklistProps('sessionToken', 'emailVerified');
         Resource.signUp = function(username, password, email) {
           var user = this.save({
             username: username,
