@@ -1,71 +1,16 @@
 <?xml version="1.0"?>
 <testsuites>
-  <testsuite name="PhantomJS 1.9.7 (Mac OS X)" package="" timestamp="2014-06-06T18:52:19" id="0" hostname="S-Morgan-Jeffries-MacBook-Air.local" tests="6" errors="0" failures="0" time="0.136">
+  <testsuite name="PhantomJS 1.9.7 (Mac OS X)" package="" timestamp="2014-06-06T20:41:28" id="0" hostname="S-Morgan-Jeffries-MacBook-Air.local" tests="7" errors="0" failures="0" time="0.03">
     <properties>
       <property name="browser.fullName" value="Mozilla/5.0 (Macintosh; PPC Mac OS X) AppleWebKit/534.34 (KHTML, like Gecko) PhantomJS/1.9.7 Safari/534.34"/>
     </properties>
-    <testcase name="should attach a list of awesomeThings to the scope" time="0.128" classname="PhantomJS 1.9.7 (Mac OS X).Controller: MainCtrl"/>
+    <testcase name="should attach a list of awesomeThings to the scope" time="0.017" classname="PhantomJS 1.9.7 (Mac OS X).Controller: MainCtrl"/>
     <testcase name="should exist" time="0.002" classname="PhantomJS 1.9.7 (Mac OS X).Factory: awesomeThingsService"/>
     <testcase name="should return a value" time="0.001" classname="PhantomJS 1.9.7 (Mac OS X).Factory: awesomeThingsService getAwesomeThings method"/>
     <testcase name="should be an array of objects" time="0.001" classname="PhantomJS 1.9.7 (Mac OS X).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <testcase name="should have elements that have both `thing` and `description` properties" time="0.001" classname="PhantomJS 1.9.7 (Mac OS X).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <testcase name="should have a total of three elements" time="0.003" classname="PhantomJS 1.9.7 (Mac OS X).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <system-out><![CDATA[
-]]></system-out>
-    <system-err/>
-  </testsuite>
-  <testsuite name="Firefox 26.0.0 (Mac OS X 10.9)" package="" timestamp="2014-06-06T18:52:22" id="0" hostname="S-Morgan-Jeffries-MacBook-Air.local" tests="6" errors="0" failures="0" time="0.105">
-    <properties>
-      <property name="browser.fullName" value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:26.0) Gecko/20100101 Firefox/26.0"/>
-    </properties>
-    <testcase name="should attach a list of awesomeThings to the scope" time="0.043" classname="Firefox 26.0.0 (Mac OS X 10.9).Controller: MainCtrl"/>
-    <testcase name="should exist" time="0.003" classname="Firefox 26.0.0 (Mac OS X 10.9).Factory: awesomeThingsService"/>
-    <testcase name="should return a value" time="0.003" classname="Firefox 26.0.0 (Mac OS X 10.9).Factory: awesomeThingsService getAwesomeThings method"/>
-    <testcase name="should be an array of objects" time="0.023" classname="Firefox 26.0.0 (Mac OS X 10.9).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <testcase name="should have elements that have both `thing` and `description` properties" time="0.003" classname="Firefox 26.0.0 (Mac OS X 10.9).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <testcase name="should have a total of three elements" time="0.03" classname="Firefox 26.0.0 (Mac OS X 10.9).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <system-out><![CDATA[
-]]></system-out>
-    <system-err/>
-  </testsuite>
-  <testsuite name="Chrome 35.0.1916 (Mac OS X 10.9.3)" package="" timestamp="2014-06-06T18:52:22" id="0" hostname="S-Morgan-Jeffries-MacBook-Air.local" tests="6" errors="0" failures="0" time="0.259">
-    <properties>
-      <property name="browser.fullName" value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.114 Safari/537.36"/>
-    </properties>
-    <testcase name="should attach a list of awesomeThings to the scope" time="0.149" classname="Chrome 35.0.1916 (Mac OS X 10.9.3).Controller: MainCtrl"/>
-    <testcase name="should exist" time="0.007" classname="Chrome 35.0.1916 (Mac OS X 10.9.3).Factory: awesomeThingsService"/>
-    <testcase name="should return a value" time="0.003" classname="Chrome 35.0.1916 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method"/>
-    <testcase name="should be an array of objects" time="0.002" classname="Chrome 35.0.1916 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <testcase name="should have elements that have both `thing` and `description` properties" time="0.003" classname="Chrome 35.0.1916 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <testcase name="should have a total of three elements" time="0.095" classname="Chrome 35.0.1916 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <system-out><![CDATA[
-]]></system-out>
-    <system-err/>
-  </testsuite>
-  <testsuite name="Opera 12.16.0 (Mac OS X 10.9.3)" package="" timestamp="2014-06-06T18:52:28" id="0" hostname="S-Morgan-Jeffries-MacBook-Air.local" tests="6" errors="0" failures="0" time="0.119">
-    <properties>
-      <property name="browser.fullName" value="Opera/9.80 (Macintosh; Intel Mac OS X 10.9.3) Presto/2.12.388 Version/12.16"/>
-    </properties>
-    <testcase name="should attach a list of awesomeThings to the scope" time="0.036" classname="Opera 12.16.0 (Mac OS X 10.9.3).Controller: MainCtrl"/>
-    <testcase name="should exist" time="0.003" classname="Opera 12.16.0 (Mac OS X 10.9.3).Factory: awesomeThingsService"/>
-    <testcase name="should return a value" time="0.067" classname="Opera 12.16.0 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method"/>
-    <testcase name="should be an array of objects" time="0.006" classname="Opera 12.16.0 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <testcase name="should have elements that have both `thing` and `description` properties" time="0.003" classname="Opera 12.16.0 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <testcase name="should have a total of three elements" time="0.004" classname="Opera 12.16.0 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <system-out><![CDATA[
-]]></system-out>
-    <system-err/>
-  </testsuite>
-  <testsuite name="Safari 7.0.4 (Mac OS X 10.9.3)" package="" timestamp="2014-06-06T18:52:30" id="0" hostname="S-Morgan-Jeffries-MacBook-Air.local" tests="6" errors="0" failures="0" time="0.051">
-    <properties>
-      <property name="browser.fullName" value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.76.4 (KHTML, like Gecko) Version/7.0.4 Safari/537.76.4"/>
-    </properties>
-    <testcase name="should attach a list of awesomeThings to the scope" time="0.025" classname="Safari 7.0.4 (Mac OS X 10.9.3).Controller: MainCtrl"/>
-    <testcase name="should exist" time="0.017" classname="Safari 7.0.4 (Mac OS X 10.9.3).Factory: awesomeThingsService"/>
-    <testcase name="should return a value" time="0.001" classname="Safari 7.0.4 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method"/>
-    <testcase name="should be an array of objects" time="0.002" classname="Safari 7.0.4 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <testcase name="should have elements that have both `thing` and `description` properties" time="0.003" classname="Safari 7.0.4 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
-    <testcase name="should have a total of three elements" time="0.003" classname="Safari 7.0.4 (Mac OS X 10.9.3).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
+    <testcase name="should have elements that have both `thing` and `description` properties" time="0.005" classname="PhantomJS 1.9.7 (Mac OS X).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
+    <testcase name="should have a total of three elements" time="0.001" classname="PhantomJS 1.9.7 (Mac OS X).Factory: awesomeThingsService getAwesomeThings method awesomeThings"/>
+    <testcase name="should exist" time="0.003" classname="PhantomJS 1.9.7 (Mac OS X).Factory: parseResourceFactory"/>
     <system-out><![CDATA[
 ]]></system-out>
     <system-err/>

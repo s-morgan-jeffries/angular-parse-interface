@@ -18,12 +18,19 @@ module.exports = function(config) {
     files: [
       // simple patterns to load the needed testfiles
 //      'test/fixtures/**/*.html',
+      // Add jasmine-matchers
+      '../../node_modules/jasmine-expect/dist/jasmine-matchers.js',
       // This is obviously the core angular module
       '../../dev_app/bower_components/angular/angular.js',
+      // This is the ngResource module
+      '../../dev_app/bower_components/angular-resource/angular-resource.js',
       // This is the angular-mocks module, which adds a couple of utility functions (module, inject, maybe others)
       '../../dev_app/bower_components/angular-mocks/angular-mocks.js',
+      // Utility libraries
+      '../../dev_app/bower_components/lodash/dist/lodash.compat.js',
+      '../../dev_app/bower_components/underscore.string/lib/underscore.string.js',
       // The source files for the module
-      '../../src/module.js',
+      '../../src/angularParseInterface.js',
       '../../src/*.js',
       // This is just the main app file, which declares the module.
       '../../dev_app/scripts/app.js',
@@ -49,11 +56,11 @@ module.exports = function(config) {
     // - IE (only Windows)
     browsers: [
       // For single runs, PhantomJS is fastest.
-      'PhantomJS',
+      'PhantomJS'/*,
       'Chrome',
       'Safari',
       'Firefox',
-      'Opera'
+      'Opera'*/
     ],
 
     // Which plugins to enable

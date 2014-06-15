@@ -128,7 +128,8 @@ module.exports = function (grunt) {
       scripts: {
         src: [
           '<%= yeoman.devApp %>/scripts/{,*/}*.js',
-          'src/**/*.js'
+          'src/**/*.js',
+          '!src/parseAppConfig.js'
         ]
       },
       integrationTests: {
@@ -216,19 +217,20 @@ module.exports = function (grunt) {
           '<%= yeoman.devApp %>/scripts/{,*/}*.js',
           'src/**/*.js'
         ],
-        tasks: ['jshint:scripts'],
+//        tasks: ['jshint:scripts'],
+//        tasks: ['jshint:scripts', 'karma:CI'],
         options: {
           livereload: true
         }
       },
-      jsIntegrationTest: {
-        files: ['test/integration/spec/{,*/}*.js'],
-        tasks: ['jshint:integrationTests', 'protractor:CI']
-      },
-      jsUnitTest: {
-        files: ['test/unit/spec/{,*/}*.js'],
-        tasks: ['jshint:unitTests', 'karma:CI']
-      },
+//      jsIntegrationTest: {
+//        files: ['test/integration/spec/{,*/}*.js'],
+//        tasks: ['jshint:integrationTests', 'protractor:CI']
+//      },
+//      jsUnitTest: {
+//        files: ['test/unit/spec/{,*/}*.js'],
+//        tasks: ['jshint:unitTests', 'karma:CI']
+//      },
       livereload: {
         options: {
           livereload: '<%= connect.options.livereload %>'
@@ -263,7 +265,7 @@ module.exports = function (grunt) {
     grunt.task.run(['serve']);
   });
 
-  grunt.registerTask('test', function(target) {
+  grunt.registerTask('test', function (target) {
     var setUpTasks = [
         'clean:server',
         'connect:test'
@@ -272,7 +274,7 @@ module.exports = function (grunt) {
         'karma:build'
       ],
       integrationTasks = [
-        'protractor:build'
+//        'protractor:build'
       ],
       tasks;
     if (target === 'unit') {
@@ -286,7 +288,7 @@ module.exports = function (grunt) {
     grunt.task.run(tasks);
   });
 
-  grunt.registerTask('build', function(target) {
+  grunt.registerTask('build', function (target) {
     var testTasks = [
         'jshint:gruntfile',
         'jshint:scripts',

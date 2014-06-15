@@ -30,7 +30,8 @@
     "inject": true,
     "it": true,
     "jasmine": false,
-    "spyOn": false
+    "spyOn": false,
+    "parseAppConfig": true
   }
 }
 

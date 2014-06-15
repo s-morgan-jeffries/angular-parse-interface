@@ -17,11 +17,29 @@
 
     <!-- bower:js -->
     <script src="bower_components/angular/angular.js"></script>
+    <script src="bower_components/angular-resource/angular-resource.js"></script>
+    <script src="bower_components/lodash/dist/lodash.compat.js"></script>
+    <script src="bower_components/ngstorage/ngStorage.js"></script>
     <!-- endbower -->
+    <script src="bower_components/underscore.string/lib/underscore.string.js"></script>
 
+    <script src="/angularParseInterface.js"></script>
+    <script src="/parseAppConfig.js"></script>
     <script src="/scripts/app.js"></script>
     <script src="/scripts/controllers/main.js"></script>
-    <script src="/module.js"></script>
-    <script src="/awesomethings.js"></script>
+
+    <!--<script>-->
+<!--//        angular.module('devApp')-->
+<!--////            .config(function($httpProvider) {-->
+<!--////                $httpProvider.interceptors.push('parseRestApiInterceptor');-->
+<!--////            })-->
+<!--//            .run(function(parseInitialize) {-->
+<!--//                var applicationId = 'I7nfCeLupxz0EEL33ADtaOtytoZlZMIKGilruUFR',-->
+<!--//                    restKey = 'zMmhz0RI1sBLddy2OOGqkcyiCjZUIBJmtv1NgV7I';-->
+<!--//-->
+<!--//                parseInitialize(applicationId, restKey);-->
+<!--//            });-->
+    <!--</script>-->
+    <script src="/debug.js"></script>
 </body>
 </html>
