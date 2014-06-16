@@ -1,9 +1,15 @@
 'use strict';
 
+//t0d0: Finish query builder
+//t0d0: Figure out how to deal with relations
+//t0d0: Clean up the User model
+//t0d0: Close some things up in closures (reduce the amount of testing)
+//t0d0: Write tests
+
 angular.module('angularParseInterface', [
   'ngResource'
 ])
-  .factory('parseInterface', function($rootScope, $resource) {
+  .factory('parseInterface', function($rootScope, $resource, $log) {
 
     var _SIGN_IN_ = 'signin';
     var _SIGN_OUT_ = 'signout';
@@ -57,9 +63,14 @@ angular.module('angularParseInterface', [
           return dataType[0].toUpperCase() + dataType.slice(1);
         },
         _typeOfResponseData: function (Resource, fieldName, val) {
-          var fieldMetaData = Resource._getFieldMetaData(fieldName),
-            dataType = (val && val.__type) || typeof val;
-          return fieldMetaData.type = dataType[0].toUpperCase() + dataType.slice(1);
+//          console.log(fieldName);
+//          console.log(val);
+//          console.log(val && val.__type);
+          var dataType = Resource._getFieldDataType(fieldName) || (val && val.__type) || typeof val;
+          return dataType[0].toUpperCase() + dataType.slice(1);
+        },
+        _classOfResponseData: function (Resource, fieldName, val) {
+          return val && val.className;
         },
         _isBlacklisted: function (Resource, fieldName) {
           return Resource._isRequestBlacklisted(fieldName);
@@ -67,35 +78,78 @@ angular.module('angularParseInterface', [
         // Need to add Bytes, Pointer, and Relation
         _codecs: {
           Date: {
-            encode: function (val) {
+            encode: function (Resource, fieldName, val) {
               return {
                 __type: 'Date',
                 iso: val.toISOString()
               };
             },
-            decode: function (val) {
+            decode: function (Resource, fieldName, val) {
+              Resource._setFieldDataType(fieldName, 'Date');
               return new Date(val.iso);
+            }
+          },
+          Pointer: {
+            // This one is a little tricky. It could be a pointer, or it could be an object.
+            encode: function (Resource, fieldName, val) {
+              var objectId;
+              if (angular.isObject(val)) {
+                $log.warn('Objects in Pointer fields will not be automatically persisted; only their objectIds will be' +
+                  'saved. If you want to save other data from those objects, you\'ll need to do so separately.');
+                objectId = val.objectId;
+                if (!objectId) {
+                  $log.warn('No objectId found for object in Pointer field ' + fieldName + '. Try saving it first.');
+                }
+              } else if (angular.isString(val)) {
+                objectId = val;
+              } else {
+                $log.warn('Could not find an objectId for Pointer field ' + fieldName +
+                  '. Value in field should either be a string or an object.');
+              }
+              return {
+                __type: 'Pointer',
+                className: className,
+                objectId: objectId
+              };
+            },
+            // Could be getting a few things here:
+            // 1) a pointer
+            //    Just return the objectId
+            // 2) an object for which we have a constructor
+            //    Return the constructed object
+            // 3) an object for which we don't have a constructor
+            //    Just return the objectId (for now)
+            decode: function (Resource, fieldName, val) {
+              var isPointer = val.__type && val.__type === 'Pointer';
+              if (!isPointer) {
+                var valContructor = Resource._getFieldRelationConstructor(fieldName);
+                if (valContructor) {
+                  return new valContructor(val);
+                }
+              }
+              return val.objectId;
             }
           }
         },
         _getEncoder: function (dataType) {
           var codecs = this._codecs;
-          return (codecs[dataType] && codecs[dataType].encode) || angular.identity;
+          return (codecs[dataType] && codecs[dataType].encode) || function (Resource, key, val) {return val;};
         },
         _getDecoder: function (dataType) {
           var codecs = this._codecs;
-          return (codecs[dataType] && codecs[dataType].decode) || angular.identity;
+          return (codecs[dataType] && codecs[dataType].decode) || function (Resource, key, val) {return val;};
         },
         encodeRequestData: function (Resource, data) {
           var isBlacklisted = this._isBlacklisted,
             typeOf = this._typeOfRequestData,
+//            classOf = this._classOfRequestData,
             getEncoder = this._getEncoder.bind(this),
             encodedData = {};
           angular.forEach(data, function (val, key) {
             var encoder;
             if (!isBlacklisted(Resource, key)) {
               encoder = getEncoder(typeOf(Resource, key, val));
-              encodedData[key] = encoder(data[key]);
+              encodedData[key] = encoder(Resource, key, data[key]);
             }
           });
           return encodedData;
@@ -106,7 +160,12 @@ angular.module('angularParseInterface', [
             decodedData = {};
           angular.forEach(data, function (val, key) {
             var decoder = getDecoder(typeOf(Resource, key, val));
-            decodedData[key] = decoder(data[key]);
+            decodedData[key] = decoder(Resource, key, data[key]);
+//            console.log(key);
+//            console.log(val);
+//            console.log(typeOf(Resource, key, val));
+//            console.log(decoder);
+//            console.log(decodedData[key]);
           });
           return decodedData;
         }
@@ -116,7 +175,6 @@ angular.module('angularParseInterface', [
           addParseRequestHeaders = this._headers.addParseRequestHeaders.bind(this._headers),
           encodeRequestData = this._dataEncoding.encodeRequestData.bind(this._dataEncoding),
           decodeResponseData = this._dataEncoding.decodeResponseData.bind(this._dataEncoding);
-
         // Register with appEventBus
         appEventBus.on(_SIGN_IN_, function(e, data) {
           appStorage.sessionToken = data.sessionToken;
@@ -127,6 +185,7 @@ angular.module('angularParseInterface', [
 
         return function appResourceFactory(url, defaults, customActions) {
           var Resource,
+            actions,
             baseActions = {
               get: {
                 method: 'GET',
@@ -139,13 +198,22 @@ angular.module('angularParseInterface', [
                 method:'GET',
                 isArray: true,
                 transformResponse: function(data) {
-                  data = angular.fromJson(data).results;
-                  if (!data) {
+                  var results = angular.fromJson(data).results;
+                  if (!results) {
                     return [];
                   }
-                  return angular.forEach(data, function(item, idx, col) {
+                  return angular.forEach(results, function(item, idx, col) {
                     col[idx] = new Resource(decodeResponseData(Resource, item));
                   });
+                }
+              },
+              count: {
+                method:'GET',
+                isArray: false,
+                transformResponse: function(data) {
+                  var count = angular.fromJson(data).count;
+//                  return {count: angular.isNumber(count) ? count : null};
+                  return {count: count};
                 }
               },
               create: {
@@ -166,8 +234,9 @@ angular.module('angularParseInterface', [
               delete: {
                 method: 'DELETE'
               }
-            },
-            actions = angular.extend(baseActions, (customActions || {}));
+            };
+
+          actions = angular.extend(baseActions, (customActions || {}));
 
           addParseRequestHeaders(actions, appConfig, appStorage);
 
@@ -175,7 +244,69 @@ angular.module('angularParseInterface', [
 
           Resource = baseResourceFactory(url, defaults, actions);
 
-          // t0d0: Refactor the shit out of this (it does too much)
+
+          var isInstance = function(obj, idx, col) {
+            return obj instanceof Resource;
+          };
+
+          var isParams = function(obj, idx, col) {
+            return (typeof obj === 'object') && !isInstance(obj);
+          };
+
+          var find = function (ar, pred) {
+            for (var i = 0, len = ar.length; i<len; i++) {
+              if (pred(ar[i])) {
+                return ar[i];
+              }
+            }
+          };
+
+          var findLast = function (ar, pred) {
+            return find(angular.copy(ar).reverse(), pred);
+          };
+
+          var setDefaults = function (dst, src) {
+            angular.forEach(src, function (val, key) {
+              dst[key] = dst[key] || src[key];
+            });
+            return dst;
+          };
+
+          var ownDataProps = function (obj) {
+            var objData = {};
+            angular.forEach(obj, function (val, key) {
+              if (!angular.isFunction(val)) {
+                objData[key] = val;
+              }
+            });
+            return objData;
+          };
+
+          Resource.query = (function () {
+            var query = Resource.query,
+              count = Resource.count;
+
+            delete Resource.count;
+            delete Resource.prototype.$count;
+
+            return function() {
+              var args,
+                params,
+                isCountQuery,
+                queryFx;
+
+              // Turn arguments into an actual array
+              args = [].slice.call(arguments);
+              // Get the parameters we're saving (or an empty object)
+              params = find(args, isParams) || {};
+              isCountQuery = angular.equals(params.count, 1);
+
+              queryFx = isCountQuery ? count : query;
+              // Delegate to the original function...
+              return queryFx.apply(this, args);
+            };
+          }());
+
           // Have to do something smart here so that:
           // 1) save delegates to separate functions under the hood for creating (using POST) and updating (using PUT), and
           // 2) instance properties are restored after a successful save
@@ -193,44 +324,6 @@ angular.module('angularParseInterface', [
             delete Resource.update;
             delete Resource.prototype.$create;
             delete Resource.prototype.$update;
-
-            var isInstance = function(obj, idx, col) {
-              return obj instanceof Resource;
-            };
-
-            var isParams = function(obj, idx, col) {
-              return (typeof obj === 'object') && !isInstance(obj);
-            };
-
-            var find = function (ar, pred) {
-              for (var i = 0, len = ar.length; i<len; i++) {
-                if (pred(ar[i])) {
-                  return ar[i];
-                }
-              }
-            };
-
-            var findLast = function (ar, pred) {
-              return find(angular.copy(ar).reverse(), pred);
-            };
-
-            var defaults = function (dst, src) {
-              angular.forEach(src, function (val, key) {
-                dst[key] = dst[key] || src[key];
-              });
-              return dst;
-            };
-
-            var ownDataProps = function (obj) {
-              var objData = {};
-              angular.forEach(obj, function (val, key) {
-                if (!angular.isFunction(val)) {
-                  objData[key] = val;
-                }
-              });
-              return objData;
-            };
-            parseInterface._ownDataProps = ownDataProps;
 
             return function() {
               var args,
@@ -261,7 +354,7 @@ angular.module('angularParseInterface', [
               // Provide updatedInstanceProps as default values to the new instance (if there are conflicting
               // properties from the server, those will win)
               wrappedSuccessFunc = function(newInstance, responseHeaders) {
-                defaults(newInstance, updatedInstanceProps);
+                setDefaults(newInstance, updatedInstanceProps);
                 successFunc(newInstance, responseHeaders);
               };
               // The error function that was passed in, or a do-nothing function if there wasn't one
@@ -296,6 +389,14 @@ angular.module('angularParseInterface', [
             resourceMetaData[propName] = val;
           };
 
+          Resource._getClassName = function () {
+            return this._getMetaDataProp('className');
+          };
+
+          Resource._setClassName = function (val) {
+            return this._setMetaDataProp('className', val);
+          };
+
           Resource._getFieldMetaData = function (fieldName) {
             var resourceMetaData = this._getMetaData();
             var fieldsMetaData = resourceMetaData.fields || (resourceMetaData.fields = {});
@@ -320,6 +421,22 @@ angular.module('angularParseInterface', [
             this._setFieldMetaDataProp(fieldName, 'dataType', val);
           };
 
+          Resource._getFieldClassName = function (fieldName) {
+            return this._getFieldMetaDataProp(fieldName, 'className');
+          };
+
+          Resource._setFieldClassName = function (fieldName, val) {
+            this._setFieldMetaDataProp(fieldName, 'className', val);
+          };
+
+          Resource._getFieldRelationConstructor = function (fieldName) {
+            return this._getFieldMetaDataProp(fieldName, 'relationConstructor');
+          };
+
+          Resource._setFieldRelationConstructor = function (fieldName, val) {
+            return this._setFieldMetaDataProp(fieldName, 'relationConstructor', val);
+          };
+
           Resource._addRequestBlacklistProp = function (fieldName) {
             this._setFieldMetaDataProp(fieldName, 'isRequestBlacklisted', true);
           };
@@ -334,13 +451,17 @@ angular.module('angularParseInterface', [
             return !!this._getFieldMetaDataProp(fieldName, 'isRequestBlacklisted');
           };
 
+          // Relational methods
+          Resource.hasOne = function (fieldName, other) {
+            this._setFieldDataType(fieldName, 'Pointer');
+            this._setFieldClassName(fieldName, other._getClassName());
+            this._setFieldRelationConstructor(fieldName, other);
+          };
+
           // Instance methods
           Resource.prototype.isNew = function() {
             return !this.objectId;
           };
-
-          // Some stuff that angular adds to instances that shouldn't be persisted
-          Resource._addRequestBlacklistProps('$promise', '$resolved');
 
           return Resource;
 
@@ -355,27 +476,27 @@ angular.module('angularParseInterface', [
       },
       objectDecorator: function (Resource, className) {
         Resource._addRequestBlacklistProps('createdAt', 'updatedAt');
-        Resource._setMetaDataProp('className', className);
+        Resource._setClassName(className);
         Object.defineProperty(Resource.prototype, '_className', {
           get: function () {
-            return this.constructor._getMetaDataProp('className');
+            return this.constructor._getClassName();
           }
         });
-        Resource.prototype.getPointer = function() {
-          return {
-            __type: 'Pointer',
-            className: this._className,
-            objectId: this.objectId
-          };
-        };
+//        Resource.prototype.getPointer = function() {
+//          return {
+//            __type: 'Pointer',
+//            className: this._className,
+//            objectId: this.objectId
+//          };
+//        };
 
-        Resource.prototype.setUserPriveleges = function(user, canRead, canWrite) {
-          this.ACL = this.ACL || {};
-          this.ACL[user.objectId] = {
-            read: canRead,
-            write: canWrite
-          };
-        };
+//        Resource.prototype.setUserPriveleges = function(user, canRead, canWrite) {
+//          this.ACL = this.ACL || {};
+//          this.ACL[user.objectId] = {
+//            read: canRead,
+//            write: canWrite
+//          };
+//        };
         return Resource;
       },
       createObjectFactory: function (appResourceFactory) {
@@ -438,23 +559,59 @@ angular.module('angularParseInterface', [
         };
         return Resource;
       },
-      createUserModule: function (objectDecorator, appResourceFactory, sessionState) {
+      createUserModule: function (objectDecorator, appResourceFactory, appStore) {
         var url = this._userUrl,
           defaults = this._userDefaults,
           customActions = {},
           Resource = appResourceFactory(url, defaults, customActions);
-        return this._userDecorator(objectDecorator, Resource, sessionState);
+        return this._userDecorator(objectDecorator, Resource, appStore);
       }
     };
 
     // query submodule
     parseInterface._query = {};
-    parseInterface._query._Query = function (obj) {
-      this._queryFx = obj.query.bind(obj);
+    parseInterface._query._QueryContraints = function (query) {
+      this._query = query;
+      this._contraints = {};
+    };
+    parseInterface._query._QueryContraints.prototype.setWhere = function () {
+      var query = this._query,
+        constraints = this._contraints;
+//      query._setWhere(constraints);
+      return query._setWhere(constraints);
+    };
+    parseInterface._query._Query = function (Resource) {
+      this._Resource = Resource;
+//      this._queryFx = Resource.query.bind(Resource);
       this._params = {};
     };
-    parseInterface._query._Query.prototype.where = function (constraints) {
+    parseInterface._query._Query.prototype.where = function () {
+      var QueryContraints = parseInterface._query._QueryContraints;
+      return new QueryContraints(this);
+    };
+    parseInterface._query._Query.prototype._setWhere = function (constraints) {
       this._params.where = constraints;
+      return this;
+    };
+    // This is for the next version
+    parseInterface._query._Query.prototype.include = function (/* relations */) {
+      var args = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
+      // Need to filter that list according to which are known pointers
+      var includedFields = this._params.include || [];
+      var Resource = this._Resource;
+      var isIncludable = function (fieldName) {
+        return angular.equals(Resource._getFieldDataType(fieldName), 'Pointer') &&
+          !!Resource._getFieldClassName(fieldName) &&
+          !!Resource._getFieldRelationConstructor(fieldName);
+      };
+      angular.forEach(args, function(val, idx) {
+        if (isIncludable(val)) {
+          includedFields.push(val);
+        } else {
+          $log.warn('Cannot include a field without a known constructor');
+        }
+      });
+      this._params.include = includedFields;
       return this;
     };
     parseInterface._query._Query.prototype.skip = function (n) {
@@ -465,14 +622,26 @@ angular.module('angularParseInterface', [
       this._params.limit = n;
       return this;
     };
-    parseInterface._query._Query.prototype.keys = function () {
+    parseInterface._query._Query.prototype.count = function () {
+      this._params.limit = 0;
+      this._params.count = 1;
+      return this;
+    };
+    parseInterface._query._Query.prototype.select = function () {
       this._params.keys = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
       return this;
     };
+    parseInterface._query._Query.prototype.order = function (/* keys */) {
+      this._params.order = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
+      return this;
+    };
     parseInterface._query._Query.prototype.exec = function () {
-      // transform these somehow
-      var params = this._params;
-      return this._queryFx(params);
+      var params = angular.copy(this._params);
+      // This needs to be serialized here, since angular.toJson will remove anything with a leading `$`
+      params.where = params.where && JSON.stringify(params.where);
+      params.order = params.order && params.order.length && params.order.join(',');
+      params.include = params.include && params.include.length && params.include.join(',');
+      return this._Resource.query(params);
     };
     parseInterface._query.createQueryFx = function () {
       var Query = this._Query;
