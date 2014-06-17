@@ -9,8 +9,10 @@
 angular.module('angularParseInterface', [
   'ngResource'
 ])
+  // This is the only service the module provides. Everything is encapsulted within it.
   .factory('parseInterface', function($rootScope, $resource, $log) {
 
+    // Events
     var _SIGN_IN_ = 'signin';
     var _SIGN_OUT_ = 'signout';
 
@@ -18,6 +20,7 @@ angular.module('angularParseInterface', [
 
     // resource submodule
     parseInterface._resource = {
+      // The url submodule. This provides helpers for putting together the url.
       _url: {
         // This is the base URL for all requests
         _restApiBaseUrl: 'https://api.parse.com/1',
@@ -57,7 +60,12 @@ angular.module('angularParseInterface', [
           });
         }
       },
+      // This is for encoding and decoding data from a Resource instance when it is en route to or from the server.
+      // Basically, it's an interpreter between what we use client-side and what Parse uses server-side.
+      // Once I've figured out relations, this will probably need some cleanup.
       _dataEncoding: {
+        // For determining the type of data going to the server. The canonical source is the Resource's metadata, with
+        // several fallbacks available after that.
         _typeOfRequestData: function (Resource, fieldName, val) {
           var dataType = Resource._getFieldDataType(fieldName) || (angular.isDate(val) ? 'Date': undefined) || typeof val;
           return dataType[0].toUpperCase() + dataType.slice(1);
@@ -570,31 +578,185 @@ angular.module('angularParseInterface', [
 
     // query submodule
     parseInterface._query = {};
-    parseInterface._query._QueryContraints = function (query) {
-      this._query = query;
-      this._contraints = {};
-    };
-    parseInterface._query._QueryContraints.prototype.setWhere = function () {
-      var query = this._query,
-        constraints = this._contraints;
-//      query._setWhere(constraints);
-      return query._setWhere(constraints);
-    };
-    parseInterface._query._Query = function (Resource) {
+
+    parseInterface._query.Query = function (Resource) {
       this._Resource = Resource;
-//      this._queryFx = Resource.query.bind(Resource);
       this._params = {};
     };
-    parseInterface._query._Query.prototype.where = function () {
-      var QueryContraints = parseInterface._query._QueryContraints;
-      return new QueryContraints(this);
+
+    parseInterface._query.Query.prototype._getConstraints = function () {
+      return angular.copy(this._params.where) || {};
     };
-    parseInterface._query._Query.prototype._setWhere = function (constraints) {
+
+    parseInterface._query.Query.prototype._setConstraints = function (constraints) {
       this._params.where = constraints;
+    };
+
+    parseInterface._query.Query.prototype._getFieldConstraints = function (fieldName) {
+      var constraints = this._getConstraints();
+      return angular.copy(constraints[fieldName]);
+    };
+
+    parseInterface._query.Query.prototype._setFieldConstraints = function (fieldName, val) {
+      var constraints = this._getConstraints();
+      constraints[fieldName] = val;
+      this._setConstraints(constraints);
+    };
+
+    parseInterface._query.Query.prototype._isNonArrayObj = function (val) {
+      return angular.isObject(val) && !angular.isArray(val);
+    };
+
+    parseInterface._query.Query.prototype._pick = function (obj, keys) {
+      var newObj = {};
+      angular.forEach(obj, function(v, k) {
+        if (~keys.indexOf(k)) {
+          newObj[k] = v;
+        }
+      });
+      return newObj;
+    };
+
+    parseInterface._query.Query.prototype._setFieldConstraintsKey = function (fieldName, key, val, compatibleKeys) {
+      var fieldConstraints = this._getFieldConstraints(fieldName);
+      fieldConstraints = this._isNonArrayObj(fieldConstraints) ? fieldConstraints : {};
+      fieldConstraints = this._pick(fieldConstraints, compatibleKeys);
+      fieldConstraints[key] = val;
+      this._setFieldConstraints(fieldName, fieldConstraints);
       return this;
     };
+
+    // equalTo
+    parseInterface._query.Query.prototype.equalTo = function (fieldName, val) {
+      this._setFieldConstraints(fieldName, val);
+      return this;
+    };
+
+//    var allKeys = ['$lt', '$lte', '$gt', '$gte', '$ne', '$in', '$nin', '$exists', '$select', '$dontSelect', '$inQuery', '$notInQuery', '$regex', '$all'];
+
+    // notEqualTo
+    parseInterface._query.Query.prototype.notEqualTo = function (fieldName, val) {
+      var compatibleConstraints = ['$lt', '$lte', '$gt', '$gte', '$in', '$nin', '$exists', '$select', '$dontSelect', '$inQuery', '$notInQuery', '$regex'];
+      this._setFieldConstraintsKey(fieldName, '$ne', val, compatibleConstraints);
+      return this;
+    };
+
+    // lessThan
+    parseInterface._query.Query.prototype.lessThan = function (fieldName, val) {
+      var compatibleConstraints = ['$gt', '$gte', '$ne', '$in', '$nin', '$select', '$dontSelect', '$inQuery', '$notInQuery', '$regex'];
+      this._setFieldConstraintsKey(fieldName, '$lt', val, compatibleConstraints);
+      return this;
+    };
+    // lessThanOrEqualTo
+    parseInterface._query.Query.prototype.lessThanOrEqualTo = function (fieldName, val) {
+      var compatibleConstraints = ['$gt', '$gte', '$ne', '$in', '$nin', '$select', '$dontSelect', '$inQuery', '$notInQuery', '$regex'];
+      this._setFieldConstraintsKey(fieldName, '$lte', val, compatibleConstraints);
+      return this;
+    };
+    // greaterThan
+    parseInterface._query.Query.prototype.greaterThan = function (fieldName, val) {
+      var compatibleConstraints = ['$lt', '$lte', '$ne', '$in', '$nin', '$select', '$dontSelect', '$inQuery', '$notInQuery', '$regex'];
+      this._setFieldConstraintsKey(fieldName, '$gt', val, compatibleConstraints);
+      return this;
+    };
+    // greaterThanOrEqualTo
+    parseInterface._query.Query.prototype.greaterThanOrEqualTo = function (fieldName, val) {
+      var compatibleConstraints = ['$lt', '$lte', '$ne', '$in', '$nin', '$select', '$dontSelect', '$inQuery', '$notInQuery', '$regex'];
+      this._setFieldConstraintsKey(fieldName, '$gte', val, compatibleConstraints);
+      return this;
+    };
+
+    // containedIn
+    parseInterface._query.Query.prototype.containedIn = function (fieldName, val) {
+      var compatibleConstraints = ['$gt', '$gte', '$lt', '$lte', '$ne', '$nin', '$select', '$dontSelect', '$inQuery', '$notInQuery', '$regex'];
+      this._setFieldConstraintsKey(fieldName, '$in', val, compatibleConstraints);
+      return this;
+    };
+    // notContainedIn
+    parseInterface._query.Query.prototype.notContainedIn = function (fieldName, val) {
+      var compatibleConstraints = ['$gt', '$gte', '$lt', '$lte', '$ne', '$in', '$select', '$dontSelect', '$inQuery', '$notInQuery', '$regex'];
+      this._setFieldConstraintsKey(fieldName, '$nin', val, compatibleConstraints);
+      return this;
+    };
+
+    // exists
+    parseInterface._query.Query.prototype.exists = function (fieldName) {
+      var compatibleConstraints = ['$ne', '$in', '$nin', '$select', '$dontSelect', '$inQuery', '$notInQuery', '$regex'];
+      this._setFieldConstraintsKey(fieldName, '$exists', true, compatibleConstraints);
+      return this;
+    };
+    // doesNotExist
+    parseInterface._query.Query.prototype.doesNotExist = function (fieldName) {
+      var compatibleConstraints = [];
+      this._setFieldConstraintsKey(fieldName, '$exists', false, compatibleConstraints);
+      return this;
+    };
+
+    // startsWith
+    parseInterface._query.Query.prototype.startsWith = function (fieldName, str) {
+      var compatibleConstraints = ['$lt', '$lte', '$gt', '$gte', '$ne', '$in', '$nin', '$exists', '$select', '$dontSelect', '$inQuery', '$notInQuery'];
+      var regexStr = '^\\Q' + str + '\\E';
+      this._setFieldConstraintsKey(fieldName, '$regex', regexStr, compatibleConstraints);
+      return this;
+    };
+
+    // Arrays
+    // contains
+    parseInterface._query.Query.prototype.contains = function (fieldName, val) {
+      this._setFieldConstraints(fieldName, val);
+      return this;
+    };
+    // containsAll
+    parseInterface._query.Query.prototype.containsAll = function (fieldName, vals) {
+      var compatibleConstraints = ['$lt', '$lte', '$gt', '$gte', '$ne', '$in', '$nin', '$exists', '$select', '$dontSelect', '$inQuery', '$notInQuery', '$regex'];
+      this._setFieldConstraintsKey(fieldName, '$all', vals, compatibleConstraints);
+      return this;
+    };
+
+    // matchesQuery
+    parseInterface._query.Query.prototype.matchesQuery = function (fieldName, query, queryKey) {
+      var compatibleConstraints = ['$lt', '$lte', '$gt', '$gte', '$ne', '$in', '$nin', '$exists', '$select', '$dontSelect', '$notInQuery', '$regex'];
+      queryKey = queryKey || 'objectId';
+      var selectParams = {
+        query: query._yieldParams(),
+        key: queryKey
+      };
+      this._setFieldConstraintsKey(fieldName, '$select', selectParams, compatibleConstraints);
+      return this;
+    };
+    // doesNotMatchQuery
+    parseInterface._query.Query.prototype.doesNotMatchQuery = function (fieldName, query, queryKey) {
+      var compatibleConstraints = ['$lt', '$lte', '$gt', '$gte', '$ne', '$in', '$nin', '$exists', '$select', '$dontSelect', '$inQuery', '$regex'];
+      queryKey = queryKey || 'objectId';
+      var selectParams = {
+        query: query._yieldParams(),
+        key: queryKey
+      };
+      this._setFieldConstraintsKey(fieldName, '$dontSelect', selectParams, compatibleConstraints);
+      return this;
+    };
+
+    // Powerful
+    parseInterface._query.Query.or = function (Resource) {
+      var Query = this;
+      var subQueries = [].slice.call(arguments, 1);
+      var compoundQuery = new Query(Resource);
+      var className = Resource._getClassName();
+      var queryArray = [];
+      angular.forEach(subQueries, function (query) {
+        var subQueryParams = query._yieldParams();
+        if (subQueryParams.className !== className) {
+          return;
+        }
+        queryArray.push(subQueryParams.where);
+      });
+      compoundQuery._setConstraints({'$or': queryArray});
+      return compoundQuery;
+    };
+
+
     // This is for the next version
-    parseInterface._query._Query.prototype.include = function (/* relations */) {
+    parseInterface._query.Query.prototype.include = function (/* relations */) {
       var args = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
       // Need to filter that list according to which are known pointers
       var includedFields = this._params.include || [];
@@ -605,50 +767,61 @@ angular.module('angularParseInterface', [
           !!Resource._getFieldRelationConstructor(fieldName);
       };
       angular.forEach(args, function(val, idx) {
-        if (isIncludable(val)) {
+//        if (isIncludable(val)) {
           includedFields.push(val);
-        } else {
-          $log.warn('Cannot include a field without a known constructor');
-        }
+//        } else {
+//          $log.warn('Cannot include a field without a known constructor');
+//        }
       });
       this._params.include = includedFields;
       return this;
     };
-    parseInterface._query._Query.prototype.skip = function (n) {
+
+    parseInterface._query.Query.prototype.skip = function (n) {
       this._params.skip = n;
       return this;
     };
-    parseInterface._query._Query.prototype.limit = function (n) {
+    parseInterface._query.Query.prototype.limit = function (n) {
       this._params.limit = n;
       return this;
     };
-    parseInterface._query._Query.prototype.count = function () {
+    parseInterface._query.Query.prototype.count = function () {
       this._params.limit = 0;
       this._params.count = 1;
       return this;
     };
-    parseInterface._query._Query.prototype.select = function () {
+    parseInterface._query.Query.prototype.select = function () {
       this._params.keys = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
       return this;
     };
-    parseInterface._query._Query.prototype.order = function (/* keys */) {
+
+    // ascending
+    // descending
+    parseInterface._query.Query.prototype.order = function (/* keys */) {
       this._params.order = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
       return this;
     };
-    parseInterface._query._Query.prototype.exec = function () {
+
+    parseInterface._query.Query.prototype._yieldParams = function () {
       var params = angular.copy(this._params);
-      // This needs to be serialized here, since angular.toJson will remove anything with a leading `$`
-      params.where = params.where && JSON.stringify(params.where);
       params.order = params.order && params.order.length && params.order.join(',');
       params.include = params.include && params.include.length && params.include.join(',');
+      params.className = this._Resource._getClassName();
+      return params;
+    };
+    parseInterface._query.Query.prototype.exec = function () {
+      var params = this._yieldParams();
+      delete params.className;
+      params.where = params.where && JSON.stringify(params.where);
       return this._Resource.query(params);
     };
-    parseInterface._query.createQueryFx = function () {
-      var Query = this._Query;
-      return function (obj) {
-        return new Query(obj);
-      };
-    };
+
+//    parseInterface._query.createQueryFx = function () {
+//      var Query = this.Query;
+//      return function (obj) {
+//        return new Query(obj);
+//      };
+//    };
 
     // eventBus submodule
     parseInterface._eventBus = {
@@ -677,7 +850,7 @@ angular.module('angularParseInterface', [
 
       appInterface.User = this._user.createUserModule(this._object.objectDecorator, appInterface._appResourceFactory, appStorage);
 
-      appInterface.query = this._query.createQueryFx();
+      appInterface.Query = this._query.Query;
 
       return appInterface;
     };
