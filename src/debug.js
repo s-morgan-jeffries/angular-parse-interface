@@ -7,8 +7,25 @@ var Query;
 //  return '/classes/' + className + '/:objectId';
 //};
 //var eventBus;
+
+//t0d0: Figure out if you can post arbitrary data via a Resource (for operations)
+  // Find a banana not related to test, try to use add relation method as is, use console.log in the transformRequest function
 var Banana;
+var bananas;
 var Monkey;
+var Test;
+var test;
+var relatedBananas;
+var unrelatedBananas;
+
+var isRelated = function (b) {
+  return !!~_.pluck(relatedBananas, 'objectId').indexOf(b.objectId);
+};
+var not = function (f) {
+  return function () {
+    return !f.apply(null, arguments);
+  };
+};
 
 setTimeout(function() {
   var appConfig = {
@@ -26,7 +43,19 @@ setTimeout(function() {
   appInterface = $injector.get('appInterface');
   Query = appInterface.Query;
   Banana = $injector.get('Banana');
+  bananas = Banana.query();
   Monkey = $injector.get('Monkey');
+
+  Test = appInterface.objectFactory('Test');
+  tests = Test.query(function (d) {
+    test = d[0];
+    relatedBananas = (new Query(Banana)).isRelationOf('bananas', test).exec();
+    relatedBananas.$promise.then(function () {
+//      console.log(relatedBananas);
+      unrelatedBananas = _.filter(bananas, not(isRelated));
+    });
+  });
+
 //  eventBus = appInterface._eventBus;
 //  appResourceFactory = appInterface._appResourceFactory;
 }, 3000);

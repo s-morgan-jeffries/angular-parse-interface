@@ -1,6 +1,6 @@
 'use strict';
 
-//t0d0: Finish query builder
+//t0d0: Fix the include part of query builder
 //t0d0: Figure out how to deal with relations
 //t0d0: Clean up the User model
 //t0d0: Close some things up in closures (reduce the amount of testing)
@@ -150,7 +150,6 @@ angular.module('angularParseInterface', [
         encodeRequestData: function (Resource, data) {
           var isBlacklisted = this._isBlacklisted,
             typeOf = this._typeOfRequestData,
-//            classOf = this._classOfRequestData,
             getEncoder = this._getEncoder.bind(this),
             encodedData = {};
           angular.forEach(data, function (val, key) {
@@ -169,11 +168,6 @@ angular.module('angularParseInterface', [
           angular.forEach(data, function (val, key) {
             var decoder = getDecoder(typeOf(Resource, key, val));
             decodedData[key] = decoder(Resource, key, data[key]);
-//            console.log(key);
-//            console.log(val);
-//            console.log(typeOf(Resource, key, val));
-//            console.log(decoder);
-//            console.log(decodedData[key]);
           });
           return decodedData;
         }
@@ -220,7 +214,6 @@ angular.module('angularParseInterface', [
                 isArray: false,
                 transformResponse: function(data) {
                   var count = angular.fromJson(data).count;
-//                  return {count: angular.isNumber(count) ? count : null};
                   return {count: count};
                 }
               },
@@ -232,9 +225,13 @@ angular.module('angularParseInterface', [
               },
               update: {
                 method:'PUT',
-                transformRequest: function (data) {
+                transformRequest: function (data, headersGetter) {
                   return angular.toJson(encodeRequestData(Resource, data));
                 }
+              },
+              // For sending arbitrary data via put requests
+              putData: {
+                method: 'PUT'
               },
               remove: {
                 method: 'DELETE'
@@ -289,6 +286,41 @@ angular.module('angularParseInterface', [
             });
             return objData;
           };
+
+
+          Resource.putData = (function () {
+            var putData = Resource.putData;
+
+            return function() {
+              var args,
+                data,
+                instance,
+                params,
+                successFunc,
+                errorFunc;
+
+              // Turn arguments into an actual array
+              args = [].slice.call(arguments);
+              // Get the data for the put request
+              data = find(args, isParams);
+              // Figure out which argument is the instance; this has to exist so we can get its objectId
+              instance = find(args, isInstance);
+              // Create the parameters
+              params = {
+                objectId: instance.objectId
+              };
+
+              // The success function that was passed in, or a do-nothing function if there wasn't one
+              successFunc = find(args, angular.isFunction) || angular.noop;
+              // The error function that was passed in, or a do-nothing function if there wasn't one
+              errorFunc = findLast(args, angular.isFunction) || angular.noop;
+              // If the error function is the same as the save function, set errorFunc to angular.noop
+              errorFunc = (errorFunc === successFunc) ? angular.noop : errorFunc;
+
+              // Delegate to the original function...
+              return putData.call(this, params, data, successFunc, errorFunc);
+            };
+          }());
 
           Resource.query = (function () {
             var query = Resource.query,
@@ -460,15 +492,95 @@ angular.module('angularParseInterface', [
           };
 
           // Relational methods
+          // hasOne
           Resource.hasOne = function (fieldName, other) {
             this._setFieldDataType(fieldName, 'Pointer');
             this._setFieldClassName(fieldName, other._getClassName());
             this._setFieldRelationConstructor(fieldName, other);
           };
+          // hasMany
+          Resource.hasOne = function (fieldName, other) {
+            this._setFieldDataType(fieldName, 'Relation');
+            this._setFieldClassName(fieldName, other._getClassName());
+          };
 
           // Instance methods
           Resource.prototype.isNew = function() {
             return !this.objectId;
+          };
+          // className
+          Object.defineProperty(Resource.prototype, 'className', {
+            get: function () {
+              return this.constructor._getClassName();
+            }
+          });
+          // getPointer
+          Resource.prototype.getPointer = function() {
+            return {
+              __type: 'Pointer',
+              className: this.className,
+              objectId: this.objectId
+            };
+          };
+
+          // Relational methods
+          // setPointer
+          Resource.prototype.setPointer = function (fieldName, other) {
+            this[fieldName] = other.objectId;
+          };
+          // addRelations
+          Resource.prototype.addRelations = function (fieldName/*, other*/) {
+            var relations = angular.isArray(arguments[1]) ? arguments[1] : [].slice.call(arguments, 1),
+              data = {};
+
+            data[fieldName] = {
+              __op: 'AddRelation',
+              objects: []
+            };
+            angular.forEach(relations, function (o) {
+              data[fieldName].objects.push(o.getPointer());
+            });
+
+            return this.$putData(data);
+          };
+          // removeRelations
+          Resource.prototype.removeRelations = function (fieldName/*, other*/) {
+            var relations = angular.isArray(arguments[1]) ? arguments[1] : [].slice.call(arguments, 1),
+              data = {};
+
+            data[fieldName] = {
+              __op: 'RemoveRelation',
+              objects: []
+            };
+            angular.forEach(relations, function (o) {
+              data[fieldName].objects.push(o.getPointer());
+            });
+
+            return this.$putData(data);
+          };
+
+          // Probably not worth using Parse's increment operator
+          // increment
+          Resource.prototype.increment = function (fieldName, v) {
+            this[fieldName] += v;
+            return this.$save();
+          };
+          // decrement
+          Resource.prototype.decrement = function (fieldName, v) {
+            this[fieldName] -= v;
+            return this.$save();
+          };
+
+          // deleteField
+          Resource.prototype.deleteField = function (fieldName) {
+            var data = {},
+              self = this;
+            data[fieldName] = {
+              __op: 'Delete'
+            };
+            return this.$putData(data).then(function () {
+              delete self[fieldName];
+            });
           };
 
           return Resource;
@@ -485,26 +597,6 @@ angular.module('angularParseInterface', [
       objectDecorator: function (Resource, className) {
         Resource._addRequestBlacklistProps('createdAt', 'updatedAt');
         Resource._setClassName(className);
-        Object.defineProperty(Resource.prototype, '_className', {
-          get: function () {
-            return this.constructor._getClassName();
-          }
-        });
-//        Resource.prototype.getPointer = function() {
-//          return {
-//            __type: 'Pointer',
-//            className: this._className,
-//            objectId: this.objectId
-//          };
-//        };
-
-//        Resource.prototype.setUserPriveleges = function(user, canRead, canWrite) {
-//          this.ACL = this.ACL || {};
-//          this.ACL[user.objectId] = {
-//            read: canRead,
-//            write: canWrite
-//          };
-//        };
         return Resource;
       },
       createObjectFactory: function (appResourceFactory) {
@@ -517,62 +609,6 @@ angular.module('angularParseInterface', [
           var Resource = appResourceFactory(url, defaults, customActions);
           return objectDecorator(Resource, className);
         }
-      }
-    };
-
-    // user submodule
-    parseInterface._user = {
-      _userUrl: '/:root/:objectId',
-      _userDefaults: {root: 'users', objectId: '@objectId'},
-      _userDecorator: function (objectDecorator, Resource, sessionState) {
-        Resource = objectDecorator(Resource, '_User');
-        Resource._addRequestBlacklistProps('sessionToken', 'emailVerified');
-        Resource.signUp = function(username, password, email) {
-          var user = this.save({
-            username: username,
-            password: password,
-            email: email
-          });
-          user.$promise.then(function() {
-            var data = {
-              sessionToken: user.sessionToken
-            };
-            delete user.sessionToken;
-            eventBus.emit(_SIGN_IN_, data);
-          });
-          return sessionState.user = user;
-        };
-        Resource.signIn = function(username, password) {
-          var user = this.get({root: 'login', username: username, password: password});
-          user.$promise.then(function() {
-            var data = {
-              sessionToken: user.sessionToken
-            };
-            delete user.sessionToken;
-            eventBus.emit(_SIGN_IN_, data);
-          });
-          return sessionState.user = user;
-        };
-        Resource.signOut = function() {
-          sessionState.user = null;
-          eventBus.emit(_SIGN_OUT_);
-        };
-        Resource.current = function() {
-          var user = this.get({objectId: 'me'});
-          user.$promise.then(function() {
-            sessionState.sessionToken = user.sessionToken;
-            delete user.sessionToken;
-          });
-          return sessionState.user = user;
-        };
-        return Resource;
-      },
-      createUserModule: function (objectDecorator, appResourceFactory, appStore) {
-        var url = this._userUrl,
-          defaults = this._userDefaults,
-          customActions = {},
-          Resource = appResourceFactory(url, defaults, customActions);
-        return this._userDecorator(objectDecorator, Resource, appStore);
       }
     };
 
@@ -631,7 +667,7 @@ angular.module('angularParseInterface', [
       this._setFieldConstraints(fieldName, val);
       return this;
     };
-
+    // t0d0: Clean up keys
 //    var allKeys = ['$lt', '$lte', '$gt', '$gte', '$ne', '$in', '$nin', '$exists', '$select', '$dontSelect', '$inQuery', '$notInQuery', '$regex', '$all'];
 
     // notEqualTo
@@ -700,6 +736,32 @@ angular.module('angularParseInterface', [
       return this;
     };
 
+    // Relational
+    // isRelationOf
+    parseInterface._query.Query.prototype.isRelationOf = function (fieldName, obj) {
+      var constraints = this._getConstraints();
+      constraints['$relatedTo'] = {
+        object: {
+          __type: 'Pointer',
+          className: obj.className,
+          objectId: obj.objectId
+        },
+        key: fieldName
+      };
+      this._setConstraints(constraints);
+      return this;
+    };
+    // isRelatedTo
+    parseInterface._query.Query.prototype.isRelatedTo = function (fieldName, obj) {
+      var fieldConstraints = {
+        __type: 'Pointer',
+        className: obj.className,
+        objectId: obj.objectId
+      };
+      this.equalTo(fieldName, fieldConstraints);
+      return this;
+    };
+
     // Arrays
     // contains
     parseInterface._query.Query.prototype.contains = function (fieldName, val) {
@@ -745,10 +807,9 @@ angular.module('angularParseInterface', [
       var queryArray = [];
       angular.forEach(subQueries, function (query) {
         var subQueryParams = query._yieldParams();
-        if (subQueryParams.className !== className) {
-          return;
+        if (subQueryParams.className === className) {
+          queryArray.push(subQueryParams.where);
         }
-        queryArray.push(subQueryParams.where);
       });
       compoundQuery._setConstraints({'$or': queryArray});
       return compoundQuery;
@@ -756,26 +817,26 @@ angular.module('angularParseInterface', [
 
 
     // This is for the next version
-    parseInterface._query.Query.prototype.include = function (/* relations */) {
-      var args = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
-      // Need to filter that list according to which are known pointers
-      var includedFields = this._params.include || [];
-      var Resource = this._Resource;
-      var isIncludable = function (fieldName) {
-        return angular.equals(Resource._getFieldDataType(fieldName), 'Pointer') &&
-          !!Resource._getFieldClassName(fieldName) &&
-          !!Resource._getFieldRelationConstructor(fieldName);
-      };
-      angular.forEach(args, function(val, idx) {
-//        if (isIncludable(val)) {
-          includedFields.push(val);
-//        } else {
-//          $log.warn('Cannot include a field without a known constructor');
-//        }
-      });
-      this._params.include = includedFields;
-      return this;
-    };
+//    parseInterface._query.Query.prototype.include = function (/* relations */) {
+//      var args = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
+//      // Need to filter that list according to which are known pointers
+//      var includedFields = this._params.include || [];
+//      var Resource = this._Resource;
+//      var isIncludable = function (fieldName) {
+//        return angular.equals(Resource._getFieldDataType(fieldName), 'Pointer') &&
+//          !!Resource._getFieldClassName(fieldName) &&
+//          !!Resource._getFieldRelationConstructor(fieldName);
+//      };
+//      angular.forEach(args, function(val, idx) {
+////        if (isIncludable(val)) {
+//          includedFields.push(val);
+////        } else {
+////          $log.warn('Cannot include a field without a known constructor');
+////        }
+//      });
+//      this._params.include = includedFields;
+//      return this;
+//    };
 
     parseInterface._query.Query.prototype.skip = function (n) {
       this._params.skip = n;
@@ -796,7 +857,18 @@ angular.module('angularParseInterface', [
     };
 
     // ascending
+    parseInterface._query.Query.prototype.ascending = function (fieldName) {
+      this._params.order = this._params.order || [];
+      this._params.order.push(fieldName);
+      return this;
+    };
     // descending
+    parseInterface._query.Query.prototype.descending = function (fieldName) {
+      this._params.order = this._params.order || [];
+      this._params.order.push('-' + fieldName);
+      return this;
+    };
+    // order
     parseInterface._query.Query.prototype.order = function (/* keys */) {
       this._params.order = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
       return this;
@@ -816,13 +888,6 @@ angular.module('angularParseInterface', [
       return this._Resource.query(params);
     };
 
-//    parseInterface._query.createQueryFx = function () {
-//      var Query = this.Query;
-//      return function (obj) {
-//        return new Query(obj);
-//      };
-//    };
-
     // eventBus submodule
     parseInterface._eventBus = {
       createEventBus: function () {
@@ -831,6 +896,62 @@ angular.module('angularParseInterface', [
           on: $scope.$on.bind($scope),
           emit: $scope.$emit.bind($scope)
         };
+      }
+    };
+
+    // user submodule
+    parseInterface._user = {
+      _userUrl: '/:root/:objectId',
+      _userDefaults: {root: 'users', objectId: '@objectId'},
+      _userDecorator: function (objectDecorator, Resource, sessionState) {
+        Resource = objectDecorator(Resource, '_User');
+        Resource._addRequestBlacklistProps('sessionToken', 'emailVerified');
+        Resource.signUp = function(username, password, email) {
+          var user = this.save({
+            username: username,
+            password: password,
+            email: email
+          });
+          user.$promise.then(function() {
+            var data = {
+              sessionToken: user.sessionToken
+            };
+            delete user.sessionToken;
+            eventBus.emit(_SIGN_IN_, data);
+          });
+          return sessionState.user = user;
+        };
+        Resource.signIn = function(username, password) {
+          var user = this.get({root: 'login', username: username, password: password});
+          user.$promise.then(function() {
+            var data = {
+              sessionToken: user.sessionToken
+            };
+            delete user.sessionToken;
+            eventBus.emit(_SIGN_IN_, data);
+          });
+          return sessionState.user = user;
+        };
+        Resource.signOut = function() {
+          sessionState.user = null;
+          eventBus.emit(_SIGN_OUT_);
+        };
+        Resource.current = function() {
+          var user = this.get({objectId: 'me'});
+          user.$promise.then(function() {
+            sessionState.sessionToken = user.sessionToken;
+            delete user.sessionToken;
+          });
+          return sessionState.user = user;
+        };
+        return Resource;
+      },
+      createUserModule: function (objectDecorator, appResourceFactory, appStore) {
+        var url = this._userUrl,
+          defaults = this._userDefaults,
+          customActions = {},
+          Resource = appResourceFactory(url, defaults, customActions);
+        return this._userDecorator(objectDecorator, Resource, appStore);
       }
     };
 
