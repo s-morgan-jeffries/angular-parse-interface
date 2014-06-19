@@ -1,10 +1,13 @@
 'use strict';
 
-//t0d0: Fix the include part of query builder
-//t0d0: Figure out how to deal with relations
-//t0d0: Clean up the User model
+//backburner: Fix the include part of query builder
+//d0ne: Figure out how to deal with relations
 //t0d0: Close some things up in closures (reduce the amount of testing)
 //t0d0: Write tests
+//t0d0: Add roles
+//t0d0: Add cloud functions
+//t0d0: Add files
+//t0d0: Beef up the User model (password reset, etc.)
 
 angular.module('angularParseInterface', [
   'ngResource'
@@ -93,14 +96,15 @@ angular.module('angularParseInterface', [
               };
             },
             decode: function (Resource, fieldName, val) {
-              Resource._setFieldDataType(fieldName, 'Date');
+//              Resource._setFieldDataType(fieldName, 'Date');
               return new Date(val.iso);
             }
           },
           Pointer: {
             // This one is a little tricky. It could be a pointer, or it could be an object.
             encode: function (Resource, fieldName, val) {
-              var objectId;
+              var className = Resource._getFieldMetaDataProp(fieldName, 'className'),
+                objectId;
               if (angular.isObject(val)) {
                 $log.warn('Objects in Pointer fields will not be automatically persisted; only their objectIds will be' +
                   'saved. If you want to save other data from those objects, you\'ll need to do so separately.');
@@ -179,9 +183,11 @@ angular.module('angularParseInterface', [
           decodeResponseData = this._dataEncoding.decodeResponseData.bind(this._dataEncoding);
         // Register with appEventBus
         appEventBus.on(_SIGN_IN_, function(e, data) {
+//          console.log('signing in');
           appStorage.sessionToken = data.sessionToken;
         });
         appEventBus.on(_SIGN_OUT_, function(e, data) {
+//          console.log('signing out');
           delete appStorage.sessionToken;
         });
 
@@ -416,7 +422,11 @@ angular.module('angularParseInterface', [
 
           // Static methods
           Resource._getMetaData = function () {
-            return this._metaData || (this._metaData = {});
+            return this._metaData || {};
+          };
+
+          Resource._setMetaData = function (data) {
+            this._metaData = data;
           };
 
           Resource._getMetaDataProp = function (propName) {
@@ -427,6 +437,7 @@ angular.module('angularParseInterface', [
           Resource._setMetaDataProp = function (propName, val) {
             var resourceMetaData = this._getMetaData();
             resourceMetaData[propName] = val;
+            this._setMetaData(resourceMetaData);
           };
 
           Resource._getClassName = function () {
@@ -437,10 +448,23 @@ angular.module('angularParseInterface', [
             return this._setMetaDataProp('className', val);
           };
 
+          Resource._getFieldsMetaData = function () {
+            return this._getMetaDataProp('fields') || {};
+          };
+
+          Resource._setFieldsMetaData = function (data) {
+            this._setMetaDataProp('fields', data);
+          };
+
           Resource._getFieldMetaData = function (fieldName) {
-            var resourceMetaData = this._getMetaData();
-            var fieldsMetaData = resourceMetaData.fields || (resourceMetaData.fields = {});
-            return fieldsMetaData[fieldName] || (fieldsMetaData[fieldName] = {});
+            var fieldsMetaData = this._getFieldsMetaData();
+            return fieldsMetaData[fieldName] || {};
+          };
+
+          Resource._setFieldMetaData = function (fieldName, data) {
+            var fieldsMetaData = this._getFieldsMetaData();
+            fieldsMetaData[fieldName] = data;
+            this._setFieldsMetaData(fieldsMetaData);
           };
 
           Resource._getFieldMetaDataProp = function (fieldName, propName) {
@@ -451,6 +475,7 @@ angular.module('angularParseInterface', [
           Resource._setFieldMetaDataProp = function (fieldName, propName, val) {
             var fieldMetaData = this._getFieldMetaData(fieldName);
             fieldMetaData[propName] = val;
+            this._setFieldMetaData(fieldName, fieldMetaData);
           };
 
           Resource._getFieldDataType = function (fieldName) {
@@ -491,6 +516,9 @@ angular.module('angularParseInterface', [
             return !!this._getFieldMetaDataProp(fieldName, 'isRequestBlacklisted');
           };
 
+          // Blacklist createdAt and updatedAt properties
+          Resource._addRequestBlacklistProps('createdAt', 'updatedAt');
+
           // Relational methods
           // hasOne
           Resource.hasOne = function (fieldName, other) {
@@ -499,7 +527,7 @@ angular.module('angularParseInterface', [
             this._setFieldRelationConstructor(fieldName, other);
           };
           // hasMany
-          Resource.hasOne = function (fieldName, other) {
+          Resource.hasMany = function (fieldName, other) {
             this._setFieldDataType(fieldName, 'Relation');
             this._setFieldClassName(fieldName, other._getClassName());
           };
@@ -583,32 +611,30 @@ angular.module('angularParseInterface', [
             });
           };
 
+          // Security
+          Resource.prototype._setPrivileges = function(name, privileges) {
+            this.ACL = this.ACL || {};
+            this.ACL[name] = this.ACL[name] || {};
+            if (privileges.read) {
+              this.ACL[name].read = privileges.read;
+            }
+            if (privileges.write) {
+              this.ACL[name].write = privileges.write;
+            }
+          };
+          Resource.prototype.allCanRead = function () {
+            this._setPrivileges('*', {read: true});
+          };
+          Resource.prototype.allCanWrite = function () {
+            this._setPrivileges('*', {write: true});
+          };
+          Resource.prototype.setUserPrivileges = function(user, privileges) {
+            this._setPrivileges(user.objectId, privileges);
+          };
+
           return Resource;
 
         };
-      }
-    };
-
-    // object submodule
-    parseInterface._object = {
-      _objectUrl: function (className) {
-        return '/classes/' + className + '/:objectId';
-      },
-      objectDecorator: function (Resource, className) {
-        Resource._addRequestBlacklistProps('createdAt', 'updatedAt');
-        Resource._setClassName(className);
-        return Resource;
-      },
-      createObjectFactory: function (appResourceFactory) {
-        var objectUrl = this._objectUrl,
-          objectDecorator = this.objectDecorator;
-        return function (className, defaults, customActions) {
-          var url = objectUrl(className);
-          customActions = customActions || {};
-          defaults = angular.extend((defaults || {}), {objectId: '@objectId'});
-          var Resource = appResourceFactory(url, defaults, customActions);
-          return objectDecorator(Resource, className);
-        }
       }
     };
 
@@ -815,7 +841,6 @@ angular.module('angularParseInterface', [
       return compoundQuery;
     };
 
-
     // This is for the next version
 //    parseInterface._query.Query.prototype.include = function (/* relations */) {
 //      var args = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
@@ -888,24 +913,35 @@ angular.module('angularParseInterface', [
       return this._Resource.query(params);
     };
 
-    // eventBus submodule
-    parseInterface._eventBus = {
-      createEventBus: function () {
-        var $scope = $rootScope.$new(true);
-        return {
-          on: $scope.$on.bind($scope),
-          emit: $scope.$emit.bind($scope)
-        };
+    // object submodule
+    parseInterface._object = {
+      _objectUrl: function (className) {
+        return '/classes/' + className + '/:objectId';
+      },
+      createObjectFactory: function (appResourceFactory) {
+        var objectUrl = this._objectUrl,
+          objectDecorator = this.objectDecorator;
+        return function (className, defaults, customActions) {
+          var url = objectUrl(className);
+          customActions = customActions || {};
+          defaults = angular.extend((defaults || {}), {objectId: '@objectId'});
+          var Resource = appResourceFactory(url, defaults, customActions);
+          Resource._setClassName(className);
+          return Resource;
+        }
       }
     };
 
     // user submodule
     parseInterface._user = {
-      _userUrl: '/:root/:objectId',
-      _userDefaults: {root: 'users', objectId: '@objectId'},
-      _userDecorator: function (objectDecorator, Resource, sessionState) {
-        Resource = objectDecorator(Resource, '_User');
+      _userUrl: '/:urlRoot/:objectId',
+      _userDefaults: {urlRoot: 'users', objectId: '@objectId'},
+      _userDecorator: function (/*objectDecorator,*/ Resource, appStorage, appEventBus) {
+//        Resource = objectDecorator(Resource, '_User');
+        Resource._setClassName('_User');
+//        return Resource;
         Resource._addRequestBlacklistProps('sessionToken', 'emailVerified');
+
         Resource.signUp = function(username, password, email) {
           var user = this.save({
             username: username,
@@ -917,41 +953,60 @@ angular.module('angularParseInterface', [
               sessionToken: user.sessionToken
             };
             delete user.sessionToken;
-            eventBus.emit(_SIGN_IN_, data);
+            appEventBus.emit(_SIGN_IN_, data);
           });
-          return sessionState.user = user;
+          return appStorage.user = user;
         };
+
         Resource.signIn = function(username, password) {
-          var user = this.get({root: 'login', username: username, password: password});
+          var user = this.get({urlRoot: 'login', username: username, password: password});
           user.$promise.then(function() {
             var data = {
               sessionToken: user.sessionToken
             };
             delete user.sessionToken;
-            eventBus.emit(_SIGN_IN_, data);
+            appEventBus.emit(_SIGN_IN_, data);
           });
-          return sessionState.user = user;
+          return appStorage.user = user;
         };
+
         Resource.signOut = function() {
-          sessionState.user = null;
-          eventBus.emit(_SIGN_OUT_);
+          delete appStorage.user;
+          appEventBus.emit(_SIGN_OUT_);
         };
+
         Resource.current = function() {
-          var user = this.get({objectId: 'me'});
-          user.$promise.then(function() {
-            sessionState.sessionToken = user.sessionToken;
-            delete user.sessionToken;
-          });
-          return sessionState.user = user;
+          var user = appStorage.user;
+          if (!user) {
+            user = this.get({objectId: 'me'});
+            user.$promise.then(function() {
+              appStorage.sessionToken = user.sessionToken;
+              delete user.sessionToken;
+            });
+            appStorage.user = user;
+          }
+          return user;
         };
+
         return Resource;
       },
-      createUserModule: function (objectDecorator, appResourceFactory, appStore) {
+      createUserModule: function (appResourceFactory, appStorage, appEventBus) {
         var url = this._userUrl,
           defaults = this._userDefaults,
           customActions = {},
           Resource = appResourceFactory(url, defaults, customActions);
-        return this._userDecorator(objectDecorator, Resource, appStore);
+        return this._userDecorator(Resource, appStorage, appEventBus);
+      }
+    };
+
+    // eventBus submodule
+    parseInterface._eventBus = {
+      createEventBus: function () {
+        var $scope = $rootScope.$new(true);
+        return {
+          on: $scope.$on.bind($scope),
+          emit: $scope.$emit.bind($scope)
+        };
       }
     };
 
@@ -959,9 +1014,10 @@ angular.module('angularParseInterface', [
       clientStorage = clientStorage || {};
       clientStorage.parseApp = clientStorage.parseApp || {};
       var appId = appConfig.applicationId;
-      var appStorage = (clientStorage.parseApp[appId] = clientStorage.parseApp[appId] || {});
 
       var appInterface = {};
+
+      var appStorage = appInterface._appStorage = (clientStorage.parseApp[appId] = clientStorage.parseApp[appId] || {});
 
       var appEventBus = appInterface._eventBus = parseInterface._eventBus.createEventBus();
 
@@ -969,7 +1025,7 @@ angular.module('angularParseInterface', [
 
       appInterface.objectFactory = this._object.createObjectFactory(appInterface._appResourceFactory);
 
-      appInterface.User = this._user.createUserModule(this._object.objectDecorator, appInterface._appResourceFactory, appStorage);
+      appInterface.User = this._user.createUserModule(appInterface._appResourceFactory, appStorage, appEventBus);
 
       appInterface.Query = this._query.Query;
 
