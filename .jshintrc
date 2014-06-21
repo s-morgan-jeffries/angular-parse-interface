@@ -1,5 +1,5 @@
 {
-  "node": true,
+  "node": false,
   "esnext": true,
   "bitwise": true,
   "camelcase": true,

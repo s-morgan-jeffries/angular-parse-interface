@@ -33,20 +33,21 @@ module.exports = function(config) {
       '../../dev_app/bower_components/angular-mocks/angular-mocks.js',
       // Utility libraries
       '../../dev_app/bower_components/lodash/dist/lodash.compat.js',
-      '../../dev_app/bower_components/underscore.string/lib/underscore.string.js',
+//      '../../dev_app/bower_components/underscore.string/lib/underscore.string.js',
       // The source files for the module
       '../../src/angularParseInterface.js',
-      '../../src/*.js',
+//      '../../src/*.js',
       // This is just the main app file, which declares the module.
-      '../../dev_app/scripts/app.js',
-      // These are all the scripts.
-      '../../dev_app/scripts/**/*.js',
+//      '../../dev_app/scripts/app.js',
+//      // These are all the scripts.
+//      '../../dev_app/scripts/**/*.js',
       // These are all the tests.
-      'spec/**/*.js'
+      'spec/parseInterfaceSpec.js'
     ],
 
     // list of files / patterns to exclude
     exclude: [],
+
 
     // web server port
     port: 8080,

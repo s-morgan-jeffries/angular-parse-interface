@@ -64,7 +64,7 @@ setTimeout(function() {
   parseInterface = $injector.get('parseInterface');
 //  eventBus = $injector.get('eventBus');
 
-//  appInterface = parseInterface.createApp(appConfig);
+//  appInterface = parseInterface.createAppInterface(appConfig);
   appInterface = $injector.get('appInterface');
   Query = appInterface.Query;
   Banana = $injector.get('Banana');

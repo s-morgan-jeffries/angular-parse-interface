@@ -1,3 +1,4 @@
+// jshint node:true
 // Generated on 2014-06-06 using generator-angular-module 0.0.3
 'use strict';
 
@@ -129,7 +130,7 @@ module.exports = function (grunt) {
         src: [
           '<%= yeoman.devApp %>/scripts/{,*/}*.js',
           'src/**/*.js',
-          '!src/parseAppConfig.js'
+          '!<%= yeoman.devApp %>/scripts/debug.js'
         ]
       },
       integrationTests: {
@@ -218,7 +219,7 @@ module.exports = function (grunt) {
           'src/**/*.js'
         ],
 //        tasks: ['jshint:scripts'],
-//        tasks: ['jshint:scripts', 'karma:CI'],
+        tasks: ['jshint:scripts', 'karma:CI'],
         options: {
           livereload: true
         }
@@ -227,10 +228,12 @@ module.exports = function (grunt) {
 //        files: ['test/integration/spec/{,*/}*.js'],
 //        tasks: ['jshint:integrationTests', 'protractor:CI']
 //      },
-//      jsUnitTest: {
-//        files: ['test/unit/spec/{,*/}*.js'],
+      jsUnitTest: {
+        files: ['test/unit/spec/{,*/}*.js'],
 //        tasks: ['jshint:unitTests', 'karma:CI']
-//      },
+        tasks: ['jshint:unitTests']
+//        tasks: ['karma:CI']
+      },
       livereload: {
         options: {
           livereload: '<%= connect.options.livereload %>'
@@ -291,10 +294,10 @@ module.exports = function (grunt) {
   grunt.registerTask('build', function (target) {
     var testTasks = [
         'jshint:gruntfile',
-        'jshint:scripts',
-        'jshint:unitTests',
-        'jshint:integrationTests',
-        'test'
+        'jshint:scripts'
+//        'jshint:unitTests',
+//        'jshint:integrationTests',
+//        'test'
       ],
       buildTasks = [
         // Remove .tmp, built module file, minified module file
