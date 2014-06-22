@@ -1,17 +1,17 @@
 'use strict';
 
-describe('Factory: ParseEventBus', function () {
-  var ParseEventBus;
+describe('Factory: ParseAppEventBus', function () {
+  var ParseAppEventBus;
 
   beforeEach(function () {
     module('angularParseInterface');
     inject(function ($injector) {
-      ParseEventBus = $injector.get('ParseEventBus');
+      ParseAppEventBus = $injector.get('ParseAppEventBus');
     });
   });
 
   it('should return an event bus', function () {
-    var eventBus = new ParseEventBus();
+    var eventBus = new ParseAppEventBus();
     expect(eventBus).toBeObject();
     expect(eventBus.on).toBeFunction();
     expect(eventBus.emit).toBeFunction();
@@ -21,7 +21,7 @@ describe('Factory: ParseEventBus', function () {
     var eventBus;
 
     beforeEach(function () {
-      eventBus = new ParseEventBus();
+      eventBus = new ParseAppEventBus();
     });
 
     it('should execute all registered actions in order when an event is triggered', function () {

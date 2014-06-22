@@ -1,4 +1,5 @@
 // Generated on 2014-06-22 using generator-angular-module 0.0.5
+// jshint node: true
 'use strict';
 
 // # Globbing
@@ -153,20 +154,43 @@ module.exports = function (grunt) {
 
     // Test settings
     karma: {
+      options: {
+        files: [
+          // Add jasmine-matchers
+          '../../node_modules/jasmine-expect/dist/jasmine-matchers.js',
+          // This is obviously the core angular module
+          '../../dev_app/bower_components/angular/angular.js',
+          // This is the angular-mocks module, which adds a couple of utility functions (module, inject, maybe others)
+          '../../dev_app/bower_components/angular-mocks/angular-mocks.js',
+          // Other dependencies
+          '../../dev_app/bower_components/angular-resource/angular-resource.js',
+          // Utilities
+          '../../dev_app/bower_components/lodash/dist/lodash.js',
+          // The source files for the modules
+          // Resource module
+          '../../src/modules/resource/resourceModule.js',
+          '../../src/modules/resource/*.js',
+          // Main module
+          '../../src/angularParseInterface.js',
+          '../../src/*.js',
+          // These are all the tests.
+          'spec/**/*.js'
+        ]
+      },
       unitCI: {
-        configFile: 'test/unit/karma.ci.conf.js',
+        configFile: 'test/unit/karma.unit.ci.conf.js',
         singleRun: true
       },
       unitBuild: {
-        configFile: 'test/unit/karma.build.conf.js',
+        configFile: 'test/unit/karma.unit.build.conf.js',
         singleRun: true
       },
       integrationCI: {
-        configFile: 'test/integration/karma.ci.conf.js',
+        configFile: 'test/integration/karma.integration.ci.conf.js',
         singleRun: true
       },
       integrationBuild: {
-        configFile: 'test/integration/karma.build.conf.js',
+        configFile: 'test/integration/karma.integration.build.conf.js',
         singleRun: true
       }
     },
@@ -240,11 +264,11 @@ module.exports = function (grunt) {
 //        tasks: ['jshint:e2eTests', 'protractor:CI']
 //      },
       integrationTests: {
-        files: ['test/integration/spec/{,*/}*.js'],
+        files: ['test/integration/spec/**/*.js'],
         tasks: ['jshint:integrationTests', 'karma:integrationCI']
       },
       unitTests: {
-        files: ['test/unit/spec/{,*/}*.js'],
+        files: ['test/unit/spec/**/*.js'],
         tasks: ['jshint:unitTests', 'karma:unitCI']
       },
       livereload: {

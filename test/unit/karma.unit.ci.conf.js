@@ -16,21 +16,25 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      // Add jasmine-matchers
-      '../../node_modules/jasmine-expect/dist/jasmine-matchers.js',
-      // This is obviously the core angular module
-      '../../dev_app/bower_components/angular/angular.js',
-      // This is the angular-mocks module, which adds a couple of utility functions (module, inject, maybe others)
-      '../../dev_app/bower_components/angular-mocks/angular-mocks.js',
-      // Other dependencies
-      '../../dev_app/bower_components/angular-resource/angular-resource.js',
-      // Utilities
-      '../../dev_app/bower_components/lodash/dist/lodash.js',
-      // The source files for the module
-      '../../src/angularParseInterface.js',
-      '../../src/*.js',
-      // These are all the tests.
-      'spec/**/*.js'
+//      // Add jasmine-matchers
+//      '../../node_modules/jasmine-expect/dist/jasmine-matchers.js',
+//      // This is obviously the core angular module
+//      '../../dev_app/bower_components/angular/angular.js',
+//      // This is the angular-mocks module, which adds a couple of utility functions (module, inject, maybe others)
+//      '../../dev_app/bower_components/angular-mocks/angular-mocks.js',
+//      // Other dependencies
+//      '../../dev_app/bower_components/angular-resource/angular-resource.js',
+//      // Utilities
+//      '../../dev_app/bower_components/lodash/dist/lodash.js',
+//      // The source files for the module
+//      '../../src/angularParseInterface.js',
+//      '../../src/*.js',
+//      // This is just the main app file, which declares the module.
+//      '../../dev_app/scripts/app.js',
+//      // These are all the scripts.
+//      '../../dev_app/scripts/**/*.js',
+//      // These are all the tests.
+//      'spec/**/*.js'
     ],
 
     // list of files / patterns to exclude

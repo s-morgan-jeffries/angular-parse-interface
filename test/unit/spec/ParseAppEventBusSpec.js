@@ -1,7 +1,7 @@
 'use strict';
 
-describe('Factory: ParseEventBus', function () {
-  var ParseEventBus,
+describe('Factory: ParseAppEventBus', function () {
+  var ParseAppEventBus,
     mockRootScope = {
       $new: function () {
         return {
@@ -32,15 +32,12 @@ describe('Factory: ParseEventBus', function () {
       $provide.value('$rootScope', mockRootScope);
     });
     inject(function ($injector) {
-      ParseEventBus = $injector.get('ParseEventBus');
+      ParseAppEventBus = $injector.get('ParseAppEventBus');
     });
   });
 
   it('should return an event bus', function () {
-    var eventBus = new ParseEventBus();
-//    console.log(ParseEventBus);
-//    console.log(eventBus);
-//    console.log(_.keys(ParseEventBus.prototype));
+    var eventBus = new ParseAppEventBus();
     expect(eventBus).toBeObject();
     expect(eventBus.on).toBeFunction();
     expect(eventBus.emit).toBeFunction();
@@ -50,7 +47,7 @@ describe('Factory: ParseEventBus', function () {
     var eventBus;
 
     beforeEach(function () {
-      eventBus = new ParseEventBus();
+      eventBus = new ParseAppEventBus();
     });
 
     it('should have its own _$scope', function () {
@@ -65,14 +62,13 @@ describe('Factory: ParseEventBus', function () {
         var scope = eventBus._$scope,
           registeredEvents = scope._registered,
           event = 'foo',
-          action = function () {},
+          handler = function () {},
           thisEvent;
 
-        eventBus.on(event, action);
-        console.log(registeredEvents);
+        eventBus.on(event, handler);
         thisEvent = registeredEvents.pop();
         expect(thisEvent.event).toEqual(event);
-        expect(thisEvent.action).toEqual(action);
+        expect(thisEvent.action).toEqual(handler);
       });
     });
 
