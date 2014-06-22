@@ -16,26 +16,19 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      // simple patterns to load the needed testfiles
-//      'test/fixtures/**/*.html',
       // Add jasmine-matchers
       '../../node_modules/jasmine-expect/dist/jasmine-matchers.js',
       // This is obviously the core angular module
       '../../dev_app/bower_components/angular/angular.js',
-      // This is the ngResource module
-      '../../dev_app/bower_components/angular-resource/angular-resource.js',
       // This is the angular-mocks module, which adds a couple of utility functions (module, inject, maybe others)
       '../../dev_app/bower_components/angular-mocks/angular-mocks.js',
-      // Utility libraries
-      '../../dev_app/bower_components/lodash/dist/lodash.compat.js',
-      '../../dev_app/bower_components/underscore.string/lib/underscore.string.js',
+      // Other dependencies
+      '../../dev_app/bower_components/angular-resource/angular-resource.js',
+      // Utilities
+      '../../dev_app/bower_components/lodash/dist/lodash.js',
       // The source files for the module
       '../../src/angularParseInterface.js',
       '../../src/*.js',
-      // This is just the main app file, which declares the module.
-      '../../dev_app/scripts/app.js',
-      // These are all the scripts.
-      '../../dev_app/scripts/**/*.js',
       // These are all the tests.
       'spec/**/*.js'
     ],
@@ -56,11 +49,11 @@ module.exports = function(config) {
     // - IE (only Windows)
     browsers: [
       // For single runs, PhantomJS is fastest.
-      'PhantomJS'/*,
+      'PhantomJS',
       'Chrome',
       'Safari',
       'Firefox',
-      'Opera'*/
+      'Opera'
     ],
 
     // Which plugins to enable
@@ -89,20 +82,6 @@ module.exports = function(config) {
     },
 
     reporters: ['progress', 'junit']
-
-//    loggers: [
-//      {type: 'console'},
-//      {
-//        type: 'file',
-//        filename: 'test/log/unit_tests.log'
-//      }
-////      ,
-////      {
-////        type: 'file',
-////        absolute: true,
-////        filename: '/Users/Morgan/Desktop/development/angular/angular-module/angular-service-module/test/log/unit_tests.log'
-////      }
-//    ]
 
     // Uncomment the following lines if you are using grunt's server to run the tests
     // proxies: {

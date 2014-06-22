@@ -1,9 +1,9 @@
 {
   "name": "angular-parse-interface",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/s-morgan-jeffries/angular-parse-interface.git"
+    "url": "https://github.com/s.morgan.jeffries/angular-parse-interface.git"
   },
   "dependencies": {},
   "devDependencies": {

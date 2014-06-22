@@ -29,10 +29,6 @@ module.exports = function(config) {
       // The source files for the module
       '../../src/angularParseInterface.js',
       '../../src/*.js',
-      // This is just the main app file, which declares the module.
-      '../../dev_app/scripts/app.js',
-      // These are all the scripts.
-      '../../dev_app/scripts/**/*.js',
       // These are all the tests.
       'spec/**/*.js'
     ],

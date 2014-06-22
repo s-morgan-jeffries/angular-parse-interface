@@ -29,10 +29,6 @@ module.exports = function(config) {
       // The source files for the module
       '../../src/angularParseInterface.js',
       '../../src/*.js',
-      // This is just the main app file, which declares the module.
-      '../../dev_app/scripts/app.js',
-      // These are all the scripts.
-      '../../dev_app/scripts/**/*.js',
       // These are all the tests.
       'spec/**/*.js'
     ],
@@ -53,13 +49,22 @@ module.exports = function(config) {
     // - IE (only Windows)
     browsers: [
       // For single runs, PhantomJS is fastest.
-      'PhantomJS'
+      'PhantomJS',
+      'Chrome',
+      'Safari',
+      'Firefox',
+      'Opera'
     ],
 
     // Which plugins to enable
     plugins: [
+      'karma-jasmine',
       'karma-phantomjs-launcher',
-      'karma-jasmine'
+      'karma-chrome-launcher',
+      'karma-safari-launcher',
+      'karma-firefox-launcher',
+      'karma-opera-launcher',
+      'karma-junit-reporter'
     ],
 
     // Continuous Integration mode
@@ -70,7 +75,13 @@ module.exports = function(config) {
 
     // level of logging
     // possible values: LOG_DISABLE || LOG_ERROR || LOG_WARN || LOG_INFO || LOG_DEBUG
-    logLevel: config.LOG_INFO
+    logLevel: config.LOG_INFO,
+
+    junitReporter: {
+      outputFile: '../reports/integration-tests.xml'
+    },
+
+    reporters: ['progress', 'junit']
 
     // Uncomment the following lines if you are using grunt's server to run the tests
     // proxies: {

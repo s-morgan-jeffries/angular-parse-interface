@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<testsuites>
-<testsuite name="tautology" errors="0" tests="1" failures="0" time="0.019" timestamp="2014-06-06T14:52:39">
-  <testcase classname="tautology" name="should be trivially true" time="0.018"></testcase>
-</testsuite>
-</testsuites>

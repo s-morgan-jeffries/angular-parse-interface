@@ -1,5 +1,6 @@
 {
   "node": false,
+  "browser": true,
   "esnext": true,
   "bitwise": true,
   "camelcase": true,
@@ -19,7 +20,6 @@
   "smarttabs": true,
   "white": true,
   "globals": {
-    "angular": true,
-    "parseAppConfig": true
+    "angular": true
   }
 }

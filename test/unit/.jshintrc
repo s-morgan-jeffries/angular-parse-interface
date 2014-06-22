@@ -19,21 +19,20 @@
   "trailing": true,
   "smarttabs": true,
   "globals": {
+    "_": true,
     "after": false,
     "afterEach": true,
-    "angular": false,
+    "angular": true,
     "before": false,
     "beforeEach": true,
     "browser": false,
     "describe": true,
-    "xdescribe": true,
     "expect": true,
     "inject": true,
     "it": true,
-    "xit": true,
-    "jasmine": false,
+    "jasmine": true,
     "spyOn": false,
-    "parseAppConfig": true
+    "xdescribe": true,
+    "xit": true
   }
 }
-

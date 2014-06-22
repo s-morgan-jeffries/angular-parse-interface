@@ -1,5 +1,4 @@
-// jshint node:true
-// Generated on 2014-06-06 using generator-angular-module 0.0.3
+// Generated on 2014-06-22 using generator-angular-module 0.0.5
 'use strict';
 
 // # Globbing
@@ -129,9 +128,14 @@ module.exports = function (grunt) {
       scripts: {
         src: [
           '<%= yeoman.devApp %>/scripts/{,*/}*.js',
-          'src/**/*.js',
-          '!<%= yeoman.devApp %>/scripts/debug.js'
+          'src/**/*.js'
         ]
+      },
+      e2eTests: {
+        options: {
+          jshintrc: 'test/e2e/.jshintrc'
+        },
+        src: ['test/e2e/spec/{,*/}*.js']
       },
       integrationTests: {
         options: {
@@ -149,12 +153,20 @@ module.exports = function (grunt) {
 
     // Test settings
     karma: {
-      CI: {
+      unitCI: {
         configFile: 'test/unit/karma.ci.conf.js',
         singleRun: true
       },
-      build: {
+      unitBuild: {
         configFile: 'test/unit/karma.build.conf.js',
+        singleRun: true
+      },
+      integrationCI: {
+        configFile: 'test/integration/karma.ci.conf.js',
+        singleRun: true
+      },
+      integrationBuild: {
+        configFile: 'test/integration/karma.build.conf.js',
         singleRun: true
       }
     },
@@ -182,13 +194,13 @@ module.exports = function (grunt) {
       },
       build: {
         options: {
-          configFile: 'test/integration/protractor.build.conf.js', // Target-specific config file
+          configFile: 'test/e2e/protractor.build.conf.js', // Target-specific config file
           args: {} // Target-specific arguments
         }
       },
       CI: {
         options: {
-          configFile: 'test/integration/protractor.ci.conf.js', // Target-specific config file
+          configFile: 'test/e2e/protractor.ci.conf.js', // Target-specific config file
           args: {} // Target-specific arguments
         }
       }
@@ -213,26 +225,27 @@ module.exports = function (grunt) {
         files: ['Gruntfile.js'],
         tasks: ['jshint:gruntfile']
       },
-      js: {
+      scripts: {
         files: [
           '<%= yeoman.devApp %>/scripts/{,*/}*.js',
           'src/**/*.js'
         ],
-//        tasks: ['jshint:scripts'],
-        tasks: ['jshint:scripts', 'karma:CI'],
+        tasks: ['jshint:scripts', 'karma:unitCI'],
         options: {
           livereload: true
         }
       },
-//      jsIntegrationTest: {
-//        files: ['test/integration/spec/{,*/}*.js'],
-//        tasks: ['jshint:integrationTests', 'protractor:CI']
+//      e2eTests: {
+//        files: ['test/e2e/spec/{,*/}*.js'],
+//        tasks: ['jshint:e2eTests', 'protractor:CI']
 //      },
-      jsUnitTest: {
+      integrationTests: {
+        files: ['test/integration/spec/{,*/}*.js'],
+        tasks: ['jshint:integrationTests', 'karma:integrationCI']
+      },
+      unitTests: {
         files: ['test/unit/spec/{,*/}*.js'],
-//        tasks: ['jshint:unitTests', 'karma:CI']
-        tasks: ['jshint:unitTests']
-//        tasks: ['karma:CI']
+        tasks: ['jshint:unitTests', 'karma:unitCI']
       },
       livereload: {
         options: {
@@ -274,17 +287,23 @@ module.exports = function (grunt) {
         'connect:test'
       ],
       unitTasks = [
-        'karma:build'
+        'karma:unitBuild'
       ],
       integrationTasks = [
-//        'protractor:build'
+        'karma:integrationBuild'
       ],
+//      e2eTasks = [
+//        'protractor:build'
+//      ],
       tasks;
     if (target === 'unit') {
       tasks = setUpTasks.concat(unitTasks);
     } else if (target === 'integration') {
       tasks = setUpTasks.concat(integrationTasks);
+//    } else if (target === 'e2e') {
+//      tasks = setUpTasks.concat(e2eTasks);
     } else {
+//      tasks = setUpTasks.concat(unitTasks).concat(integrationTasks).concat(e2eTasks);
       tasks = setUpTasks.concat(unitTasks).concat(integrationTasks);
     }
 
@@ -294,10 +313,11 @@ module.exports = function (grunt) {
   grunt.registerTask('build', function (target) {
     var testTasks = [
         'jshint:gruntfile',
-        'jshint:scripts'
-//        'jshint:unitTests',
-//        'jshint:integrationTests',
-//        'test'
+        'jshint:scripts',
+        'jshint:unitTests',
+        'jshint:integrationTests',
+//        'jshint:e2eTests',
+        'test'
       ],
       buildTasks = [
         // Remove .tmp, built module file, minified module file
