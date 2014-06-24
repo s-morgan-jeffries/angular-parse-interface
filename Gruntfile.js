@@ -167,10 +167,14 @@ module.exports = function (grunt) {
           // Utilities
           '../../dev_app/bower_components/lodash/dist/lodash.js',
           // The source files for the modules
-          // Resource module
+          // eventBus module
+          '../../src/modules/eventBus/ParseAppEventBus.js',
+          // resource module
           '../../src/modules/resource/resourceModule.js',
           '../../src/modules/resource/*.js',
-          // Main module
+          // queryBuilder module
+          '../../src/modules/queryBuilder/parseQueryBuilder.js',
+          // main module
           '../../src/angularParseInterface.js',
           '../../src/*.js',
           // These are all the tests.

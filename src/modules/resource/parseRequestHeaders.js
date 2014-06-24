@@ -4,9 +4,9 @@ angular.module('angularParseInterface.resourceMod')
 
     var parseRequestHeaders = {};
 
-    // The service has only one method, getRequestTransform. It returns a requestTransform function that will add the
+    // The service has only one method, getTransformRequest. It returns a requestTransform function that will add the
     // correct headers to the request but will not otherwise modify the headers or data
-    parseRequestHeaders.getRequestTransform = function (appConfig, appStorage) {
+    parseRequestHeaders.getTransformRequest = function (appConfig, appStorage) {
       // Capture the application ID and REST API key
       var appId = appConfig.applicationId,
         restKey = appConfig.restKey;

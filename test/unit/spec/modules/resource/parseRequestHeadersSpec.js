@@ -12,13 +12,13 @@ describe('Factory: parseRequestHeaders', function () {
     });
   });
 
-  describe('getRequestTransform method', function () {
+  describe('getTransformRequest method', function () {
     var appConfig,
       appId,
       restKey,
       appStorage,
       sessionToken,
-      requestTransform;
+      transformRequest;
 
     beforeEach(function () {
       appId = '12345';
@@ -34,16 +34,16 @@ describe('Factory: parseRequestHeaders', function () {
     });
 
     it('should be a function that takes two arguments', function () {
-      expect(parseRequestHeaders.getRequestTransform).toBeFunction();
-      expect(parseRequestHeaders.getRequestTransform.length).toEqual(2);
+      expect(parseRequestHeaders.getTransformRequest).toBeFunction();
+      expect(parseRequestHeaders.getTransformRequest.length).toEqual(2);
     });
 
-    it('should return a requestTransform function', function () {
-      requestTransform = parseRequestHeaders.getRequestTransform(appConfig, appStorage);
-      expect(requestTransform).toBeFunction();
+    it('should return a transformRequest function', function () {
+      transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage);
+      expect(transformRequest).toBeFunction();
     });
 
-    describe('requestTransform function', function () {
+    describe('transformRequest function', function () {
       var data,
         origData,
         transformedData,
@@ -69,47 +69,47 @@ describe('Factory: parseRequestHeaders', function () {
       });
 
       it('should take two arguments', function () {
-        requestTransform = parseRequestHeaders.getRequestTransform(appConfig, appStorage);
-        expect(requestTransform.length).toEqual(2);
+        transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage);
+        expect(transformRequest.length).toEqual(2);
       });
 
       it('should return its first argument unchanged', function () {
-        requestTransform = parseRequestHeaders.getRequestTransform(appConfig, appStorage);
+        transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage);
         origData = angular.copy(data);
-        transformedData = requestTransform(data, headersGetter);
+        transformedData = transformRequest(data, headersGetter);
         expect(transformedData).toEqual(origData);
       });
 
       it('should add an X-Parse-Application-Id header set to the correct application ID', function () {
-        requestTransform = parseRequestHeaders.getRequestTransform(appConfig, appStorage);
-        transformedData = requestTransform(data, headersGetter);
+        transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage);
+        transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-Application-Id']).toEqual(appId);
       });
 
       it('should add an X-Parse-REST-API-Key header set to the correct REST key', function () {
-        requestTransform = parseRequestHeaders.getRequestTransform(appConfig, appStorage);
-        transformedData = requestTransform(data, headersGetter);
+        transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage);
+        transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-REST-API-Key']).toEqual(restKey);
       });
 
       it('should add an X-Parse-Session-Token header set to the correct session token', function () {
-        requestTransform = parseRequestHeaders.getRequestTransform(appConfig, appStorage);
-        transformedData = requestTransform(data, headersGetter);
+        transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage);
+        transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-Session-Token']).toEqual(sessionToken);
       });
 
       it('should not add an X-Parse-Session-Token header if the session token is empty, undefined, or null', function () {
         appStorage.sessionToken = '';
-        requestTransform = parseRequestHeaders.getRequestTransform(appConfig, appStorage);
-        transformedData = requestTransform(data, headersGetter);
+        transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage);
+        transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-Session-Token']).toBeUndefined();
         appStorage.sessionToken = null;
-        requestTransform = parseRequestHeaders.getRequestTransform(appConfig, appStorage);
-        transformedData = requestTransform(data, headersGetter);
+        transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage);
+        transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-Session-Token']).toBeUndefined();
         delete appStorage.sessionToken;
-        requestTransform = parseRequestHeaders.getRequestTransform(appConfig, appStorage);
-        transformedData = requestTransform(data, headersGetter);
+        transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage);
+        transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-Session-Token']).toBeUndefined();
       });
 
@@ -117,8 +117,8 @@ describe('Factory: parseRequestHeaders', function () {
         var updatedSessionToken = '54321',
           origHeaders = angular.copy(headers);
 
-        requestTransform = parseRequestHeaders.getRequestTransform(appConfig, appStorage);
-        transformedData = requestTransform(data, headersGetter);
+        transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage);
+        transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-Session-Token']).toEqual(sessionToken);
 
         // reset the headers
@@ -126,7 +126,7 @@ describe('Factory: parseRequestHeaders', function () {
         // update the session token
         appStorage.sessionToken = updatedSessionToken;
         // re-run the function
-        transformedData = requestTransform(data, headersGetter);
+        transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-Session-Token']).toEqual(updatedSessionToken);
       });
 
@@ -138,8 +138,8 @@ describe('Factory: parseRequestHeaders', function () {
         headers['X-Some-Header'] = 'aValue';
         // Make a copy
         origHeaders = angular.copy(headers);
-        requestTransform = parseRequestHeaders.getRequestTransform(appConfig, appStorage);
-        transformedData = requestTransform(data, headersGetter);
+        transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage);
+        transformedData = transformRequest(data, headersGetter);
         // Not technically necessary, but explicit is better than implicit
         transformedHeaders = angular.copy(headers);
         // Delete the new headers

@@ -2,28 +2,12 @@ angular.module('angularParseInterface.resourceMod')
   .factory('parseDataCodecs', function () {
     'use strict';
 
-    // A lookup table for codecs. The properties are the supported Parse data types. Because of the way the lookup is
-    // implemented, you'll get an error if you search for a non-supported data type.
-    var codecs = {
-      Number: {},
-      String: {},
-      Boolean: {},
-      Array: {},
-      Object: {},
-      Date: {},
-      Bytes: {},
-      Pointer: {},
-      Relation: {},
-      File: {},
-      GeoPoint: {}
-    };
-
     // Predicate to check if an object has the keys expected (useful for checking whether it's the expected type)
     var hasExpectedKeys = function (obj/*, expectedKeys */) {
       var expectedKeys, i, len, key;
       expectedKeys = (arguments[1] instanceof Array) ? arguments[1] : [].slice.call(arguments, 1);
       // return false if it's not an object
-      if (typeof obj !== 'object') {
+      if (obj === null || typeof obj !== 'object') {
         return false;
       }
       // return false if it's missing any of the Pointer properties
@@ -35,18 +19,20 @@ angular.module('angularParseInterface.resourceMod')
       // return false if it has any own properties not associated with Pointers
       for (key in obj) {
         if (obj.hasOwnProperty(key)) {
-          //jshint bitwise: false
-          if (!(~expectedKeys.indexOf(key))) {
+          if (expectedKeys.indexOf(key) < 0) {
             return false;
           }
-          //jshint bitwise: true
         }
       }
       // otherwise return true
       return true;
     };
 
+    // A lookup table for codecs.
+    var codecs = {};
+
     // Bytes
+    codecs.Bytes = {};
     // encoder
     codecs.Bytes.createEncoder = function () {
       return function (val) {
@@ -83,6 +69,7 @@ angular.module('angularParseInterface.resourceMod')
     };
 
     // Date
+    codecs.Date = {};
     // encoder
     codecs.Date.createEncoder = function () {
       return function (val) {
@@ -117,7 +104,18 @@ angular.module('angularParseInterface.resourceMod')
       };
     };
 
+    // File
+    codecs.File = {};
+    // encoder
+    // decoder
+
+    // GeoPoint
+    codecs.GeoPoint = {};
+    // encoder
+    // decoder
+
     // Pointer
+    codecs.Pointer = {};
     // encoder
     codecs.Pointer.createEncoder = function (params) {
       // Extract the relevant parameter from the params object
@@ -149,11 +147,16 @@ angular.module('angularParseInterface.resourceMod')
     };
     // decoder
     codecs.Pointer.createDecoder = function (params) {
-      var ValConstructor = params.ValConstructor;
+      var className = params.className;
       // Predicate to check if the input value is a Pointer object
       var isPointerObject = function (obj) {
         return hasExpectedKeys(obj, ['__type', 'className', 'objectId']) && obj.__type === 'Pointer';
       };
+
+      // Throw error if there's no className
+      if (!className) {
+        throw new Error('Must provide a className for Pointers');
+      }
 
       return function (val) {
         // In general, we should be liberal with decoders. However, if you're expecting a pointer (or a Parse object),
@@ -161,24 +164,17 @@ angular.module('angularParseInterface.resourceMod')
         // be harder to diagnose what went wrong. By using the Pointer decoder, you're saying, "I know I should be
         // getting a Pointer." If you don't know what type of data to expect, you should use one of the pass-through
         // decoders, which will give you everything we got from the server.
-        if (typeof val !== 'object' || angular.isArray(val)) {
-          throw new Error('Expecting Pointer or Parse object but got ' + (angular.isArray(val) ? 'array' : typeof val));
+        if (!isPointerObject(val)) {
+          throw new Error('Expecting Pointer object but got ' + (angular.isArray(val) ? 'array' : typeof val));
         }
         // If it's a Pointer, return the objectId as a string (NB: if you want the original Pointer object, you should
         // use the decoder for the Object type).
-        if (isPointerObject(val)) {
-          return val.objectId;
-        }
-        // If it's not a Pointer and we have a constructor, use it.
-        if (ValConstructor) {
-          return new ValConstructor(val);
-        }
-        // Otherwise, just return the value (which should be an object).
-        return val;
+        return val.objectId;
       };
     };
 
     // Relation
+    codecs.Relation = {};
     // encoder
     codecs.Relation.createEncoder = function (params) {
 
@@ -208,6 +204,11 @@ angular.module('angularParseInterface.resourceMod')
         return hasExpectedKeys(obj, ['__type', 'className']) && obj.__type === 'Relation';
       };
 
+      // Throw error if there's no className
+      if (!className) {
+        throw new Error('Must provide a className for Relations');
+      }
+
       return function (val) {
         if (!isRelationObject(val)) {
           throw new Error('Expecting Relation object but got ' + (angular.isArray(val) ? 'array' : typeof val));
@@ -231,14 +232,14 @@ angular.module('angularParseInterface.resourceMod')
 
     // Look up an encoder
     parseDataCodecs.getEncoderForType = function (dataType, params) {
-      var codecsForType = codecs[dataType],
+      var codecsForType = codecs[dataType] || {},
         encoderFactory = codecsForType.createEncoder || identityFactory;
       // Encoders can be parameterized, which is why we work with encoder factories instead of actual encoders.
       return encoderFactory(params);
     };
 
     parseDataCodecs.getDecoderForType = function (dataType, params) {
-      var codecsForType = codecs[dataType],
+      var codecsForType = codecs[dataType] || {},
         decoderFactory = codecsForType.createDecoder || identityFactory;
       // Decoders can be parameterized, which is why we work with decoder factories instead of actual decoders.
       return decoderFactory(params);

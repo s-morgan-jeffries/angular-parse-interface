@@ -25,14 +25,14 @@ describe('Factory: parseDataCodecs', function () {
       expect(parseDataCodecs.getEncoderForType).toBeFunction();
     });
 
-    it('should throw an error if you attempt to get an encoder for an unsupported data type', function () {
-      dataType = 'foo';
-      params = {};
-      var lookup = function () {
-        encoder = parseDataCodecs.getEncoderForType(dataType, params);
-      };
-      expect(lookup).toThrowError();
-    });
+//    xit('should throw an error if you attempt to get an encoder for an unsupported data type', function () {
+//      dataType = 'foo';
+//      params = {};
+//      var lookup = function () {
+//        encoder = parseDataCodecs.getEncoderForType(dataType, params);
+//      };
+//      expect(lookup).toThrowError();
+//    });
 
     describe('when passed a type of "Number"', function () {
       beforeEach(function () {
@@ -287,14 +287,14 @@ describe('Factory: parseDataCodecs', function () {
       expect(parseDataCodecs.getDecoderForType).toBeFunction();
     });
 
-    it('should throw an error if you attempt to get an decoder for an unsupported data type', function () {
-      dataType = 'foo';
-      params = {};
-      var lookup = function () {
-        decoder = parseDataCodecs.getDecoderForType(dataType, params);
-      };
-      expect(lookup).toThrowError();
-    });
+//    xit('should throw an error if you attempt to get an decoder for an unsupported data type', function () {
+//      dataType = 'foo';
+//      params = {};
+//      var lookup = function () {
+//        decoder = parseDataCodecs.getDecoderForType(dataType, params);
+//      };
+//      expect(lookup).toThrowError();
+//    });
 
 
     describe('when passed a type of "Number"', function () {
@@ -505,13 +505,22 @@ describe('Factory: parseDataCodecs', function () {
         };
         ValConstructor = function () {};
         params = {
-          ValConstructor: ValConstructor
+          ValConstructor: ValConstructor,
+          className: className
         };
         decoder = parseDataCodecs.getDecoderForType(dataType, params);
       });
 
       it('should return a function', function () {
         expect(decoder).toBeFunction();
+      });
+
+      it('should throw an error if no className parameter is provided', function () {
+        delete params.className;
+        var lookup = function () {
+          decoder = parseDataCodecs.getDecoderForType(dataType, params);
+        };
+        expect(lookup).toThrowError();
       });
 
       describe('decoder function', function () {
@@ -522,31 +531,31 @@ describe('Factory: parseDataCodecs', function () {
           expect(outputVal).toEqual(objectId);
         });
 
-        it('should not attempt to make an instance of its ValConstructor from a Pointer object', function () {
-          inputVal = pointerObject;
-          outputVal = decoder(inputVal);
-          expect(outputVal instanceof ValConstructor).toBeFalse();
-        });
-
-        // non-Pointer object input
-        it('should convert any non-Pointer object into an instance of its ValConstructor parameter, if available', function () {
-          inputVal = targetObject;
-          outputVal = decoder(inputVal);
-          expect(outputVal instanceof ValConstructor).toBeTrue();
-        });
-
-        it('should return any non-Pointer object unchanged if no ValConstructor is available', function () {
-          delete params.ValConstructor;
-          decoder = parseDataCodecs.getDecoderForType(dataType, params);
-          inputVal = targetObject;
-          outputVal = decoder(inputVal);
-          expect(outputVal).toEqual(targetObject);
-        });
+//        xit('should not attempt to make an instance of its ValConstructor from a Pointer object', function () {
+//          inputVal = pointerObject;
+//          outputVal = decoder(inputVal);
+//          expect(outputVal instanceof ValConstructor).toBeFalse();
+//        });
+//
+//        // non-Pointer object input
+//        xit('should convert any non-Pointer object into an instance of its ValConstructor parameter, if available', function () {
+//          inputVal = targetObject;
+//          outputVal = decoder(inputVal);
+//          expect(outputVal instanceof ValConstructor).toBeTrue();
+//        });
+//
+//        xit('should return any non-Pointer object unchanged if no ValConstructor is available', function () {
+//          delete params.ValConstructor;
+//          decoder = parseDataCodecs.getDecoderForType(dataType, params);
+//          inputVal = targetObject;
+//          outputVal = decoder(inputVal);
+//          expect(outputVal).toEqual(targetObject);
+//        });
 
         // Any other input
         // This is to prevent a hard-to-diagnose problem where you're expecting a Pointer but get back some non-Pointer
         // data from the server.
-        it('should throw an error if the input is anything other than a non-array object', function () {
+        it('should throw an error if the input is anything other than a Pointer object', function () {
           var decode = function () {
             outputVal = decoder(inputVal);
           };
@@ -557,6 +566,8 @@ describe('Factory: parseDataCodecs', function () {
           inputVal = true;
           expect(decode).toThrowError();
           inputVal = [1, 2, 3];
+          expect(decode).toThrowError();
+          inputVal = {a: 1, b: 2};
           expect(decode).toThrowError();
         });
       });
@@ -581,6 +592,14 @@ describe('Factory: parseDataCodecs', function () {
 
       it('should return a function', function () {
         expect(decoder).toBeFunction();
+      });
+
+      it('should throw an error if no className parameter is provided', function () {
+        delete params.className;
+        var lookup = function () {
+          decoder = parseDataCodecs.getDecoderForType(dataType, params);
+        };
+        expect(lookup).toThrowError();
       });
 
       describe('decoder function', function () {
