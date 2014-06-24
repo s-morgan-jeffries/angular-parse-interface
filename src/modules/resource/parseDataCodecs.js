@@ -13,7 +13,9 @@ angular.module('angularParseInterface.resourceMod')
       Date: {},
       Bytes: {},
       Pointer: {},
-      Relation: {}
+      Relation: {},
+      File: {},
+      GeoPoint: {}
     };
 
     // Predicate to check if an object has the keys expected (useful for checking whether it's the expected type)
