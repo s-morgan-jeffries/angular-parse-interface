@@ -1,6 +1,6 @@
 angular
   .module('angularParseInterface.queryBuilderMod', [])
-  .factory('parseQueryBuilder', function (/*$log*/) {
+  .factory('parseQueryBuilder', function () {
     'use strict';
 
     var isNonArrayObj = function (val) {
