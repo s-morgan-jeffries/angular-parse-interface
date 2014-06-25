@@ -2,6 +2,7 @@ angular
   .module('angularParseInterface', [
     'angularParseInterface.eventBusMod',
     'angularParseInterface.resourceMod',
+    'angularParseInterface.userMod',
     'angularParseInterface.queryBuilderMod'
   ])
 //  .value('_SIGN_IN_', 'signin')

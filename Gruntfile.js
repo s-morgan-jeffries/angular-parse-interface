@@ -172,6 +172,8 @@ module.exports = function (grunt) {
           // resource module
           '../../src/modules/resource/resourceModule.js',
           '../../src/modules/resource/*.js',
+          // user module
+          '../../src/modules/user/parseUser.js',
           // queryBuilder module
           '../../src/modules/queryBuilder/parseQueryBuilder.js',
           // main module
