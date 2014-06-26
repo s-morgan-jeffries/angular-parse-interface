@@ -167,6 +167,8 @@ module.exports = function (grunt) {
           // Utilities
           '../../dev_app/bower_components/lodash/dist/lodash.js',
           // The source files for the modules
+          // config module
+          '../../src/modules/config.js',
           // eventBus module
           '../../src/modules/eventBus/ParseAppEventBus.js',
           // resource module

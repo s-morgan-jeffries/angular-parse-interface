@@ -1,4 +1,5 @@
 angular.module('angularParseInterface.resourceMod', [
-  'ngResource'
+  'ngResource',
+  'angularParseInterface.configMod'
 ])
   .value('_BASE_URL_', 'https://api.parse.com/1');

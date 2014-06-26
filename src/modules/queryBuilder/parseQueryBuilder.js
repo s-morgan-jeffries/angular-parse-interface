@@ -1,5 +1,7 @@
 angular
-  .module('angularParseInterface.queryBuilderMod', [])
+  .module('angularParseInterface.queryBuilderMod', [
+    'angularParseInterface.configMod'
+  ])
   .factory('parseQueryBuilder', function () {
     'use strict';
 

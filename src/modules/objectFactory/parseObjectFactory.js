@@ -1,5 +1,7 @@
 angular
-  .module('angularParseInterface.objectFactoryMod', [])
+  .module('angularParseInterface.objectFactoryMod', [
+    'angularParseInterface.configMod'
+  ])
   .factory('parseObjectFactory', function () {
     'use strict';
 
