@@ -72,8 +72,8 @@ describe('Factory: parseUser', function () {
         customActions = resourceFactoryArgs[2];
       expect(mocks.resourceFactory).toHaveBeenCalled();
       expect(User).toBe(mocks.Resource);
-      expect(url).toEqual('/:urlRoot/:objectId');
-      expect(defaultParams).toEqual({ urlRoot: 'users', objectId: '@objectId' });
+      expect(url).toEqual('/:urlSegment1/:urlSegment2');
+      expect(defaultParams).toEqual({ urlSegment1: 'users', urlSegment2: '@objectId' });
       expect(customActions).toEqual({});
     });
 
@@ -124,7 +124,7 @@ describe('Factory: parseUser', function () {
 
         it('should call the User\'s get method with the provided username, password, and email', function () {
           expect(User.get).toHaveBeenCalledWith({
-            urlRoot: 'login',
+            urlSegment1: 'login',
             username: username,
             password: password
           });
@@ -167,7 +167,7 @@ describe('Factory: parseUser', function () {
 
         it('should call the User\'s get method with the correct arguments', function () {
           user = User.current();
-          expect(User.get).toHaveBeenCalledWith({objectId: 'me'});
+          expect(User.get).toHaveBeenCalledWith({urlSegment2: 'me'});
         });
 
         it('should delete the sessionToken from the user', function () {
