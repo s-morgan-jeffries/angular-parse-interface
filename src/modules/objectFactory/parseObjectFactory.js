@@ -23,16 +23,6 @@ angular
           customActions = {},
           ParseObject;
 
-        // backburner: Figure out if there's really any value to having the option of passing in default parameters
-        // Default parameter values (objectId is always included)
-//        defaultParams = angular.extend((defaultParams || {}), {objectId: '@objectId'});
-
-
-        // backburner: Figure out if there's really any value to having the option of passing in custom actions.
-        // Feel like this breaks encapsulation...
-        // Custom actions
-//        customActions = customActions || {};
-
         ParseObject = appResourceFactory(url, defaultParams, customActions);
 
         parseObjectDecorator(ParseObject, className);
