@@ -38,12 +38,7 @@ angular.module('angularParseInterface.resourceMod')
           return restApiBaseUrl.replace(/\/+$/, '') + '/' + url.replace(/^\/+/, '');
         };
 
-        // t0d0: Rewrite these
         var dataEncodingFunctions = parseDataEncoding.getTransformFunctions();
-
-//        var dataEncodingFunctions = parseDataEncoding.getTransformRequest();
-//
-//        var dataEncodingFunctions = parseDataEncoding.getTransformResponse();
 
         var addTransformRequestFxs = function (action) {
           var transformReqArray;
@@ -100,9 +95,9 @@ angular.module('angularParseInterface.resourceMod')
           // data back to JSON seems stupid.
           //   Since we're adding our transformRequest functions to the front of the queue, we'll need to work in
           // reverse. The last step before we hand off the data is to decode it:
-          transformResArray.push(dataEncodingFunctions.transformResponse);
+          transformResArray.unshift(dataEncodingFunctions.transformResponse);
           // The "first" step (the final step in this function) is parsing the JSON
-          transformResArray.push(parseJSON);
+          transformResArray.unshift(parseJSON);
         };
         //   From here to the end of the comment is basically code that deals with custom actions. Something interesting
         // here: you could almost wrap the definition of each of these actions around the underlying code, with the call
@@ -156,237 +151,11 @@ angular.module('angularParseInterface.resourceMod')
 
         // Funny story. I forgot how closures work when I first wrote these. Now I'm backtracking, and the result is a
         // really clunky API.
-//        dataEncodingFunctions.setResource(Resource);
         dataEncodingFunctions.setResource(Resource);
 
         // Return the Resource
         return Resource;
-//          actions;
-//          baseActions = {
-//            get: {
-//              method: 'GET',
-//              transformResponse: function (data) {
-//                data = angular.fromJson(data);
-//                return new Resource(decodeResponseData(Resource, data));
-//              }
-//            },
-//            query: {
-//              method: 'GET',
-//              isArray: true,
-//              transformResponse: function (data) {
-//                var results = angular.fromJson(data).results;
-//                if (!results) {
-//                  return [];
-//                }
-//                return angular.forEach(results, function (item, idx, col) {
-//                  col[idx] = new Resource(decodeResponseData(Resource, item));
-//                });
-//              }
-//            },
-//            count: {
-//              method: 'GET',
-//              isArray: false,
-//              transformResponse: function (data) {
-//                var count = angular.fromJson(data).count;
-//                return {count: count};
-//              }
-//            },
-//            create: {
-//              method: 'POST',
-//              transformRequest: function (data) {
-//                return angular.toJson(encodeRequestData(Resource, data));
-//              }
-//            },
-//            update: {
-//              method: 'PUT',
-//              transformRequest: function (data/*, headersGetter*/) {
-//                return angular.toJson(encodeRequestData(Resource, data));
-//              }
-//            },
-//            // For sending arbitrary data via put requests
-//            putData: {
-//              method: 'PUT'
-//            },
-//            remove: {
-//              method: 'DELETE'
-//            },
-//            delete: {
-//              method: 'DELETE'
-//            }
-//          };
-//
-//        var isInstance = function (obj/*, idx, col*/) {
-//          return obj instanceof Resource;
-//        };
-//
-//        var isParams = function (obj/*, idx, col*/) {
-//          return (typeof obj === 'object') && !isInstance(obj);
-//        };
-//
-//        var find = function (ar, pred) {
-//          for (var i = 0, len = ar.length; i < len; i++) {
-//            if (pred(ar[i])) {
-//              return ar[i];
-//            }
-//          }
-//        };
-//
-//        var findLast = function (ar, pred) {
-//          return find(angular.copy(ar).reverse(), pred);
-//        };
-//
-//        var setDefaults = function (dst, src) {
-//          angular.forEach(src, function (val, key) {
-//            dst[key] = dst[key] || src[key];
-//          });
-//          return dst;
-//        };
-//
-//        var ownDataProps = function (obj) {
-//          var objData = {};
-//          angular.forEach(obj, function (val, key) {
-//            if (!angular.isFunction(val)) {
-//              objData[key] = val;
-//            }
-//          });
-//          return objData;
-//        };
-
-
-//        actions = angular.extend(baseActions, (customActions || {}));
-
-//        addParseRequestHeaders(actions, appConfig, appStorage);
-
-//
-//        Resource.putData = (function () {
-//          var putData = Resource.putData;
-//
-//          return function () {
-//            var args,
-//              data,
-//              instance,
-//              params,
-//              successFunc,
-//              errorFunc;
-//
-//            // Turn arguments into an actual array
-//            args = [].slice.call(arguments);
-//            // Get the data for the put request
-//            data = find(args, isParams);
-//            // Figure out which argument is the instance; this has to exist so we can get its objectId
-//            instance = find(args, isInstance);
-//            // Create the parameters
-//            params = {
-//              objectId: instance.objectId
-//            };
-//
-//            // The success function that was passed in, or a do-nothing function if there wasn't one
-//            successFunc = find(args, angular.isFunction) || angular.noop;
-//            // The error function that was passed in, or a do-nothing function if there wasn't one
-//            errorFunc = findLast(args, angular.isFunction) || angular.noop;
-//            // If the error function is the same as the save function, set errorFunc to angular.noop
-//            errorFunc = (errorFunc === successFunc) ? angular.noop : errorFunc;
-//
-//            // Delegate to the original function...
-//            return putData.call(this, params, data, successFunc, errorFunc);
-//          };
-//        }());
-//
-//        Resource.query = (function () {
-//          var query = Resource.query,
-//            count = Resource.count;
-//
-//          delete Resource.count;
-//          delete Resource.prototype.$count;
-//
-//          return function () {
-//            var args,
-//              params,
-//              isCountQuery,
-//              queryFx;
-//
-//            // Turn arguments into an actual array
-//            args = [].slice.call(arguments);
-//            // Get the parameters we're saving (or an empty object)
-//            params = find(args, isParams) || {};
-//            isCountQuery = angular.equals(params.count, 1);
-//
-//            queryFx = isCountQuery ? count : query;
-//            // Delegate to the original function...
-//            return queryFx.apply(this, args);
-//          };
-//        }());
-//
-//        // Have to do something smart here so that:
-//        // 1) save delegates to separate functions under the hood for creating (using POST) and updating (using PUT), and
-//        // 2) instance properties are restored after a successful save
-//        // The first issue is easy to fix. You always get the instance as one of the arguments, so you just check to see if
-//        // it's new and call the appropriate function accordingly.
-//        // The second issue is a little trickier. For reasons I don't fully understand yet, when you save an instance to
-//        // Parse, you wind up losing all of its properties, except for the ones that are returned from the server. That only
-//        // happens when you call the instance method (so probably related to "this" within angular-resource.js).
-//        // Key point to remember is that you want this to behave just like $resource's built-in save function.
-//        Resource.save = (function () {
-//          var create = Resource.create,
-//            update = Resource.update;
-//
-//          delete Resource.create;
-//          delete Resource.update;
-//          delete Resource.prototype.$create;
-//          delete Resource.prototype.$update;
-//
-//          return function () {
-//            var args,
-//              params,
-//              instance,
-//              originalInstanceProps,
-//              updatedInstanceProps,
-//              errorFunc,
-//              successFunc,
-//              wrappedSuccessFunc,
-//              wrappedErrorFunc,
-//              saveFunc;
-//
-//            // Turn arguments into an actual array
-//            args = [].slice.call(arguments);
-//            // Get the parameters we're saving (or an empty object)
-//            params = find(args, isParams) || {};
-//            // Figure out which argument is the instance and create one if it doesn't exist
-//            instance = find(args, isInstance) || new Resource(params);
-//            // These are all the the own properties that aren't methods
-//            originalInstanceProps = ownDataProps(instance);
-//            // originalInstanceProps extended with the params (where there's a conflict, params will overwrite
-//            // originalInstanceProps)
-//            updatedInstanceProps = angular.extend(originalInstanceProps, params);
-//
-//            // The success function that was passed in, or a do-nothing function if there wasn't one
-//            successFunc = find(args, angular.isFunction) || angular.noop;
-//            // Provide updatedInstanceProps as default values to the new instance (if there are conflicting
-//            // properties from the server, those will win)
-//            wrappedSuccessFunc = function (newInstance, responseHeaders) {
-//              setDefaults(newInstance, updatedInstanceProps);
-//              successFunc(newInstance, responseHeaders);
-//            };
-//            // The error function that was passed in, or a do-nothing function if there wasn't one
-//            errorFunc = findLast(args, angular.isFunction) || angular.noop;
-//            // If the error function is the same as the save function, set errorFunc to angular.noop
-//            errorFunc = (errorFunc === successFunc) ? angular.noop : errorFunc;
-//            // In case there's a problem, this basically resets the instance
-//            wrappedErrorFunc = function (response) {
-//              angular.extend(instance, originalInstanceProps);
-//              errorFunc(response);
-//            };
-//
-//            // Delegate to the correct function depending on whether this is a creation or update
-//            saveFunc = instance.isNew() ? create : update;
-//            // Delegate to the original function...
-//            return saveFunc.call(this, params, instance, wrappedSuccessFunc, wrappedErrorFunc);
-//          };
-//        }());
-
       };
-
     };
-
     return parseResource;
   });
