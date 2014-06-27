@@ -12,5 +12,7 @@ xdescribe('Factory: parseResource', function () {
     });
   });
 
-  describe('createAppResourceFactory function', function () {});
+  describe('createAppResourceFactory function', function () {
+
+  });
 });

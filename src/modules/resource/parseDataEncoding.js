@@ -39,9 +39,15 @@ angular.module('angularParseInterface.resourceMod')
 
     var parseDataEncoding = {};
 
-    parseDataEncoding.getTransformRequest = function (Resource) {
+    parseDataEncoding.getTransformFunctions = function () {
+      var Resource;
 
-      var getDataType = function (fieldName, val) {
+      // Get the registered className for a field if it exists (it's up to Resource to return undefined if it doesn't).
+      var getClassName = function (fieldName) {
+        return Resource.getClassNameForField(fieldName);
+      };
+
+      var getRequestDataType = function (fieldName, val) {
         // The canonical source is the dataType registered with the Resource
         var dataType = Resource.getDataTypeForField(fieldName) ||
           // If that's not available, check to see if it's an array
@@ -56,15 +62,10 @@ angular.module('angularParseInterface.resourceMod')
         return capitalize(dataType);
       };
 
-      // Get the registered className for a field if it exists (it's up to Resource to return undefined if it doesn't).
-      var getClassName = function (fieldName) {
-        return Resource.getClassNameForField(fieldName);
-      };
-
       // Decode a single field using its fieldName and value.
       var encodeField = function (fieldName, val) {
         var dataType, params, encoder;
-        dataType = getDataType(fieldName, val);
+        dataType = getRequestDataType(fieldName, val);
         params = {
           className: getClassName(fieldName)
         };
@@ -84,32 +85,8 @@ angular.module('angularParseInterface.resourceMod')
         return encodedData;
       };
 
-      // This is the actual transformResponse function returned to the caller. Note that it completely ignores the
-      // second argument.
-      return function (data /*, headersGetter*/) {
-
-//        var encodedData;
-//
-//        // If the data to decode is an array, we apply the decoder to each element.
-//        if (angular.isArray(data)) {
-//          encodedData = [];
-//          angular.forEach(data, function (val) {
-//            encodedData.push(encodeData(val));
-//          });
-//        } else {
-//          // Otherwise, we apply the decoder directly to the data object.
-//          encodedData = encodeData(data);
-//        }
-
-        return encodeData(data);
-
-      };
-    };
-
-    parseDataEncoding.getTransformResponse = function (Resource) {
-
       // Get the dataType for a single field
-      var getDataType = function (fieldName, val) {
+      var getResponseDataType = function (fieldName, val) {
         // The canonical source is the dataType registered with the Resource
         var dataType = Resource.getDataTypeForField(fieldName) ||
           // If that's not available, check to see if it's an array
@@ -125,15 +102,10 @@ angular.module('angularParseInterface.resourceMod')
         return capitalize(dataType);
       };
 
-      // Get the registered className for a field if it exists (it's up to Resource to return undefined if it doesn't).
-      var getClassName = function (fieldName) {
-        return Resource.getClassNameForField(fieldName);
-      };
-
       // Decode a single field using its fieldName and value.
       var decodeField = function (fieldName, val) {
         var dataType, params, decoder;
-        dataType = getDataType(fieldName, val);
+        dataType = getResponseDataType(fieldName, val);
         params = {
           className: getClassName(fieldName)
         };
@@ -153,27 +125,41 @@ angular.module('angularParseInterface.resourceMod')
         return decodedData;
       };
 
-      // This is the actual transformResponse function returned to the caller. Note that it completely ignores the
-      // second argument.
-      return function (data /*, headersGetter*/) {
+      return {
+        transformRequest: function (data /*, headersGetter*/) {
+//        var encodedData;
+//
+//        // If the data to decode is an array, we apply the decoder to each element.
+//        if (angular.isArray(data)) {
+//          encodedData = [];
+//          angular.forEach(data, function (val) {
+//            encodedData.push(encodeData(val));
+//          });
+//        } else {
+//          // Otherwise, we apply the decoder directly to the data object.
+//          encodedData = encodeData(data);
+//        }
+          return encodeData(data);
+        },
+        transformResponse: function (data /*, headersGetter*/) {
+          var decodedData;
 
-        var decodedData;
-
-        // If the data to decode is an array, we apply the decoder to each element.
-        if (angular.isArray(data)) {
-          decodedData = [];
-          angular.forEach(data, function (val) {
-            decodedData.push(decodeData(val));
-          });
-        } else {
-          // Otherwise, we apply the decoder directly to the data object.
-          decodedData = decodeData(data);
+          // If the data to decode is an array, we apply the decoder to each element.
+          if (angular.isArray(data)) {
+            decodedData = [];
+            angular.forEach(data, function (val) {
+              decodedData.push(decodeData(val));
+            });
+          } else {
+            // Otherwise, we apply the decoder directly to the data object.
+            decodedData = decodeData(data);
+          }
+          return decodedData;
+        },
+        setResource: function (ParseResource) {
+          Resource = ParseResource;
         }
-
-        return decodedData;
-
       };
     };
-
     return parseDataEncoding;
   });

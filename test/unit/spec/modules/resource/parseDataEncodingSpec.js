@@ -14,6 +14,7 @@ describe('Factory: parseDataEncoding', function () {
       return 'decoded' + val;
     },
     fieldsMetaData,
+    transformFunctions,
     mockResource;
 
   beforeEach(function () {
@@ -43,25 +44,23 @@ describe('Factory: parseDataEncoding', function () {
   });
 
   // This should have two methods: one to return a requestTransform function, and one to return a responseTransform function
-  describe('getTransformRequest method', function () {
-    var data,
-      transformedData,
-      expectedDataType,
-      actualDataType,
-      expectedParams,
-      actualParams,
-      transformRequest;
+  describe('getTransformFunctions method', function () {
 
     it('should be a function', function () {
-      expect(parseDataEncoding.getTransformRequest).toBeFunction();
+      expect(parseDataEncoding.getTransformFunctions).toBeFunction();
     });
 
-    it('should return a transformRequest function', function () {
-      transformRequest = parseDataEncoding.getTransformRequest(mockResource);
-      expect(transformRequest).toBeFunction();
+    it('should return a transformFunctions object', function () {
+      var transformFunctions = parseDataEncoding.getTransformFunctions();
+      expect(transformFunctions).toBeObject();
+      expect(transformFunctions.setResource).toBeFunction();
+      expect(transformFunctions.transformRequest).toBeFunction();
+      expect(transformFunctions.transformResponse).toBeFunction();
     });
 
-    describe('transformRequest function', function () {
+    describe('setResource function', function () {
+      var transformFunctions,
+        data;
 
       beforeEach(function () {
         data = {
@@ -93,7 +92,68 @@ describe('Factory: parseDataEncoding', function () {
           }
         };
         headers = {};
-        transformRequest = parseDataEncoding.getTransformRequest(mockResource);
+        transformFunctions = parseDataEncoding.getTransformFunctions();
+        spyOn(mockResource, 'getDataTypeForField').andCallThrough();
+        spyOn(mockResource, 'getClassNameForField').andCallThrough();
+        transformFunctions.setResource(mockResource);
+      });
+
+      it('should set the Resource object used by the transformRequest function', function () {
+        transformFunctions.transformRequest(data);
+        expect(mockResource.getDataTypeForField).toHaveBeenCalled();
+        expect(mockResource.getClassNameForField).toHaveBeenCalled();
+      });
+
+      it('should set the Resource object used by the transformResponse function', function () {
+        transformFunctions.transformResponse(data);
+        expect(mockResource.getDataTypeForField).toHaveBeenCalled();
+        expect(mockResource.getClassNameForField).toHaveBeenCalled();
+      });
+    });
+
+    describe('transformRequest function', function () {
+      var data,
+        transformedData,
+        expectedDataType,
+        actualDataType,
+        expectedParams,
+        actualParams,
+        transformRequest;
+
+      beforeEach(function () {
+        data = {
+          num: 3,
+          str: 'string',
+          bool: true,
+          unDef: undefined,
+          nothing: null,
+          ar: [1,2,3],
+          obj: {
+            a: 1,
+            b: 2
+          },
+          pointer: '12345',
+          relation: {
+            __type: 'Relation',
+            className: 'SomeClass'
+          },
+          date: new Date()
+        };
+        fieldsMetaData = {
+          pointer: {
+            dataType: 'Pointer',
+            className: 'SomeClass'
+          },
+          relation: {
+            dataType: 'Relation',
+            className: 'SomeClass'
+          }
+        };
+        headers = {};
+//        transformRequest = parseDataEncoding.getTransformRequest(mockResource);
+        transformFunctions = parseDataEncoding.getTransformFunctions();
+        transformFunctions.setResource(mockResource);
+        transformRequest = transformFunctions.transformRequest;
       });
 
       it('should not modify the headers', function () {
@@ -294,27 +354,16 @@ describe('Factory: parseDataEncoding', function () {
         expect(actualParams.className).toEqual(expectedParams.className);
       });
     });
-  });
 
-  describe('getTransformResponse method', function () {
-    var data,
-      transformedData,
-      expectedDataType,
-      actualDataType,
-      expectedParams,
-      actualParams,
-      transformResponse;
-
-    it('should be a function', function () {
-      expect(parseDataEncoding.getTransformResponse).toBeFunction();
-    });
-
-    it('should return a transformResponse function', function () {
-      transformResponse = parseDataEncoding.getTransformResponse(mockResource);
-      expect(transformResponse).toBeFunction();
-    });
 
     describe('transformResponse function', function () {
+      var data,
+        transformedData,
+        expectedDataType,
+        actualDataType,
+        expectedParams,
+        actualParams,
+        transformResponse;
 
       beforeEach(function () {
         data = {
@@ -349,7 +398,10 @@ describe('Factory: parseDataEncoding', function () {
           }
         };
         headers = {};
-        transformResponse = parseDataEncoding.getTransformResponse(mockResource);
+//        transformResponse = parseDataEncoding.getTransformResponse(mockResource);
+        transformFunctions = parseDataEncoding.getTransformFunctions();
+        transformFunctions.setResource(mockResource);
+        transformResponse = transformFunctions.transformResponse;
       });
 
       it('should not modify the headers', function () {

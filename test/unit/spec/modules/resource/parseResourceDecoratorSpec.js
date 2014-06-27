@@ -494,7 +494,6 @@ describe('Factory: parseResourceDecorator', function () {
     });
 
     it('should call the _addRequestBlacklistProp method for every argument in its argument list', function () {
-      console.log(Resource._addRequestBlacklistProp.bind);
       var propsList = ['a', 'b', 'c'];
       Resource._addRequestBlacklistProps(propsList[0], propsList[1], propsList[2]);
       angular.forEach(propsList, function (propName, idx) {
