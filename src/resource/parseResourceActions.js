@@ -1,5 +1,5 @@
-angular.module('angularParseInterface.resourceMod')
-  .factory('parseResourceActions', function (/*$log*/) {
+angular.module('angularParseInterface')
+  .factory('parseResourceActions', function () {
     'use strict';
 
     var parseResourceActions = {};
@@ -264,6 +264,8 @@ angular.module('angularParseInterface.resourceMod')
         }
       },
       decorator: function (Resource) {
+
+//        console.log(Resource);
 
         // Have to do something smart here so that:
         // 1) save delegates to separate functions under the hood for creating (using POST) and updating (using PUT), and

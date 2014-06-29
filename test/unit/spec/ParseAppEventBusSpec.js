@@ -28,7 +28,7 @@ describe('Factory: ParseAppEventBus', function () {
     };
 
   beforeEach(function () {
-    module('angularParseInterface.eventBusMod', function ($provide) {
+    module('angularParseInterface', function ($provide) {
       $provide.value('$rootScope', mockRootScope);
     });
     inject(function ($injector) {

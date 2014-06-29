@@ -3,11 +3,10 @@
 describe('Factory: parseUser', function () {
   var parseUser,
     SIGN_IN = 'signin',
-    SIGN_OUT = 'signout',
-    mocks;
+    SIGN_OUT = 'signout';
 
   beforeEach(function () {
-    module('angularParseInterface.userMod', function ($provide) {
+    module('angularParseInterface', function ($provide) {
       $provide.value('SIGN_IN', SIGN_IN);
       $provide.value('SIGN_OUT', SIGN_OUT);
     });
@@ -55,7 +54,7 @@ describe('Factory: parseUser', function () {
         emit: jasmine.createSpy()
       };
       mocks.storage = {};
-      User = parseUser.createUserModel(mocks.resourceFactory, mocks.eventBus, mocks.storage);
+      User = parseUser.createUserModel(mocks.resourceFactory, mocks.storage, mocks.eventBus);
       username = 'JimJefferies';
       password = 'password';
       email = 'jim@gmail.com';

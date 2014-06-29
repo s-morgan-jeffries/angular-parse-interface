@@ -167,22 +167,22 @@ module.exports = function (grunt) {
           // Utilities
           '../../dev_app/bower_components/lodash/dist/lodash.js',
           // The source files for the modules
-          // config module
-          '../../src/modules/config.js',
-          // eventBus module
-          '../../src/modules/eventBus/ParseAppEventBus.js',
-          // resource module
-          '../../src/modules/resource/resourceModule.js',
-          '../../src/modules/resource/*.js',
-          // objectFactory module
-          '../../src/modules/objectFactory/parseObjectFactory.js',
-          // user module
-          '../../src/modules/user/parseUser.js',
-          // queryBuilder module
-          '../../src/modules/queryBuilder/parseQueryBuilder.js',
+//          // config module
+//          '../../src/modules/config.js',
+//          // eventBus module
+//          '../../src/modules/eventBus/ParseAppEventBus.js',
+//          // resource module
+//          '../../src/modules/resource/resourceModule.js',
+//          '../../src/modules/resource/*.js',
+//          // objectFactory module
+//          '../../src/modules/objectFactory/parseObjectFactory.js',
+//          // user module
+//          '../../src/modules/user/parseUser.js',
+//          // queryBuilder module
+//          '../../src/modules/queryBuilder/parseQueryBuilder.js',
           // main module
           '../../src/angularParseInterface.js',
-          '../../src/*.js',
+          '../../src/**/*.js',
           // These are all the tests.
           'spec/**/*.js'
         ]

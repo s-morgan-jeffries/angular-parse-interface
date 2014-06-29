@@ -13,8 +13,8 @@ describe('Factory: parseResource', function () {
     spyOn(mocks, '$resource').andCallThrough();
     mocks.addRequestHeaders = function () {};
     mocks.parseRequestHeaders = {
-      getTransformRequest: function (appConfig, appStorage, appEventBus) {
-        return mocks.addRequestHeaders
+      getTransformRequest: function (/*appConfig, appStorage, appEventBus*/) {
+        return mocks.addRequestHeaders;
       }
     };
     mocks.dataEncodingFunctions = {
@@ -27,7 +27,7 @@ describe('Factory: parseResource', function () {
         return mocks.dataEncodingFunctions;
       }
     };
-    module('angularParseInterface.resourceMod', function ($provide) {
+    module('angularParseInterface', function ($provide) {
       $provide.value('$resource', mocks.$resource);
       $provide.value('parseRequestHeaders', mocks.parseRequestHeaders);
       $provide.value('parseDataEncoding', mocks.parseDataEncoding);

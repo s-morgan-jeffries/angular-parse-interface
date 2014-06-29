@@ -1,10 +1,10 @@
 'use strict';
-
+//t0d0: revise tests for parseObjectFactory
 describe('Factory: parseObjectFactory', function () {
   var parseObjectFactory;
 
   beforeEach(function () {
-    module('angularParseInterface.objectFactoryMod', function (/*$provide*/) {
+    module('angularParseInterface', function (/*$provide*/) {
 //      $provide.value('$rootScope', mockRootScope);
     });
     inject(function ($injector) {

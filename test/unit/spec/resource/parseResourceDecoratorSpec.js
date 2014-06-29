@@ -10,7 +10,7 @@ describe('Factory: parseResourceDecorator', function () {
     mockLog = {
       warn: jasmine.createSpy()
     };
-    module('angularParseInterface.resourceMod', function ($provide) {
+    module('angularParseInterface', function ($provide) {
       $provide.value('$log', mockLog);
     });
     inject(function ($injector) {
@@ -96,8 +96,7 @@ describe('Factory: parseResourceDecorator', function () {
 
   describe('_setMetaDataProp method', function () {
     var dummyProp,
-      dummyPropVal,
-      returnedPropVal;
+      dummyPropVal;
 
     beforeEach(function () {
       dummyProp = 'foo';

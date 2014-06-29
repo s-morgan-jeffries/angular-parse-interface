@@ -7,7 +7,7 @@ describe('Factory: parseRequestHeaders', function () {
     SIGN_OUT = 'signout';
 
   beforeEach(function () {
-    module('angularParseInterface.resourceMod', function ($provide) {
+    module('angularParseInterface', function ($provide) {
       $provide.value('SIGN_IN', SIGN_IN);
       $provide.value('SIGN_OUT', SIGN_OUT);
     });

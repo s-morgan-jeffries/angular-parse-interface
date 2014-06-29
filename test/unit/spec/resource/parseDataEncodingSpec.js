@@ -26,7 +26,7 @@ describe('Factory: parseDataEncoding', function () {
         return dummyEncoder;
       }
     };
-    module('angularParseInterface.resourceMod', function ($provide) {
+    module('angularParseInterface', function ($provide) {
       $provide.value('parseDataCodecs', mockDataCodecs);
     });
     inject(function ($injector) {
@@ -34,10 +34,10 @@ describe('Factory: parseDataEncoding', function () {
     });
     // This is going to look up values in fieldsMetaData, which is pretty much what the actual Resource will do
     mockResource = {
-      getDataTypeForField: function (fieldName) {
+      _getFieldDataType: function (fieldName) {
         return (fieldsMetaData[fieldName] || {}).dataType;
       },
-      getClassNameForField: function (fieldName) {
+      _getFieldClassName: function (fieldName) {
         return (fieldsMetaData[fieldName] || {}).className;
       }
     };
@@ -93,21 +93,21 @@ describe('Factory: parseDataEncoding', function () {
         };
         headers = {};
         transformFunctions = parseDataEncoding.getTransformFunctions();
-        spyOn(mockResource, 'getDataTypeForField').andCallThrough();
-        spyOn(mockResource, 'getClassNameForField').andCallThrough();
+        spyOn(mockResource, '_getFieldDataType').andCallThrough();
+        spyOn(mockResource, '_getFieldClassName').andCallThrough();
         transformFunctions.setResource(mockResource);
       });
 
       it('should set the Resource object used by the transformRequest function', function () {
         transformFunctions.transformRequest(data);
-        expect(mockResource.getDataTypeForField).toHaveBeenCalled();
-        expect(mockResource.getClassNameForField).toHaveBeenCalled();
+        expect(mockResource._getFieldDataType).toHaveBeenCalled();
+        expect(mockResource._getFieldClassName).toHaveBeenCalled();
       });
 
       it('should set the Resource object used by the transformResponse function', function () {
         transformFunctions.transformResponse(data);
-        expect(mockResource.getDataTypeForField).toHaveBeenCalled();
-        expect(mockResource.getClassNameForField).toHaveBeenCalled();
+        expect(mockResource._getFieldDataType).toHaveBeenCalled();
+        expect(mockResource._getFieldClassName).toHaveBeenCalled();
       });
     });
 

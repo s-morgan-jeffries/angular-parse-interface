@@ -30,7 +30,7 @@ describe('Factory: parseQueryBuilder', function () {
   };
 
   beforeEach(function () {
-    module('angularParseInterface.queryBuilderMod', function (/*$provide*/) {
+    module('angularParseInterface', function (/*$provide*/) {
 //      $provide.value('$rootScope', mockRootScope);
     });
     inject(function ($injector) {
@@ -201,7 +201,7 @@ describe('Factory: parseQueryBuilder', function () {
         });
 
         it('should remove any incompatible constraints from the constraints object', function () {
-          var key, val, incompatibleKeys, fieldConstraints, compatibleKeys;
+          var key, val, incompatibleKeys, compatibleKeys;
           dummyConstraints = {a: 1, b: 2, c: 3, d: 4};
           fieldName = 'foo';
           key = 'bar';
@@ -226,7 +226,7 @@ describe('Factory: parseQueryBuilder', function () {
         });
 
         it('should leave any compatible constraints from the constraints object', function () {
-          var key, val, incompatibleKeys, fieldConstraints, compatibleKeys;
+          var key, val, incompatibleKeys, compatibleKeys;
           dummyConstraints = {a: 1, b: 2, c: 3, d: 4};
           fieldName = 'foo';
           key = 'bar';

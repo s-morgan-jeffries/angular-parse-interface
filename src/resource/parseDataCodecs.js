@@ -1,4 +1,4 @@
-angular.module('angularParseInterface.resourceMod')
+angular.module('angularParseInterface')
   .factory('parseDataCodecs', function () {
     'use strict';
 

@@ -1,6 +1,6 @@
 angular
   .module('angularParseInterface')
-  .factory('parseInterface', function () {
+  .factory('parseInterface', function (ParseAppEventBus, parseResource, parseObjectFactory, parseUser, parseQueryBuilder) {
     'use strict';
 
     // Create a new isolated scope for the event bus
@@ -9,6 +9,8 @@ angular
     parseInterface.createAppInterface = function (appConfig, clientStorage) {
       var appId,
         appStorage,
+        appEventBus,
+        appResource,
         appInterface;
 
       // Throw error if we're missing required properties from appConfig
@@ -25,13 +27,17 @@ angular
       clientStorage.parseApp = clientStorage.parseApp || {};
       appStorage = clientStorage.parseApp[appId] = (clientStorage.parseApp[appId] || {});
 
+      appEventBus = new ParseAppEventBus();
+
+      appResource = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
+
       appInterface = {};
 
-      appInterface.objectFactory = function () {};
+      appInterface.objectFactory = parseObjectFactory.createObjectFactory(appResource);
 
-      appInterface.User = function () {};
+      appInterface.User = parseUser.createUserModel(appResource, appStorage, appEventBus);
 
-      appInterface.Query = function () {};
+      appInterface.Query = parseQueryBuilder.Query;
 
       return appInterface;
     };

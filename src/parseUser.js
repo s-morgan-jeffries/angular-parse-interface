@@ -1,15 +1,14 @@
 angular
-  .module('angularParseInterface.userMod', [
-    'angularParseInterface.configMod'
-  ])
-  .factory('parseUser', function (SIGN_IN, SIGN_OUT) {
+  .module('angularParseInterface')
+  .factory('parseUser', function (parseResourceActions, SIGN_IN, SIGN_OUT) {
     'use strict';
 
     var parseUser = {};
 
     var userDecorator = function (User, eventBus, storage) {
       // Set the className to _User (Parse uses leading underscore names for certain built-in classes)
-      User._setClassName('_User');
+//      User._setClassName('_User');
+      User.className = '_User';
       // These should never be sent with PUT requests
       // backburner: Maybe remove sessionToken from request blacklist (it should be deleted, anyway)
       User._addRequestBlacklistProps('sessionToken', 'emailVerified');
@@ -98,13 +97,18 @@ angular
 
     };
 
-    parseUser.createUserModel = function (appResourceFactory, appEventBus, appStorage) {
+    parseUser.createUserModel = function (appResourceFactory, appStorage, appEventBus) {
       var url = '/:urlSegment1/:urlSegment2',
         defaultParams = {
           urlSegment1: 'users',
           urlSegment2: '@objectId'
         },
-        customActions = {},
+        customActions = {
+          get: parseResourceActions.get,
+          query: parseResourceActions.query,
+          save: parseResourceActions.save,
+          delete: parseResourceActions.delete
+        },
         // Create the User model using our application's resource factory
         User = appResourceFactory(url, defaultParams, customActions);
 

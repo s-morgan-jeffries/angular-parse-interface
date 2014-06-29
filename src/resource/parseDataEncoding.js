@@ -1,4 +1,4 @@
-angular.module('angularParseInterface.resourceMod')
+angular.module('angularParseInterface')
   .factory('parseDataEncoding', function (parseDataCodecs) {
     'use strict';
 
@@ -45,12 +45,12 @@ angular.module('angularParseInterface.resourceMod')
 
       // Get the registered className for a field if it exists (it's up to Resource to return undefined if it doesn't).
       var getClassName = function (fieldName) {
-        return Resource.getClassNameForField(fieldName);
+        return Resource._getFieldClassName(fieldName);
       };
 
       var getRequestDataType = function (fieldName, val) {
         // The canonical source is the dataType registered with the Resource
-        var dataType = Resource.getDataTypeForField(fieldName) ||
+        var dataType = Resource._getFieldDataType(fieldName) ||
           // If that's not available, check to see if it's an array
           (angular.isArray(val) && 'Array') ||
           // See if it's a Date object (these can be decoded and re-encoded without any additional metadata, so it's
@@ -89,7 +89,7 @@ angular.module('angularParseInterface.resourceMod')
       // Get the dataType for a single field
       var getResponseDataType = function (fieldName, val) {
         // The canonical source is the dataType registered with the Resource
-        var dataType = Resource.getDataTypeForField(fieldName) ||
+        var dataType = Resource._getFieldDataType(fieldName) ||
           // If that's not available, check to see if it's an array
           (angular.isArray(val) && 'Array') ||
           // See if it's a Parse Date object (these can be decoded and re-encoded without any additional metadata, so

@@ -9,7 +9,7 @@ describe('Factory: parseResourceActions', function () {
     instance;
 
   beforeEach(function () {
-    module('angularParseInterface.resourceMod', function ($provide) {
+    module('angularParseInterface', function ($provide) {
       $provide.value('$log', console);
     });
     inject(function ($injector) {
@@ -205,7 +205,7 @@ describe('Factory: parseResourceActions', function () {
 
       describe('query', function () {
 
-        var data, expectedResults;
+        var data;
 
         beforeEach(function () {
           action = mainAction.actions.query;
@@ -319,7 +319,7 @@ describe('Factory: parseResourceActions', function () {
             b: 2,
             count: 1
           };
-          var result = mocks.Resource.query(queryParams, successFx, errorFx);
+          mocks.Resource.query(queryParams, successFx, errorFx);
           args = mocks.Resource.query.argsForCall[0];
           expect(countFx).toHaveBeenCalledWith(queryParams, successFx, errorFx);
         });
@@ -383,7 +383,7 @@ describe('Factory: parseResourceActions', function () {
 
     describe('decorator', function () {
 
-      var saveFx, createFx, updateFx, queryParams, successFx, errorFx;
+      var saveFx, createFx, updateFx, successFx, errorFx;
 
       beforeEach(function () {
         decoratorFx = mainAction.decorator;
@@ -420,7 +420,7 @@ describe('Factory: parseResourceActions', function () {
       });
 
       describe('decorated save function', function () {
-        var params, objectId, successFx, errorFx;
+        var objectId, successFx, errorFx;
 
         beforeEach(function () {
           instance = new mocks.Resource();
@@ -507,7 +507,6 @@ describe('Factory: parseResourceActions', function () {
 
         it('it should wrap the original errorFx in a wrapper that resets the original instance values back on the instance', function () {
           var wrappedErrorFx,
-            headers = {},
             newVal = 50,
             response = {};
           mocks.Resource.save({}, instance, successFx, errorFx);

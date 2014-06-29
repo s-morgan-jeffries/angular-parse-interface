@@ -1,4 +1,4 @@
-angular.module('angularParseInterface.resourceMod')
+angular.module('angularParseInterface')
   .factory('parseRequestHeaders', function (SIGN_IN, SIGN_OUT) {
     'use strict';
 

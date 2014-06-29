@@ -9,7 +9,7 @@ describe('Factory: parseDataCodecs', function () {
     outputVal;
 
   beforeEach(function () {
-    module('angularParseInterface.resourceMod', function (/*$provide*/) {
+    module('angularParseInterface', function (/*$provide*/) {
 //      $provide.value('$rootScope', mockRootScope);
     });
     inject(function ($injector) {

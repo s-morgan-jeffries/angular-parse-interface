@@ -1,7 +1,5 @@
 angular
-  .module('angularParseInterface.eventBusMod', [
-    'angularParseInterface.configMod'
-  ])
+  .module('angularParseInterface')
   .factory('ParseAppEventBus', function ($rootScope) {
     'use strict';
 

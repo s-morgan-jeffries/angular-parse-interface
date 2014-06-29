@@ -1,124 +1,12 @@
-angular.module('angularParseInterface.resourceMod')
-  .factory('parseResource', function ($resource, parseRequestHeaders, parseDataEncoding) {
+angular.module('angularParseInterface')
+  .factory('parseResource', function ($resource, parseRequestHeaders, parseDataEncoding, parseResourceDecorator) {
     'use strict';
 
     var parseResource = {};
 
-//    // This should maybe be spun off on its own. It should return a library of action adders that can be used sort of
-//    // like mixins.
-//    parseResource.getActionAdders = function (actionNames) {
-//
-//      // For identifying which of the passed in arguments is the instance. Shouldn't this be data, though?
-//      var isInstance = function (Resource) {
-//        return function (obj/*, idx, col*/) {
-//          return obj instanceof Resource;
-//        };
-//      };
-//
-//      //
-//      var isParams = function (obj/*, idx, col*/) {
-//        return (typeof obj === 'object') && !isInstance(obj);
-//      };
-//
-//      // Find the first item in an array for which the predicate is true
-//      var find = function (ar, pred) {
-//        for (var i = 0, len = ar.length; i < len; i++) {
-//          if (pred(ar[i])) {
-//            return ar[i];
-//          }
-//        }
-//      };
-//
-//      // Find the last item in an array for which the predicate is true
-//      var findLast = function (ar, pred) {
-//        return find(angular.copy(ar).reverse(), pred);
-//      };
-//
-//      // Replacement for _.defaults.
-//      var setDefaults = function (dst, src) {
-//        angular.forEach(src, function (val, key) {
-//          dst[key] = dst[key] || src[key];
-//        });
-//        return dst;
-//      };
-//
-//      var isIn = function (val, col) {
-//        if (col.indexOf) {
-//          return col.indexOf(val) >= 0;
-//        } else {
-//          for (var k in col) {
-//            if (col.hasOwnProperty(k) && (col[k] === val)) {
-//              return true;
-//            }
-//          }
-//          return false;
-//        }
-//      };
-//
-//      // Return an object with the non-method own properties of an object
-//      var ownDataProps = function (obj) {
-//        var objData = {};
-//        angular.forEach(obj, function (val, key) {
-//          if (!angular.isFunction(val)) {
-//            objData[key] = val;
-//          }
-//        });
-//        return objData;
-//      };
-//
-//      // jshint bitwise:false
-//      var pick = function (obj, keys) {
-//        var newObj = {};
-//        angular.forEach(obj, function (v, k) {
-//          if (~keys.indexOf(k)) {
-//            newObj[k] = v;
-//          }
-//        });
-//        return newObj;
-//      };
-//      // jshint bitwise:true
-//
-//      var omit = function (obj, keys) {
-//        var newObj = {};
-//        angular.forEach(obj, function (v, k) {
-//          if (keys.indexOf(k) < 0) {
-//            newObj[k] = v;
-//          }
-//        });
-//        return newObj;
-//      };
-//
-//      // A test
-//      var saveActionAdder = {
-//        actions: {
-//          create: {
-//            method: 'POST'
-//          },
-//          update: {
-//            method: 'PUT'
-//          }
-//        },
-//        decorator: function (Resource) {
-//          return Resource;
-//        }
-//      };
-//
-//      var actionAdders = {
-//        save: saveActionAdder
-//      };
-//
-//      if (actionNames) {
-//        actionAdders = pick(actionAdders, actionNames)
-//      }
-//
-//      return actionAdders;
-//    };
-
-    // t0d0: Test this
+    // t0d0: Write tests for parseResource.createAppResourceFactory
     parseResource.createAppResourceFactory = function (appConfig, appStorage, appEventBus) {
       var coreAppResourceFactory = this.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
-        // This will get customized actionAdders defined above
-//        actionAdders = this.getActionAdders();
 
       // Okay for now. What do you want this to do ultimately? You probably don't want to leave customActions in its
       // current state. For example, you probably want objects to have certain actions but not others.
@@ -139,7 +27,7 @@ angular.module('angularParseInterface.resourceMod')
         // Decorate with decorators
         angular.forEach(actionAdders, function (actionAdder) {
           if (angular.isFunction(actionAdder.decorator)) {
-            Resource = actionAdder.decorator(Resource);
+            actionAdder.decorator(Resource);
           }
         });
 
@@ -153,6 +41,9 @@ angular.module('angularParseInterface.resourceMod')
             delete Resource.prototype['$' + k];
           }
         });
+
+        // Apply the decorator
+        parseResourceDecorator(Resource);
 
         return Resource;
       };
