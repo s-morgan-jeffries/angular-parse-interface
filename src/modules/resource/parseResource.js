@@ -2,33 +2,189 @@ angular.module('angularParseInterface.resourceMod')
   .factory('parseResource', function ($resource, parseRequestHeaders, parseDataEncoding) {
     'use strict';
 
-    var hasRequestBody = function (action) {
-      // For Parse, these are currently the only methods for which a request body has any meaning
-      var requestBodyMethods = ['POST', 'PUT'];
-      return requestBodyMethods.indexOf(action.method) >= 0;
-    };
-
-    var stringifyData = function (data) {
-      if (!angular.isString(data)) {
-        data = angular.toJson(data);
-      }
-      return data;
-    };
-
-    var parseJSON = function (data) {
-      if (angular.isString(data)) {
-        data = angular.fromJson(data);
-      }
-      return data;
-    };
-
     var parseResource = {};
 
+//    // This should maybe be spun off on its own. It should return a library of action adders that can be used sort of
+//    // like mixins.
+//    parseResource.getActionAdders = function (actionNames) {
+//
+//      // For identifying which of the passed in arguments is the instance. Shouldn't this be data, though?
+//      var isInstance = function (Resource) {
+//        return function (obj/*, idx, col*/) {
+//          return obj instanceof Resource;
+//        };
+//      };
+//
+//      //
+//      var isParams = function (obj/*, idx, col*/) {
+//        return (typeof obj === 'object') && !isInstance(obj);
+//      };
+//
+//      // Find the first item in an array for which the predicate is true
+//      var find = function (ar, pred) {
+//        for (var i = 0, len = ar.length; i < len; i++) {
+//          if (pred(ar[i])) {
+//            return ar[i];
+//          }
+//        }
+//      };
+//
+//      // Find the last item in an array for which the predicate is true
+//      var findLast = function (ar, pred) {
+//        return find(angular.copy(ar).reverse(), pred);
+//      };
+//
+//      // Replacement for _.defaults.
+//      var setDefaults = function (dst, src) {
+//        angular.forEach(src, function (val, key) {
+//          dst[key] = dst[key] || src[key];
+//        });
+//        return dst;
+//      };
+//
+//      var isIn = function (val, col) {
+//        if (col.indexOf) {
+//          return col.indexOf(val) >= 0;
+//        } else {
+//          for (var k in col) {
+//            if (col.hasOwnProperty(k) && (col[k] === val)) {
+//              return true;
+//            }
+//          }
+//          return false;
+//        }
+//      };
+//
+//      // Return an object with the non-method own properties of an object
+//      var ownDataProps = function (obj) {
+//        var objData = {};
+//        angular.forEach(obj, function (val, key) {
+//          if (!angular.isFunction(val)) {
+//            objData[key] = val;
+//          }
+//        });
+//        return objData;
+//      };
+//
+//      // jshint bitwise:false
+//      var pick = function (obj, keys) {
+//        var newObj = {};
+//        angular.forEach(obj, function (v, k) {
+//          if (~keys.indexOf(k)) {
+//            newObj[k] = v;
+//          }
+//        });
+//        return newObj;
+//      };
+//      // jshint bitwise:true
+//
+//      var omit = function (obj, keys) {
+//        var newObj = {};
+//        angular.forEach(obj, function (v, k) {
+//          if (keys.indexOf(k) < 0) {
+//            newObj[k] = v;
+//          }
+//        });
+//        return newObj;
+//      };
+//
+//      // A test
+//      var saveActionAdder = {
+//        actions: {
+//          create: {
+//            method: 'POST'
+//          },
+//          update: {
+//            method: 'PUT'
+//          }
+//        },
+//        decorator: function (Resource) {
+//          return Resource;
+//        }
+//      };
+//
+//      var actionAdders = {
+//        save: saveActionAdder
+//      };
+//
+//      if (actionNames) {
+//        actionAdders = pick(actionAdders, actionNames)
+//      }
+//
+//      return actionAdders;
+//    };
+
+    // t0d0: Test this
     parseResource.createAppResourceFactory = function (appConfig, appStorage, appEventBus) {
+      var coreAppResourceFactory = this.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
+        // This will get customized actionAdders defined above
+//        actionAdders = this.getActionAdders();
+
+      // Okay for now. What do you want this to do ultimately? You probably don't want to leave customActions in its
+      // current state. For example, you probably want objects to have certain actions but not others.
+      return function appResourceFactory(url, defaultParams, actionAdders) {
+        var Resource,
+          customActions = {};
+
+        // Add actions
+        angular.forEach(actionAdders, function (actionAdder) {
+          // Extend the customActions with any actions defined on the actionAdder (will work even if that property
+          // isn't defined)
+          angular.extend(customActions, actionAdder.actions);
+        });
+
+        // Create the Resource
+        Resource = coreAppResourceFactory(url, defaultParams, customActions);
+
+        // Decorate with decorators
+        angular.forEach(actionAdders, function (actionAdder) {
+          if (angular.isFunction(actionAdder.decorator)) {
+            Resource = actionAdder.decorator(Resource);
+          }
+        });
+
+        // Remove any actions that weren't part of the actionAdders object
+        angular.forEach(Resource, function (v, k) {
+          var isAction = function (name) {
+            return Resource.hasOwnProperty(name) && Resource.prototype.hasOwnProperty('$' + name);
+          };
+          if (isAction(k) && !actionAdders[k]) {
+            delete Resource[k];
+            delete Resource.prototype['$' + k];
+          }
+        });
+
+        return Resource;
+      };
+    };
+
+    // This creates the core app resource. It's concerned with encoding/decoding of data and the addition of the
+    // appropriate headers. A separate function deals with actions.
+    parseResource.createCoreAppResourceFactory = function (appConfig, appStorage, appEventBus) {
+
+      var hasRequestBody = function (action) {
+        // For Parse, these are currently the only methods for which a request body has any meaning
+        var requestBodyMethods = ['POST', 'PUT'];
+        return requestBodyMethods.indexOf(action.method) >= 0;
+      };
+
+      var stringifyData = function (data) {
+        if (!angular.isString(data)) {
+          data = angular.toJson(data);
+        }
+        return data;
+      };
+
+      var parseJSON = function (data) {
+        if (angular.isString(data)) {
+          data = angular.fromJson(data);
+        }
+        return data;
+      };
 
       var addRequestHeaders = parseRequestHeaders.getTransformRequest(appConfig, appStorage, appEventBus);
 
-      return function appResourceFactory(url, defaultParams, customActions) {
+      return function coreAppResourceFactory(url, defaultParams, customActions) {
         var restApiBaseUrl = 'https://api.parse.com/1',
           baseActions,
           actions,
@@ -101,7 +257,7 @@ angular.module('angularParseInterface.resourceMod')
         };
         //   From here to the end of the comment is basically code that deals with custom actions. Something interesting
         // here: you could almost wrap the definition of each of these actions around the underlying code, with the call
-        // to appResourceFactory in the middle, except for the fact that some of the actions use Resource in their
+        // to coreAppResourceFactory in the middle, except for the fact that some of the actions use Resource in their
         // definitions. So you may have to think of a way to pass them in so that Resource can be passed to them as an
         // argument. (Maybe pass an argument to customActions that are functions?)
         //   In any case, these don't really belong here, as they require this function to do too much. The purpose of
@@ -117,6 +273,7 @@ angular.module('angularParseInterface.resourceMod')
         defaultParams = defaultParams || {};
         customActions = customActions || {};
 
+        // t0d0: Move this into the action library function
         // In order for us to add the required transformRequest and transformResponse functions to our actions, they
         // have to be visible inside this function. That means we have to re-define all the built-in actions here.
         baseActions = {
@@ -152,6 +309,13 @@ angular.module('angularParseInterface.resourceMod')
         // Funny story. I forgot how closures work when I first wrote these. Now I'm backtracking, and the result is a
         // really clunky API.
         dataEncodingFunctions.setResource(Resource);
+        // And then I decided to make a thing out of it. This will let you define custom actions from outside of this
+        // function, even if they require a reference to the Resource.
+        angular.forEach(actions, function (action) {
+          if (action.setResource) {
+            action.setResource(Resource);
+          }
+        });
 
         // Return the Resource
         return Resource;

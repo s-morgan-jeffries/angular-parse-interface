@@ -29,7 +29,7 @@ angular
           };
           // Delete the sessionToken from the user
           delete user.sessionToken;
-          // Emit a SIGN_IN event with the sessionToken as data. Currently (as of this writing), the appResourceFactory
+          // Emit a SIGN_IN event with the sessionToken as data. Currently (as of this writing), the coreAppResourceFactory
           // uses this to keep track of the sessionToken, but this prevents us from having to hard-code that. The point
           // is that something else is keeping track of it.
           eventBus.emit(SIGN_IN, data);

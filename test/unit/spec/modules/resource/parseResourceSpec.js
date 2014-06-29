@@ -37,7 +37,7 @@ describe('Factory: parseResource', function () {
     });
   });
 
-  describe('createAppResourceFactory function', function () {
+  describe('createCoreAppResourceFactory function', function () {
     var appConfig, appStorage, appEventBus;
 
     beforeEach(function () {
@@ -47,28 +47,28 @@ describe('Factory: parseResource', function () {
     });
 
     it('should be a function', function () {
-      expect(parseResource.createAppResourceFactory).toBeFunction();
+      expect(parseResource.createCoreAppResourceFactory).toBeFunction();
     });
 
     it('should call parseRequestHeaders\' getTransformRequest function with appConfig, appStorage, and appEventBus', function () {
       spyOn(mocks.parseRequestHeaders, 'getTransformRequest').andCallThrough();
-      parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
+      parseResource.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
       expect(mocks.parseRequestHeaders.getTransformRequest).toHaveBeenCalledWith(appConfig, appStorage, appEventBus);
     });
 
     it('should return a function', function () {
-      var returnVal = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
+      var returnVal = parseResource.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
       expect(returnVal).toBeFunction();
     });
 
-    describe('appResourceFactory function', function () {
+    describe('coreAppResourceFactory function', function () {
       var url, defaultParams, customActions, appResourceFactory, Resource;
 
       beforeEach(function () {
         url = 'a/url/for/you';
         defaultParams = {};
         customActions = {};
-        appResourceFactory = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
+        appResourceFactory = parseResource.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
       });
 
       it('should call the getTransformFunctions method from the parseDataEncoding module', function () {

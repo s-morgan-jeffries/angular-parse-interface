@@ -2,6 +2,7 @@ angular.module('angularParseInterface.resourceMod')
   .factory('parseResourceDecorator', function ($log) {
     'use strict';
 
+    //t0d0: Move this into the core resource module
     return function (Resource) {
       // Static methods
       Resource._getMetaData = function () {
