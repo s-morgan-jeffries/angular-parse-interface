@@ -10,7 +10,7 @@ angular
       User.className = '_User';
       // These should never be sent with PUT requests
       // backburner: Maybe remove sessionToken from request blacklist (it should be deleted, anyway)
-      User._addRequestBlacklistProps('sessionToken', 'emailVerified');
+      User._addRequestBlacklistProps('emailVerified');
 
       // This both creates a user and signs in
       User.signUp = function (username, password, email) {
@@ -92,8 +92,10 @@ angular
       };
 
       // backburner: Add the ability to link accounts (e.g. Facebook, Twitter)
-      // backburner: Add ability to request a password reset
 
+      User.resetPassword = function (email) {
+        return this.POST({urlSegment1: 'requestPasswordReset'}, {email: email});
+      };
     };
 
     parseUser.createUserModel = function (appResourceFactory, appStorage, appEventBus) {
@@ -110,7 +112,8 @@ angular
           query: parseResourceActions.query,
           save: parseResourceActions.save,
           delete: parseResourceActions.delete,
-          PUT: parseResourceActions.PUT
+          PUT: parseResourceActions.PUT,
+          POST: parseResourceActions.POST
         },
         // Create the User model using our application's resource factory
         User = appResourceFactory(url, defaultParams, customActions),

@@ -48,10 +48,9 @@ module.exports = function(config) {
     // - PhantomJS
     // - IE (only Windows)
     browsers: [
-      // For single runs, PhantomJS is fastest.
+      'Safari',
       'PhantomJS',
       'Chrome',
-      'Safari',
       'Firefox',
       'Opera'
     ],

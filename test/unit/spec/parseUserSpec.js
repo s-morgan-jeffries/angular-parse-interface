@@ -14,7 +14,8 @@ describe('Factory: parseUser', function () {
       save: {},
       query: {},
       delete: {},
-      PUT: {}
+      PUT: {},
+      POST: {}
     };
     module('angularParseInterface', function ($provide) {
       $provide.value('EVENTS', EVENTS);
@@ -79,7 +80,7 @@ describe('Factory: parseUser', function () {
         url = resourceFactoryArgs[0],
         defaultParams = resourceFactoryArgs[1],
         customActions = resourceFactoryArgs[2],
-        expectedActions = ['delete', 'get', 'PUT', 'query', 'save'];
+        expectedActions = ['delete', 'get', 'POST', 'PUT', 'query', 'save'];
       expect(mocks.resourceFactory).toHaveBeenCalled();
       expect(User).toBe(mocks.Resource);
       expect(url).toEqual('/:urlSegment1/:urlSegment2');
@@ -93,8 +94,8 @@ describe('Factory: parseUser', function () {
       expect(User.className).toEqual('_User');
     });
 
-    it('should add sessionToken and emailVerified to the request blacklist', function () {
-      expect(mocks.Resource._addRequestBlacklistProps).toHaveBeenCalledWith('sessionToken', 'emailVerified');
+    it('should add emailVerified to the request blacklist', function () {
+      expect(mocks.Resource._addRequestBlacklistProps).toHaveBeenCalledWith('emailVerified');
     });
 
     it('should create a module-specific namespace for storage', function () {
@@ -198,6 +199,22 @@ describe('Factory: parseUser', function () {
         it('should cache the user in its modStorage', function () {
           user = User.current();
           expect(modStorage.user).toBe(user);
+        });
+      });
+
+      describe('resetPassword method', function () {
+        it('should call its own POST method with the correct arguments and return the response', function () {
+          var paramsArg = {urlSegment1: 'requestPasswordReset'},
+            dataArg = {email: email},
+            mockResponse = {},
+            response;
+          User.POST = function () {
+            return mockResponse;
+          };
+          spyOn(User, 'POST').andCallThrough();
+          response = User.resetPassword(email);
+          expect(User.POST).toHaveBeenCalledWith(paramsArg, dataArg);
+          expect(response).toBe(mockResponse);
         });
       });
     });

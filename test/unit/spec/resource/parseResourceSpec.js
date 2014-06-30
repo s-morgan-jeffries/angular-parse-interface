@@ -38,6 +38,8 @@ describe('Factory: parseResource', function () {
   });
 
   // t0d0: Write tests for parseResource.createAppResourceFactory
+  // t0d0: Rewrite all the tests for createCoreAppResourceFactory in terms of that
+  // t0d0: Refactor the module so createCoreAppResourceFactory is not directly accessible
   xdescribe('createAppResourceFactory function', function () {});
 
   describe('createCoreAppResourceFactory function', function () {
@@ -65,18 +67,18 @@ describe('Factory: parseResource', function () {
     });
 
     describe('coreAppResourceFactory function', function () {
-      var url, defaultParams, customActions, appResourceFactory, Resource;
+      var url, defaultParams, actions, appResourceFactory, Resource;
 
       beforeEach(function () {
         url = 'a/url/for/you';
         defaultParams = {};
-        customActions = {};
+        actions = {};
         appResourceFactory = parseResource.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
       });
 
       it('should call the getTransformFunctions method from the parseDataEncoding module', function () {
         spyOn(mocks.parseDataEncoding, 'getTransformFunctions').andCallThrough();
-        Resource = appResourceFactory(url, defaultParams, customActions);
+        Resource = appResourceFactory(url, defaultParams, actions);
         expect(mocks.parseDataEncoding.getTransformFunctions).toHaveBeenCalled();
       });
 
@@ -87,21 +89,21 @@ describe('Factory: parseResource', function () {
         // No leading slash
         url = 'a/url';
         expectedUrl = baseUrl + '/' + url;
-        Resource = appResourceFactory(url, defaultParams, customActions);
+        Resource = appResourceFactory(url, defaultParams, actions);
         actualUrl = mocks.$resource.argsForCall[0][0];
         mocks.$resource.reset();
         expect(actualUrl).toEqual(expectedUrl);
         // Single leading slash
         url = '/another/url';
         expectedUrl = baseUrl + url;
-        Resource = appResourceFactory(url, defaultParams, customActions);
+        Resource = appResourceFactory(url, defaultParams, actions);
         actualUrl = mocks.$resource.argsForCall[0][0];
         mocks.$resource.reset();
         expect(actualUrl).toEqual(expectedUrl);
         // Double leading slash
         url = '//yet/another/url';
         expectedUrl = baseUrl + '/' + url.slice(2);
-        Resource = appResourceFactory(url, defaultParams, customActions);
+        Resource = appResourceFactory(url, defaultParams, actions);
         actualUrl = mocks.$resource.argsForCall[0][0];
         mocks.$resource.reset();
         expect(actualUrl).toEqual(expectedUrl);
@@ -113,7 +115,7 @@ describe('Factory: parseResource', function () {
         // undefined
         defaultParams = undefined;
         expectedParams = {};
-        Resource = appResourceFactory(url, defaultParams, customActions);
+        Resource = appResourceFactory(url, defaultParams, actions);
         actualParams = mocks.$resource.argsForCall[0][1];
         mocks.$resource.reset();
         expect(actualParams).toEqual(expectedParams);
@@ -122,76 +124,18 @@ describe('Factory: parseResource', function () {
           b: 2
         };
         expectedParams = defaultParams;
-        Resource = appResourceFactory(url, defaultParams, customActions);
+        Resource = appResourceFactory(url, defaultParams, actions);
         actualParams = mocks.$resource.argsForCall[0][1];
         mocks.$resource.reset();
         expect(actualParams).toEqual(expectedParams);
       });
 
-      it('should extend the built-in actions with customActions or an empty object and pass the result to $resource', function () {
+      it('should pass the actions to $resource', function () {
         var expectedActions,
-          actualActions,
-          baseActions = {
-            get: {
-              method: 'GET'
-            },
-            save: {
-              method: 'POST'
-            },
-            query: {
-              method: 'GET',
-              isArray: true
-            },
-            remove: {
-              method: 'DELETE'
-            },
-            delete: {
-              method: 'DELETE'
-            }
-          };
-        // undefined
-        customActions = undefined;
-        expectedActions = angular.copy(baseActions);
-        Resource = appResourceFactory(url, defaultParams, customActions);
+          actualActions;
+        expectedActions = actions;
+        Resource = appResourceFactory(url, defaultParams, actions);
         actualActions = mocks.$resource.argsForCall[0][2];
-        mocks.$resource.reset();
-        angular.forEach(actualActions, function (val) {
-          delete val.transformRequest;
-          delete val.transformResponse;
-        });
-        expect(actualActions).toEqual(expectedActions);
-        // Non-overlapping actions
-        customActions = {
-          foo: {
-            method: 'GET'
-          }
-        };
-        expectedActions = angular.copy(baseActions);
-        expectedActions.foo = customActions.foo;
-        Resource = appResourceFactory(url, defaultParams, customActions);
-        actualActions = mocks.$resource.argsForCall[0][2];
-        mocks.$resource.reset();
-        angular.forEach(actualActions, function (val) {
-          delete val.transformRequest;
-          delete val.transformResponse;
-        });
-        expect(actualActions).toEqual(expectedActions);
-        // Overlapping actions
-        customActions = {
-          // isArray is undefined here
-          query: {
-            method: 'GET'
-          }
-        };
-        expectedActions = angular.copy(baseActions);
-        expectedActions.query = customActions.query;
-        Resource = appResourceFactory(url, defaultParams, customActions);
-        actualActions = mocks.$resource.argsForCall[0][2];
-        mocks.$resource.reset();
-        angular.forEach(actualActions, function (val) {
-          delete val.transformRequest;
-          delete val.transformResponse;
-        });
         expect(actualActions).toEqual(expectedActions);
       });
 
@@ -204,7 +148,7 @@ describe('Factory: parseResource', function () {
         var placeHolder = function () {};
 
         beforeEach(function () {
-          customActions = {
+          actions = {
             // GET with no transformRequest
             getWoTR: {
               method: 'GET'
@@ -274,7 +218,7 @@ describe('Factory: parseResource', function () {
               transformRequest: [foo, placeHolder, mocks.dataEncodingFunctions.transformRequest, placeHolder, mocks.addRequestHeaders]
             }
           };
-          Resource = appResourceFactory(url, defaultParams, customActions);
+          Resource = appResourceFactory(url, defaultParams, actions);
           actualActions = mocks.$resource.argsForCall[0][2];
           angular.forEach(expectedActions, function (action, actionName) {
             var expectedFxAr = action.transformRequest;
@@ -341,7 +285,7 @@ describe('Factory: parseResource', function () {
         var placeHolder = function () {};
 
         beforeEach(function () {
-          customActions = {
+          actions = {
             // no transformResponse
             woTR: {
               method: 'POST'
@@ -377,7 +321,7 @@ describe('Factory: parseResource', function () {
               transformResponse: [placeHolder, mocks.dataEncodingFunctions.transformResponse, foo]
             }
           };
-          Resource = appResourceFactory(url, defaultParams, customActions);
+          Resource = appResourceFactory(url, defaultParams, actions);
           actualActions = mocks.$resource.argsForCall[0][2];
           angular.forEach(expectedActions, function (action, actionName) {
             var expectedFxAr = action.transformResponse;
@@ -414,18 +358,18 @@ describe('Factory: parseResource', function () {
       });
 
       it('should call the $resource function', function () {
-        Resource = appResourceFactory(url, defaultParams, customActions);
+        Resource = appResourceFactory(url, defaultParams, actions);
         expect(mocks.$resource).toHaveBeenCalled();
       });
 
       it('should call the setResource method on dataEncodingFunctions with Resource', function () {
         spyOn(mocks.dataEncodingFunctions, 'setResource');
-        Resource = appResourceFactory(url, defaultParams, customActions);
+        Resource = appResourceFactory(url, defaultParams, actions);
         expect(mocks.dataEncodingFunctions.setResource).toHaveBeenCalledWith(Resource);
       });
 
       it('should return the Resource returned by the $resource factory function', function () {
-        Resource = appResourceFactory(url, defaultParams, customActions);
+        Resource = appResourceFactory(url, defaultParams, actions);
         expect(Resource).toBe(mocks.Resource);
       });
     });

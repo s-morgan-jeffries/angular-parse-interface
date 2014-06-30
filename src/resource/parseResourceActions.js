@@ -74,6 +74,9 @@ angular.module('angularParseInterface')
       }
     };
 
+    // t0d0: Update this so it returns something other than a Resource
+    //  tricky, because the Resource instance is what gets updated, but you could have it return an object with own
+    // properties and then, on resolution, iterate through the Resource's own properties again and update the object
     parseResourceActions.POST = {
       actions: {
         POST: {

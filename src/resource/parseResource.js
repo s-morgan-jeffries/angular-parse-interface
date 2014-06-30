@@ -4,7 +4,8 @@ angular.module('angularParseInterface')
 
     var parseResource = {};
 
-
+    //   The purpose of this function is to modify the $resource service so that it adds appropriate headers and
+    // encodes/decodes data in the correct format for Parse.
     parseResource.createAppResourceFactory = function (appConfig, appStorage, appEventBus) {
       var coreAppResourceFactory = this.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
 
@@ -75,10 +76,8 @@ angular.module('angularParseInterface')
 
       var addRequestHeaders = parseRequestHeaders.getTransformRequest(appConfig, appStorage, appEventBus);
 
-      return function coreAppResourceFactory(url, defaultParams, customActions) {
+      return function coreAppResourceFactory(url, defaultParams, actions) {
         var restApiBaseUrl = 'https://api.parse.com/1',
-          baseActions,
-          actions,
           Resource;
 
         var prependBaseUrl = function (url) {
@@ -146,48 +145,11 @@ angular.module('angularParseInterface')
           // The "first" step (the final step in this function) is parsing the JSON
           transformResArray.unshift(parseJSON);
         };
-        //   From here to the end of the comment is basically code that deals with custom actions. Something interesting
-        // here: you could almost wrap the definition of each of these actions around the underlying code, with the call
-        // to coreAppResourceFactory in the middle, except for the fact that some of the actions use Resource in their
-        // definitions. So you may have to think of a way to pass them in so that Resource can be passed to them as an
-        // argument. (Maybe pass an argument to customActions that are functions?)
-        //   In any case, these don't really belong here, as they require this function to do too much. The purpose of
-        // this function is to modify the $resource service so that it adds appropriate headers and encodes/decodes data
-        // in the correct format for Parse.
-        //   Right, so how to do that? The request headers part is easy. Every action will get the transformRequest for
-        // adding headers. Every non-GET action will also get a transformRequest function to convert the data to JSON if
-        // it isn't already (since they all get at least one transformRequest function, angular won't do this
-        // automatically). Data encoding transformRequests only need to be added to non-GET requests, since GET requests
-        // don't have a body. Conversely, data decoding has to be applied to every response.
 
         url = prependBaseUrl(url);
         defaultParams = defaultParams || {};
-        customActions = customActions || {};
-
-        // backburner: Get rid of these, and rewrite your tests to deal with the change.
-        // In order for us to add the required transformRequest and transformResponse functions to our actions, they
-        // have to be visible inside this function. That means we have to re-define all the built-in actions here.
-        baseActions = {
-          get: {
-            method: 'GET'
-          },
-          save: {
-            method: 'POST'
-          },
-          query: {
-            method: 'GET',
-            isArray: true
-          },
-          remove: {
-            method: 'DELETE'
-          },
-          delete: {
-            method: 'DELETE'
-          }
-        };
-
-        // This allows us to override the above definitions with any customActions that were passed in:
-        actions = angular.extend(baseActions, customActions);
+        // In theory, this should be an error, but I'm going to leave it as is for now
+        actions = actions || {};
 
         angular.forEach(actions, function (action) {
           addTransformRequestFxs(action);

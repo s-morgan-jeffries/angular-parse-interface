@@ -23,6 +23,7 @@ angular
 
     return ParseAppEventBus;
   })
+  // A map of event names to the strings that are used on the event bus
   .value('EVENTS', {
     SIGN_IN: 'signin',
     SIGN_OUT: 'signout'

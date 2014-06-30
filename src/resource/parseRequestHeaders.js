@@ -2,10 +2,10 @@ angular.module('angularParseInterface')
   .factory('parseRequestHeaders', function (EVENTS) {
     'use strict';
 
+    // The service has only one method, getTransformRequest. It returns a transformRequest function that will add the
+    // correct headers to the request but will not otherwise modify the headers or data
     var parseRequestHeaders = {};
 
-    // The service has only one method, getTransformRequest. It returns a requestTransform function that will add the
-    // correct headers to the request but will not otherwise modify the headers or data
     parseRequestHeaders.getTransformRequest = function (appConfig, appStorage, appEventBus) {
       // Capture the application ID and REST API key
       var appId = appConfig.applicationId,
@@ -23,7 +23,7 @@ angular.module('angularParseInterface')
         delete modStorage.sessionToken;
       });
 
-      // The requestTransform function
+      // The transformRequest function
       return function (data, headersGetter) {
         var headers = headersGetter(),
           // Get the current value of the session token

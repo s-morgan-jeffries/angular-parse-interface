@@ -2,6 +2,8 @@ angular.module('angularParseInterface')
   .factory('parseResourceDecorator', function ($log) {
     'use strict';
 
+    // t0d0: Refactor this so there are multiple decorators
+    //    consider which methods every Resource will need, which may get easier as you add more features
     //backburner: Move this into the core resource module
     return function (Resource) {
       // Static methods

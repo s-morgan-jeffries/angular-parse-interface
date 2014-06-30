@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<testsuites>
+  <testsuite name="Safari 7.0.4 (Mac OS X 10.9.3)" package="" timestamp="2014-06-30T16:15:20" id="0" hostname="S-Morgan-Jeffries-MacBook-Air.local" tests="2" errors="0" failures="0" time="10.525">
+    <properties>
+      <property name="browser.fullName" value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.76.4 (KHTML, like Gecko) Version/7.0.4 Safari/537.76.4"/>
+    </properties>
+    <testcase name="should return an event bus" time="4.527" classname="Safari 7.0.4 (Mac OS X 10.9.3).Factory: ParseAppEventBus"/>
+    <testcase name="should execute all registered actions in order when an event is triggered" time="5.998" classname="Safari 7.0.4 (Mac OS X 10.9.3).Factory: ParseAppEventBus eventBus"/>
+    <system-out><![CDATA[
+]]></system-out>
+    <system-err/>
+  </testsuite>
+  <testsuite name="Chrome 35.0.1916 (Mac OS X 10.9.3)" package="" timestamp="2014-06-30T16:15:26" id="0" hostname="S-Morgan-Jeffries-MacBook-Air.local" tests="2" errors="0" failures="0" time="0.404">
+    <properties>
+      <property name="browser.fullName" value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36"/>
+    </properties>
+    <testcase name="should return an event bus" time="0.385" classname="Chrome 35.0.1916 (Mac OS X 10.9.3).Factory: ParseAppEventBus"/>
+    <testcase name="should execute all registered actions in order when an event is triggered" time="0.019" classname="Chrome 35.0.1916 (Mac OS X 10.9.3).Factory: ParseAppEventBus eventBus"/>
+    <system-out><![CDATA[
+]]></system-out>
+    <system-err/>
+  </testsuite>
+  <testsuite name="PhantomJS 1.9.7 (Mac OS X)" package="" timestamp="2014-06-30T16:15:27" id="0" hostname="S-Morgan-Jeffries-MacBook-Air.local" tests="2" errors="0" failures="0" time="0.033">
+    <properties>
+      <property name="browser.fullName" value="Mozilla/5.0 (Macintosh; PPC Mac OS X) AppleWebKit/534.34 (KHTML, like Gecko) PhantomJS/1.9.7 Safari/534.34"/>
+    </properties>
+    <testcase name="should return an event bus" time="0.026" classname="PhantomJS 1.9.7 (Mac OS X).Factory: ParseAppEventBus"/>
+    <testcase name="should execute all registered actions in order when an event is triggered" time="0.007" classname="PhantomJS 1.9.7 (Mac OS X).Factory: ParseAppEventBus eventBus"/>
+    <system-out><![CDATA[
+]]></system-out>
+    <system-err/>
+  </testsuite>
+  <testsuite name="Firefox 26.0.0 (Mac OS X 10.9)" package="" timestamp="2014-06-30T16:15:31" id="0" hostname="S-Morgan-Jeffries-MacBook-Air.local" tests="2" errors="0" failures="0" time="0.067">
+    <properties>
+      <property name="browser.fullName" value="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:26.0) Gecko/20100101 Firefox/26.0"/>
+    </properties>
+    <testcase name="should return an event bus" time="0.06" classname="Firefox 26.0.0 (Mac OS X 10.9).Factory: ParseAppEventBus"/>
+    <testcase name="should execute all registered actions in order when an event is triggered" time="0.007" classname="Firefox 26.0.0 (Mac OS X 10.9).Factory: ParseAppEventBus eventBus"/>
+    <system-out><![CDATA[
+]]></system-out>
+    <system-err/>
+  </testsuite>
+  <testsuite name="Opera 12.16.0 (Mac OS X 10.9.3)" package="" timestamp="2014-06-30T16:15:35" id="0" hostname="S-Morgan-Jeffries-MacBook-Air.local" tests="2" errors="0" failures="0" time="0.015">
+    <properties>
+      <property name="browser.fullName" value="Opera/9.80 (Macintosh; Intel Mac OS X 10.9.3) Presto/2.12.388 Version/12.16"/>
+    </properties>
+    <testcase name="should return an event bus" time="0.011" classname="Opera 12.16.0 (Mac OS X 10.9.3).Factory: ParseAppEventBus"/>
+    <testcase name="should execute all registered actions in order when an event is triggered" time="0.004" classname="Opera 12.16.0 (Mac OS X 10.9.3).Factory: ParseAppEventBus eventBus"/>
+    <system-out><![CDATA[
+]]></system-out>
+    <system-err/>
+  </testsuite>
+</testsuites>
