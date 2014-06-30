@@ -2,6 +2,9 @@ angular.module('angularParseInterface')
   .factory('parseResourceActions', function () {
     'use strict';
 
+    // The point of this module is to serve as a library of actions for the parseResource service. Actions are tricky
+    // to write, so this is definitely an area where you want the code to be reusable. Rather than relying inheritance,
+    // these function like mixins.
     var parseResourceActions = {};
 
     // Find the first item in an array for which the predicate is true
@@ -30,19 +33,6 @@ angular.module('angularParseInterface')
       return dst;
     };
 
-//    var isIn = function (val, col) {
-//      if (col.indexOf) {
-//        return col.indexOf(val) >= 0;
-//      } else {
-//        for (var k in col) {
-//          if (col.hasOwnProperty(k) && (col[k] === val)) {
-//            return true;
-//          }
-//        }
-//        return false;
-//      }
-//    };
-
     // Return an object with the non-method own properties of an object
     var ownDataProps = function (obj) {
       var objData = {};
@@ -53,28 +43,6 @@ angular.module('angularParseInterface')
       });
       return objData;
     };
-
-//    // jshint bitwise:false
-//    var pick = function (obj, keys) {
-//      var newObj = {};
-//      angular.forEach(obj, function (v, k) {
-//        if (~keys.indexOf(k)) {
-//          newObj[k] = v;
-//        }
-//      });
-//      return newObj;
-//    };
-//    // jshint bitwise:true
-
-//    var omit = function (obj, keys) {
-//      var newObj = {};
-//      angular.forEach(obj, function (v, k) {
-//        if (keys.indexOf(k) < 0) {
-//          newObj[k] = v;
-//        }
-//      });
-//      return newObj;
-//    };
 
     parseResourceActions.get = {
       actions: {

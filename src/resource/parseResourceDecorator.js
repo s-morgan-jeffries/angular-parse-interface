@@ -27,16 +27,6 @@ angular.module('angularParseInterface')
         this._setMetaData(resourceMetaData);
       };
 
-//      Resource._getClassName = function () {
-//        return this._getMetaDataProp('className');
-//      };
-
-//      // Not sure I'm crazy about how I'm implementing this. Might be going overboard with security.
-//      // backburner: Consider specifying some allowed inputs here
-//      Resource._setClassName = function (val) {
-//        return this._setMetaDataProp('className', val);
-//      };
-
       // A self-defining function
       var setClassName = function (val) {
         Resource._setMetaDataProp('className', val);
@@ -121,13 +111,11 @@ angular.module('angularParseInterface')
       };
 
       Resource._addRequestBlacklistProps = function () {
-        var props = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
-//        var addBlacklistProp = this._addRequestBlacklistProp.bind(this);
-        var self = this;
-        var addBlacklistProp = function (propName) {
-          self._addRequestBlacklistProp(propName);
-        };
-
+        var props = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments),
+          self = this,
+          addBlacklistProp = function (propName) {
+            self._addRequestBlacklistProp(propName);
+          };
         angular.forEach(props, addBlacklistProp);
       };
 

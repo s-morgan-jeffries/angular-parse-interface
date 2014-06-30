@@ -196,7 +196,7 @@ module.exports = function (grunt) {
       },
       unitBuild: {
         configFile: 'test/unit/karma.unit.build.conf.js',
-        singleRun: true
+        singleRun: true,
       },
       integrationCI: {
         configFile: 'test/integration/karma.integration.ci.conf.js',

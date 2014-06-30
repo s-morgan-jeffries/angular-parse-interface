@@ -3,9 +3,9 @@ angular
   .factory('parseInterface', function (ParseAppEventBus, parseResource, parseObjectFactory, parseUser, parseQueryBuilder) {
     'use strict';
 
-    // Create a new isolated scope for the event bus
     var parseInterface = {};
 
+    // The only API entry point
     parseInterface.createAppInterface = function (appConfig, clientStorage) {
       var appId,
         appStorage,
@@ -27,17 +27,24 @@ angular
       clientStorage.parseApp = clientStorage.parseApp || {};
       appStorage = clientStorage.parseApp[appId] = (clientStorage.parseApp[appId] || {});
 
+      // Create an application-specific event bus
       appEventBus = new ParseAppEventBus();
 
+      // Create an application-specific resource factory (analogous to $resource). This will add headers to all requests
+      // that are specific to this application, including a sessionToken when appropriate. It will also encode and
+      // decode data with the correct format for Parse's API.
       appResource = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
 
-      appInterface = {};
-
-      appInterface.objectFactory = parseObjectFactory.createObjectFactory(appResource);
-
-      appInterface.User = parseUser.createUserModel(appResource, appStorage, appEventBus);
-
-      appInterface.Query = parseQueryBuilder.Query;
+      // Compose the application interface
+      appInterface = {
+        // An object factory. This takes a className argument and returns a Resource mapped to a Parse Object
+        objectFactory: parseObjectFactory.createObjectFactory(appResource),
+        // A User model. It has the same capabilities as other Resources, as well as some additional user-specific
+        // methods.
+        User: parseUser.createUserModel(appResource, appStorage, appEventBus),
+        // A constructor that takes a Resource and returns a query builder.
+        Query: parseQueryBuilder.Query
+      };
 
       return appInterface;
     };

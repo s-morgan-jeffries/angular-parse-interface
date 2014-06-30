@@ -3,13 +3,14 @@
 describe('Factory: parseRequestHeaders', function () {
   var parseRequestHeaders;
 
-  var SIGN_IN = 'signin',
-    SIGN_OUT = 'signout';
+  var EVENTS = {
+    SIGN_IN: 'signin',
+    SIGN_OUT: 'signout'
+  };
 
   beforeEach(function () {
     module('angularParseInterface', function ($provide) {
-      $provide.value('SIGN_IN', SIGN_IN);
-      $provide.value('SIGN_OUT', SIGN_OUT);
+      $provide.value('EVENTS', EVENTS);
     });
     inject(function ($injector) {
       parseRequestHeaders = $injector.get('parseRequestHeaders');
@@ -34,7 +35,7 @@ describe('Factory: parseRequestHeaders', function () {
       };
       sessionToken = '!@#$%';
       appStorage = {
-        sessionToken: sessionToken
+//        sessionToken: sessionToken
       };
       appEventBus = {
         on: jasmine.createSpy(),
@@ -45,6 +46,11 @@ describe('Factory: parseRequestHeaders', function () {
     it('should be a function', function () {
       expect(parseRequestHeaders.getTransformRequest).toBeFunction();
 //      expect(parseRequestHeaders.getTransformRequest.length).toEqual(2);
+    });
+
+    it('should create a module-specific namespace for storage', function () {
+      transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage, appEventBus);
+      expect(appStorage.parseRequestHeaders).toBeObject();
     });
 
     it('should return a transformRequest function', function () {
@@ -59,7 +65,8 @@ describe('Factory: parseRequestHeaders', function () {
         headers,
         headersGetter = function () {
           return headers;
-        };
+        },
+        modStorage;
 
       beforeEach(function () {
         data = {
@@ -75,6 +82,9 @@ describe('Factory: parseRequestHeaders', function () {
           }
         };
         headers = {};
+//        appStorage.parseRequestHeaders
+        modStorage = appStorage.parseRequestHeaders = {};
+        modStorage.sessionToken = sessionToken;
       });
 
       it('should take two arguments', function () {
@@ -108,15 +118,15 @@ describe('Factory: parseRequestHeaders', function () {
       });
 
       it('should not add an X-Parse-Session-Token header if the session token is empty, undefined, or null', function () {
-        appStorage.sessionToken = '';
+        modStorage.sessionToken = '';
         transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage, appEventBus);
         transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-Session-Token']).toBeUndefined();
-        appStorage.sessionToken = null;
+        modStorage.sessionToken = null;
         transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage, appEventBus);
         transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-Session-Token']).toBeUndefined();
-        delete appStorage.sessionToken;
+        delete modStorage.sessionToken;
         transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage, appEventBus);
         transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-Session-Token']).toBeUndefined();
@@ -133,7 +143,7 @@ describe('Factory: parseRequestHeaders', function () {
         // reset the headers
         headers = angular.copy(origHeaders);
         // update the session token
-        appStorage.sessionToken = updatedSessionToken;
+        modStorage.sessionToken = updatedSessionToken;
         // re-run the function
         transformedData = transformRequest(data, headersGetter);
         expect(headers['X-Parse-Session-Token']).toEqual(updatedSessionToken);
@@ -160,32 +170,32 @@ describe('Factory: parseRequestHeaders', function () {
         expect(transformedHeaders).toEqual(origHeaders);
       });
 
-      it('should register an event handler that caches the sessionToken to appStorage on SIGN_IN', function () {
+      it('should register an event handler that caches the sessionToken to modStorage on SIGN_IN', function () {
         var data = {
-            sessionToken: appStorage.sessionToken
+            sessionToken: modStorage.sessionToken
           },
           eventName,
           eventHandler;
-        delete appStorage.sessionToken;
+        delete modStorage.sessionToken;
         transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage, appEventBus);
         // NB: If this fails, make sure the order of the event registrations hasn't changed.
         eventName = appEventBus.on.argsForCall[0][0];
-        expect(eventName).toEqual(SIGN_IN);
+        expect(eventName).toEqual(EVENTS.SIGN_IN);
         eventHandler = appEventBus.on.argsForCall[0][1];
         eventHandler(null, data);
-        expect(appStorage.sessionToken).toEqual(data.sessionToken);
+        expect(modStorage.sessionToken).toEqual(data.sessionToken);
       });
 
-      it('should register an event handler that deletes the sessionToken from appStorage on SIGN_OUT', function () {
+      it('should register an event handler that deletes the sessionToken from modStorage on SIGN_OUT', function () {
         var eventName,
           eventHandler;
         transformRequest = parseRequestHeaders.getTransformRequest(appConfig, appStorage, appEventBus);
         // NB: If this fails, make sure the order of the event registrations hasn't changed.
         eventName = appEventBus.on.argsForCall[1][0];
-        expect(eventName).toEqual(SIGN_OUT);
+        expect(eventName).toEqual(EVENTS.SIGN_OUT);
         eventHandler = appEventBus.on.argsForCall[1][1];
         eventHandler();
-        expect(appStorage.sessionToken).toBeUndefined();
+        expect(modStorage.sessionToken).toBeUndefined();
       });
     });
   });

@@ -3,19 +3,21 @@
 describe('Factory: parseUser', function () {
   var parseUser,
     mockParseResourceActions,
-    SIGN_IN = 'signin',
-    SIGN_OUT = 'signout';
+    EVENTS = {
+      SIGN_IN: 'signin',
+      SIGN_OUT: 'signout'
+    };
 
   beforeEach(function () {
     mockParseResourceActions = {
       get: {},
       save: {},
       query: {},
-      delete: {}
+      delete: {},
+      PUT: {}
     };
     module('angularParseInterface', function ($provide) {
-      $provide.value('SIGN_IN', SIGN_IN);
-      $provide.value('SIGN_OUT', SIGN_OUT);
+      $provide.value('EVENTS', EVENTS);
       $provide.value('parseResourceActions', mockParseResourceActions);
     });
     inject(function ($injector) {
@@ -61,8 +63,8 @@ describe('Factory: parseUser', function () {
         on: jasmine.createSpy(),
         emit: jasmine.createSpy()
       };
-      mocks.storage = {};
-      User = parseUser.createUserModel(mocks.resourceFactory, mocks.storage, mocks.eventBus);
+      mocks.appStorage = {};
+      User = parseUser.createUserModel(mocks.resourceFactory, mocks.appStorage, mocks.eventBus);
       username = 'JimJefferies';
       password = 'password';
       email = 'jim@gmail.com';
@@ -76,15 +78,15 @@ describe('Factory: parseUser', function () {
       var resourceFactoryArgs = mocks.resourceFactory.argsForCall[0],
         url = resourceFactoryArgs[0],
         defaultParams = resourceFactoryArgs[1],
-        customActions = resourceFactoryArgs[2];
+        customActions = resourceFactoryArgs[2],
+        expectedActions = ['delete', 'get', 'PUT', 'query', 'save'];
       expect(mocks.resourceFactory).toHaveBeenCalled();
       expect(User).toBe(mocks.Resource);
       expect(url).toEqual('/:urlSegment1/:urlSegment2');
       expect(defaultParams).toEqual({ urlSegment1: 'users', urlSegment2: '@objectId' });
-      expect(customActions.get).toBe(mockParseResourceActions.get);
-      expect(customActions.query).toBe(mockParseResourceActions.query);
-      expect(customActions.save).toBe(mockParseResourceActions.save);
-      expect(customActions.delete).toBe(mockParseResourceActions.delete);
+      angular.forEach(expectedActions, function (actionName) {
+        expect(customActions[actionName]).toBe(mockParseResourceActions[actionName]);
+      });
     });
 
     it('should set the className of the User to \'_User\'', function () {
@@ -95,7 +97,15 @@ describe('Factory: parseUser', function () {
       expect(mocks.Resource._addRequestBlacklistProps).toHaveBeenCalledWith('sessionToken', 'emailVerified');
     });
 
+    it('should create a module-specific namespace for storage', function () {
+      expect(mocks.appStorage.parseUser).toBeObject();
+    });
+
     describe('User model', function () {
+      var modStorage;
+      beforeEach(function () {
+        modStorage = mocks.appStorage.parseUser;
+      });
 
       describe('signUp method', function () {
 
@@ -112,7 +122,7 @@ describe('Factory: parseUser', function () {
         });
 
         it('should emit a SIGN_IN event with the sessionToken', function () {
-          expect(mocks.eventBus.emit).toHaveBeenCalledWith(SIGN_IN, {
+          expect(mocks.eventBus.emit).toHaveBeenCalledWith(EVENTS.SIGN_IN, {
             sessionToken: sessionToken
           });
         });
@@ -121,8 +131,8 @@ describe('Factory: parseUser', function () {
           expect(mocks.user.sessionToken).toBeUndefined();
         });
 
-        it('should cache the user in its storage', function () {
-          expect(mocks.storage.user).toBe(mocks.user);
+        it('should cache the user in its modStorage', function () {
+          expect(modStorage.user).toBe(mocks.user);
         });
       });
 
@@ -141,7 +151,7 @@ describe('Factory: parseUser', function () {
         });
 
         it('should emit a SIGN_IN event with the sessionToken', function () {
-          expect(mocks.eventBus.emit).toHaveBeenCalledWith(SIGN_IN, {
+          expect(mocks.eventBus.emit).toHaveBeenCalledWith(EVENTS.SIGN_IN, {
             sessionToken: sessionToken
           });
         });
@@ -150,29 +160,29 @@ describe('Factory: parseUser', function () {
           expect(mocks.user.sessionToken).toBeUndefined();
         });
 
-        it('should cache the user in its storage', function () {
-          expect(mocks.storage.user).toBe(mocks.user);
+        it('should cache the user in its modStorage', function () {
+          expect(modStorage.user).toBe(mocks.user);
         });
       });
 
       describe('signOut method', function () {
-        it('should delete the user property from its storage', function () {
-          mocks.storage.user = mocks.user;
+        it('should delete the user property from its modStorage', function () {
+          modStorage.user = mocks.user;
           User.signOut();
-          expect(mocks.storage.user).toBeUndefined();
+          expect(modStorage.user).toBeUndefined();
         });
 
         it('should trigger the SIGN_OUT event on the eventBus', function () {
           User.signOut();
-          expect(mocks.eventBus.emit).toHaveBeenCalledWith(SIGN_OUT);
+          expect(mocks.eventBus.emit).toHaveBeenCalledWith(EVENTS.SIGN_OUT);
         });
       });
 
       describe('current method', function () {
-        it('should return the user from its storage if it\'s set', function () {
-          mocks.storage.user = 'a user';
+        it('should return the user from its modStorage if it\'s set', function () {
+          modStorage.user = 'a user';
           user = User.current();
-          expect(user).toBe(mocks.storage.user);
+          expect(user).toBe(modStorage.user);
         });
 
         it('should call the User\'s get method with the correct arguments', function () {
@@ -185,9 +195,9 @@ describe('Factory: parseUser', function () {
           expect(user.sessionToken).toBeUndefined();
         });
 
-        it('should cache the user in its storage', function () {
+        it('should cache the user in its modStorage', function () {
           user = User.current();
-          expect(mocks.storage.user).toBe(user);
+          expect(modStorage.user).toBe(user);
         });
       });
     });

@@ -1,5 +1,5 @@
 angular.module('angularParseInterface')
-  .factory('parseRequestHeaders', function (SIGN_IN, SIGN_OUT) {
+  .factory('parseRequestHeaders', function (EVENTS) {
     'use strict';
 
     var parseRequestHeaders = {};
@@ -9,23 +9,25 @@ angular.module('angularParseInterface')
     parseRequestHeaders.getTransformRequest = function (appConfig, appStorage, appEventBus) {
       // Capture the application ID and REST API key
       var appId = appConfig.applicationId,
-        restKey = appConfig.restKey;
+        restKey = appConfig.restKey,
+        // Create module-specific namespace for storage
+        modStorage = appStorage.parseRequestHeaders = (appStorage.parseRequestHeaders || {});
 
       // Register event handlers
       // On a SIGN_IN event, cache the sessionToken
-      appEventBus.on(SIGN_IN, function (e, data) {
-        appStorage.sessionToken = data.sessionToken;
+      appEventBus.on(EVENTS.SIGN_IN, function (e, data) {
+        modStorage.sessionToken = data.sessionToken;
       });
       // On a SIGN_OUT event, delete the sessionToken from the cache
-      appEventBus.on(SIGN_OUT, function (/*e, data*/) {
-        delete appStorage.sessionToken;
+      appEventBus.on(EVENTS.SIGN_OUT, function (/*e, data*/) {
+        delete modStorage.sessionToken;
       });
 
       // The requestTransform function
       return function (data, headersGetter) {
         var headers = headersGetter(),
           // Get the current value of the session token
-          sessionToken = appStorage.sessionToken;
+          sessionToken = modStorage.sessionToken;
 
         // Set the application ID and REST key headers
         headers['X-Parse-Application-Id'] = appId;

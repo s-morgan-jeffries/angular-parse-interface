@@ -14,13 +14,13 @@ angular.module('angularParseInterface')
       if (obj === null || typeof obj !== 'object') {
         return false;
       }
-      // return false if it's missing any of the Pointer properties
+      // return false if it's missing any of the expected properties
       for (i = 0, len = expectedKeys.length; i < len; i++) {
         if (!obj.hasOwnProperty(expectedKeys[i])) {
           return false;
         }
       }
-      // return false if it has any own properties not associated with Pointers
+      // return false if it has any own properties that aren't in the list
       for (key in obj) {
         if (obj.hasOwnProperty(key)) {
           if (expectedKeys.indexOf(key) < 0) {

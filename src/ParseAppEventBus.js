@@ -22,4 +22,8 @@ angular
     };
 
     return ParseAppEventBus;
+  })
+  .value('EVENTS', {
+    SIGN_IN: 'signin',
+    SIGN_OUT: 'signout'
   });

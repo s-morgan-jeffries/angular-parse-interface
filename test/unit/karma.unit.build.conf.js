@@ -64,7 +64,8 @@ module.exports = function(config) {
       'karma-safari-launcher',
       'karma-firefox-launcher',
       'karma-opera-launcher',
-      'karma-junit-reporter'
+      'karma-junit-reporter',
+      'karma-coverage'
     ],
 
     // Continuous Integration mode
@@ -77,11 +78,21 @@ module.exports = function(config) {
     // possible values: LOG_DISABLE || LOG_ERROR || LOG_WARN || LOG_INFO || LOG_DEBUG
     logLevel: config.LOG_INFO,
 
+    reporters: ['progress', 'junit', 'coverage'],
+
     junitReporter: {
-      outputFile: '../reports/unit-tests.xml'
+      outputFile: '../reports/unit/unit-tests.xml'
     },
 
-    reporters: ['progress', 'junit']
+    coverageReporter: {
+      type : 'html',
+      // where to store the report
+      dir : '../reports/unit/coverage/'
+    },
+
+    preprocessors: {
+      '../../src/**/*.js': ['coverage']
+    }
 
     // Uncomment the following lines if you are using grunt's server to run the tests
     // proxies: {

@@ -1,6 +1,6 @@
 angular
   .module('angularParseInterface')
-  .factory('parseUser', function (parseResourceActions, SIGN_IN, SIGN_OUT) {
+  .factory('parseUser', function (parseResourceActions, EVENTS) {
     'use strict';
 
     var parseUser = {};
@@ -30,7 +30,7 @@ angular
           // Emit a SIGN_IN event with the sessionToken as data. Currently (as of this writing), the coreAppResourceFactory
           // uses this to keep track of the sessionToken, but this prevents us from having to hard-code that. The point
           // is that something else is keeping track of it.
-          eventBus.emit(SIGN_IN, data);
+          eventBus.emit(EVENTS.SIGN_IN, data);
         });
         // jshint boss:true
         // Cache the user in storage and return it
@@ -52,7 +52,7 @@ angular
           // Delete the sessionToken from the user
           delete user.sessionToken;
           // Emit a SIGN_IN event with the sessionToken as data.
-          eventBus.emit(SIGN_IN, data);
+          eventBus.emit(EVENTS.SIGN_IN, data);
         });
         // jshint boss:true
         // Cache the user in storage and return it
@@ -66,7 +66,7 @@ angular
         // Delete the user from the cache
         delete storage.user;
         // Emit a SIGN_OUT event, in case anyone else is interested (hint: they are)
-        eventBus.emit(SIGN_OUT);
+        eventBus.emit(EVENTS.SIGN_OUT);
       };
 
       // This is for retrieving the current user
@@ -97,22 +97,27 @@ angular
     };
 
     parseUser.createUserModel = function (appResourceFactory, appStorage, appEventBus) {
+      // This is a slightly ugly url, but I can't think of any names that better capture what's going on here.
       var url = '/:urlSegment1/:urlSegment2',
+        // By default, the first segment is the literal string 'users'
         defaultParams = {
           urlSegment1: 'users',
           urlSegment2: '@objectId'
         },
+        // Grab custom actions from the library
         customActions = {
           get: parseResourceActions.get,
           query: parseResourceActions.query,
           save: parseResourceActions.save,
-          delete: parseResourceActions.delete
+          delete: parseResourceActions.delete,
+          PUT: parseResourceActions.PUT
         },
         // Create the User model using our application's resource factory
-        User = appResourceFactory(url, defaultParams, customActions);
+        User = appResourceFactory(url, defaultParams, customActions),
+        moduleStorage = (appStorage.parseUser = appStorage.parseUser || {});
 
       // Add functionality from above decorator
-      userDecorator(User, appEventBus, appStorage);
+      userDecorator(User, appEventBus, moduleStorage);
 
       return User;
     };

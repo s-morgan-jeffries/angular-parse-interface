@@ -9,7 +9,8 @@ describe('Factory: parseObjectFactory', function () {
       get: {},
       save: {},
       query: {},
-      delete: {}
+      delete: {},
+      PUT: {}
     };
     module('angularParseInterface', function ($provide) {
       $provide.value('parseResourceActions', mockParseResourceActions);
@@ -75,14 +76,14 @@ describe('Factory: parseObjectFactory', function () {
       });
 
       it('should pass the parseResourceActions for get, save, query, and delete to the resourceFactory function as customActions', function () {
-        var customActionsArg;
+        var customActionsArg,
+          expectedActions = ['delete', 'get', 'PUT', 'query', 'save'];
         ParseObject = objectFactory(className);
         resourceFactoryArgs = mocks.resourceFactory.argsForCall[0];
         customActionsArg = resourceFactoryArgs[2];
-        expect(customActionsArg.get).toBe(mockParseResourceActions.get);
-        expect(customActionsArg.query).toBe(mockParseResourceActions.query);
-        expect(customActionsArg.save).toBe(mockParseResourceActions.save);
-        expect(customActionsArg.delete).toBe(mockParseResourceActions.delete);
+        angular.forEach(expectedActions, function (actionName) {
+          expect(customActionsArg[actionName]).toBe(mockParseResourceActions[actionName]);
+        });
       });
 
       it('should set the className on the ParseObject to the passed in className', function () {
