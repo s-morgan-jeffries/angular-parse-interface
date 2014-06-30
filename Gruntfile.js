@@ -196,7 +196,7 @@ module.exports = function (grunt) {
       },
       unitBuild: {
         configFile: 'test/unit/karma.unit.build.conf.js',
-        singleRun: true,
+        singleRun: true
       },
       integrationCI: {
         configFile: 'test/integration/karma.integration.ci.conf.js',
@@ -346,6 +346,11 @@ module.exports = function (grunt) {
 
     grunt.task.run(tasks);
   });
+
+  grunt.registerTask('travis', [
+    'test:unit',
+    'test:integration'
+  ]);
 
   grunt.registerTask('build', function (target) {
     var testTasks = [
