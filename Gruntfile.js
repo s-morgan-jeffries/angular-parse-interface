@@ -24,6 +24,7 @@ module.exports = function (grunt) {
       // configurable paths
       devApp: 'dev_app',
       src: 'src',
+      dist: 'dist',
       builtModule: 'angular-parse-interface.js',
       minifiedModule: 'angular-parse-interface.min.js'
     },
@@ -53,7 +54,8 @@ module.exports = function (grunt) {
           src: [
             '.tmp',
             '<%= yeoman.builtModule %>',
-            '<%= yeoman.minifiedModule %>'
+            '<%= yeoman.minifiedModule %>',
+            '<%= yeoman.dist %>'
           ]
         }]
       },
@@ -64,7 +66,7 @@ module.exports = function (grunt) {
       dist: {
         files: [
           {
-            dest: '<%= yeoman.builtModule %>',
+            dest: '<%= yeoman.dist %>/<%= yeoman.builtModule %>',
             src: [
               'src/angularParseInterface.js',
 //              'src/config.js',
@@ -212,8 +214,8 @@ module.exports = function (grunt) {
     ngmin: {
       dist: {
         files: [{
-          src: '<%= yeoman.builtModule %>',
-          dest: '<%= yeoman.minifiedModule %>'
+          src: '<%= yeoman.dist %>/<%= yeoman.builtModule %>',
+          dest: '<%= yeoman.dist %>/<%= yeoman.minifiedModule %>'
         }]
       }
     },
@@ -244,8 +246,8 @@ module.exports = function (grunt) {
     uglify: {
       dist: {
         files: [{
-          src: '<%= yeoman.minifiedModule %>',
-          dest: '<%= yeoman.minifiedModule %>'
+          src: '<%= yeoman.dist %>/<%= yeoman.minifiedModule %>',
+          dest: '<%= yeoman.dist %>/<%= yeoman.minifiedModule %>'
         }]
       }
     },
