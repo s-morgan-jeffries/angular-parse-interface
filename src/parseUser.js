@@ -7,7 +7,6 @@ angular
 
     var userDecorator = function (User, eventBus, storage) {
       // Set the className to _User (Parse uses leading underscore names for certain built-in classes)
-//      User._setClassName('_User');
       User.className = '_User';
       // These should never be sent with PUT requests
       // backburner: Maybe remove sessionToken from request blacklist (it should be deleted, anyway)

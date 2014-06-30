@@ -9,7 +9,6 @@ var appInterface;
 //};
 //var eventBus;
 
-//t0d0: Figure out if you can post arbitrary data via a Resource (for operations)
 // Find a banana not related to test, try to use add relation method as is, use console.log in the transformRequest function
 //var Banana;
 //var bananas;

@@ -1,11 +1,18 @@
 'use strict';
-//t0d0: revise tests for parseObjectFactory
+
 describe('Factory: parseObjectFactory', function () {
-  var parseObjectFactory;
+  var parseObjectFactory,
+    mockParseResourceActions;
 
   beforeEach(function () {
-    module('angularParseInterface', function (/*$provide*/) {
-//      $provide.value('$rootScope', mockRootScope);
+    mockParseResourceActions = {
+      get: {},
+      save: {},
+      query: {},
+      delete: {}
+    };
+    module('angularParseInterface', function ($provide) {
+      $provide.value('parseResourceActions', mockParseResourceActions);
     });
     inject(function ($injector) {
       parseObjectFactory = $injector.get('parseObjectFactory');
@@ -19,7 +26,7 @@ describe('Factory: parseObjectFactory', function () {
     beforeEach(function () {
       mocks = {};
       mocks.Resource = function () {};
-      mocks.Resource._setClassName = jasmine.createSpy();
+//      mocks.Resource._setClassName = jasmine.createSpy();
       mocks.resourceFactory = function () {
         return mocks.Resource;
       };
@@ -32,16 +39,16 @@ describe('Factory: parseObjectFactory', function () {
     });
 
     describe('objectFactory function', function () {
-      var className, defaultParams, customActions, ParseObject, resourceFactoryArgs;
+      var className, ParseObject, resourceFactoryArgs;
       beforeEach(function () {
         objectFactory = parseObjectFactory.createObjectFactory(mocks.resourceFactory);
         className = 'SomeClass';
-        defaultParams = {};
-        customActions = {};
+//        defaultParams = {};
+//        customActions = {};
       });
 
       it('should create a ParseObject by calling the passed in resourceFactory', function () {
-        ParseObject = objectFactory(className, defaultParams, customActions);
+        ParseObject = objectFactory(className);
         expect(mocks.resourceFactory).toHaveBeenCalled();
         expect(ParseObject).toBe(mocks.Resource);
       });
@@ -49,7 +56,7 @@ describe('Factory: parseObjectFactory', function () {
       it('should pass the correct URL to the resourceFactory function', function () {
         var urlArg,
           expectedUrlArg = '/classes/' + className + '/:objectId';
-        ParseObject = objectFactory(className, defaultParams, customActions);
+        ParseObject = objectFactory(className);
         resourceFactoryArgs = mocks.resourceFactory.argsForCall[0];
         urlArg = resourceFactoryArgs[0];
         expect(urlArg).toEqual(expectedUrlArg);
@@ -67,21 +74,24 @@ describe('Factory: parseObjectFactory', function () {
         expect(defaultParamsArg).toEqual(expectedDefaultParamsArg);
       });
 
-      it('should pass an empty set of customActions to the resourceFactory function', function () {
-        var customActionsArg,
-          expectedCustomActionsArg = {};
+      it('should pass the parseResourceActions for get, save, query, and delete to the resourceFactory function as customActions', function () {
+        var customActionsArg;
         ParseObject = objectFactory(className);
         resourceFactoryArgs = mocks.resourceFactory.argsForCall[0];
         customActionsArg = resourceFactoryArgs[2];
-        expect(customActionsArg).toEqual(expectedCustomActionsArg);
+        expect(customActionsArg.get).toBe(mockParseResourceActions.get);
+        expect(customActionsArg.query).toBe(mockParseResourceActions.query);
+        expect(customActionsArg.save).toBe(mockParseResourceActions.save);
+        expect(customActionsArg.delete).toBe(mockParseResourceActions.delete);
       });
 
       it('should set the className on the ParseObject to the passed in className', function () {
-        ParseObject = objectFactory(className, defaultParams, customActions);
-        expect(mocks.Resource._setClassName).toHaveBeenCalledWith(className);
+        ParseObject = objectFactory(className);
+        expect(ParseObject.className).toEqual(className);
       });
     });
 
   });
+
 
 });

@@ -4,7 +4,7 @@ angular.module('angularParseInterface')
 
     var parseResource = {};
 
-    // t0d0: Write tests for parseResource.createAppResourceFactory
+
     parseResource.createAppResourceFactory = function (appConfig, appStorage, appEventBus) {
       var coreAppResourceFactory = this.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
 
@@ -164,7 +164,7 @@ angular.module('angularParseInterface')
         defaultParams = defaultParams || {};
         customActions = customActions || {};
 
-        // t0d0: Move this into the action library function
+        // backburner: Get rid of these, and rewrite your tests to deal with the change.
         // In order for us to add the required transformRequest and transformResponse functions to our actions, they
         // have to be visible inside this function. That means we have to re-define all the built-in actions here.
         baseActions = {

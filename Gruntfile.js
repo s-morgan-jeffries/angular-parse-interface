@@ -66,7 +66,8 @@ module.exports = function (grunt) {
           {
             dest: '<%= yeoman.builtModule %>',
             src: [
-              'src/module.js',
+              'src/angularParseInterface.js',
+//              'src/config.js',
               'src/**/*.js'
             ]
           }
@@ -351,7 +352,8 @@ module.exports = function (grunt) {
         'jshint:unitTests',
         'jshint:integrationTests',
 //        'jshint:e2eTests',
-        'test'
+//        'test'
+        'test:unit'
       ],
       buildTasks = [
         // Remove .tmp, built module file, minified module file

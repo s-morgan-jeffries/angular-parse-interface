@@ -39,7 +39,7 @@ angular.module('angularParseInterface')
 
     var parseDataEncoding = {};
 
-    // t0d0: Move the codecs into this module
+    // backburner: Move the codecs into this module
     parseDataEncoding.getTransformFunctions = function () {
       var Resource;
 

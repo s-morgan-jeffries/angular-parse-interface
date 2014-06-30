@@ -37,6 +37,9 @@ describe('Factory: parseResource', function () {
     });
   });
 
+  // t0d0: Write tests for parseResource.createAppResourceFactory
+  xdescribe('createAppResourceFactory function', function () {});
+
   describe('createCoreAppResourceFactory function', function () {
     var appConfig, appStorage, appEventBus;
 

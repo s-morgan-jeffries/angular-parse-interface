@@ -4,8 +4,6 @@ angular.module('angularParseInterface')
 
     var parseResourceActions = {};
 
-    //t0d0: Fix this - should really deal with data
-
     // Find the first item in an array for which the predicate is true
     var find = function (ar, pred) {
       for (var i = 0, len = ar.length; i < len; i++) {
@@ -100,14 +98,6 @@ angular.module('angularParseInterface')
       }
     };
 
-//    parseResourceActions.GET = {
-//      actions: {
-//        GET: {
-//          method: 'GET'
-//        }
-//      }
-//    };
-
     parseResourceActions.delete = {
       actions: {
         delete: {
@@ -142,7 +132,6 @@ angular.module('angularParseInterface')
       // Is there any way to prevent it from returning a Resource? And is that worth it? If you want to do that, you're
       // going to have to use promises. Arguably not worth it for now. Just make sure you don't give the Resource method
       // the actual instance.
-//      ,
       decorator: function (Resource) {
         Resource.PUT = (function () {
           var PUT = Resource.PUT;

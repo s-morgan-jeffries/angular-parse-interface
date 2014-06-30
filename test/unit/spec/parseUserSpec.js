@@ -2,13 +2,21 @@
 
 describe('Factory: parseUser', function () {
   var parseUser,
+    mockParseResourceActions,
     SIGN_IN = 'signin',
     SIGN_OUT = 'signout';
 
   beforeEach(function () {
+    mockParseResourceActions = {
+      get: {},
+      save: {},
+      query: {},
+      delete: {}
+    };
     module('angularParseInterface', function ($provide) {
       $provide.value('SIGN_IN', SIGN_IN);
       $provide.value('SIGN_OUT', SIGN_OUT);
+      $provide.value('parseResourceActions', mockParseResourceActions);
     });
     inject(function ($injector) {
       parseUser = $injector.get('parseUser');
@@ -73,11 +81,14 @@ describe('Factory: parseUser', function () {
       expect(User).toBe(mocks.Resource);
       expect(url).toEqual('/:urlSegment1/:urlSegment2');
       expect(defaultParams).toEqual({ urlSegment1: 'users', urlSegment2: '@objectId' });
-      expect(customActions).toEqual({});
+      expect(customActions.get).toBe(mockParseResourceActions.get);
+      expect(customActions.query).toBe(mockParseResourceActions.query);
+      expect(customActions.save).toBe(mockParseResourceActions.save);
+      expect(customActions.delete).toBe(mockParseResourceActions.delete);
     });
 
     it('should set the className of the User to \'_User\'', function () {
-      expect(mocks.Resource._setClassName).toHaveBeenCalledWith('_User');
+      expect(User.className).toEqual('_User');
     });
 
     it('should add sessionToken and emailVerified to the request blacklist', function () {
