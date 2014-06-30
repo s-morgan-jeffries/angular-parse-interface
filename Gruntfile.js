@@ -198,12 +198,20 @@ module.exports = function (grunt) {
         configFile: 'test/unit/karma.unit.build.conf.js',
         singleRun: true
       },
+      unitTravis: {
+        configFile: 'test/unit/karma.unit.travis.conf.js',
+        singleRun: true
+      },
       integrationCI: {
         configFile: 'test/integration/karma.integration.ci.conf.js',
         singleRun: true
       },
       integrationBuild: {
         configFile: 'test/integration/karma.integration.build.conf.js',
+        singleRun: true
+      },
+      integrationTravis: {
+        configFile: 'test/integration/karma.integration.travis.conf.js',
         singleRun: true
       }
     },
@@ -332,6 +340,10 @@ module.exports = function (grunt) {
 //      e2eTasks = [
 //        'protractor:build'
 //      ],
+      travisTasks = [
+        'karma:unitTravis',
+        'karma:integrationTravis'
+      ],
       tasks;
     if (target === 'unit') {
       tasks = setUpTasks.concat(unitTasks);
@@ -339,6 +351,8 @@ module.exports = function (grunt) {
       tasks = setUpTasks.concat(integrationTasks);
 //    } else if (target === 'e2e') {
 //      tasks = setUpTasks.concat(e2eTasks);
+    } else if (target === 'travis') {
+      tasks = setUpTasks.concat(travisTasks);
     } else {
 //      tasks = setUpTasks.concat(unitTasks).concat(integrationTasks).concat(e2eTasks);
       tasks = setUpTasks.concat(unitTasks).concat(integrationTasks);
@@ -348,8 +362,7 @@ module.exports = function (grunt) {
   });
 
   grunt.registerTask('travis', [
-    'test:unit',
-    'test:integration'
+    'test:travis'
   ]);
 
   grunt.registerTask('build', function (target) {

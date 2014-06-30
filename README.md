@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/s-morgan-jeffries/angular-parse-interface.svg?branch=master)](https://travis-ci.org/s-morgan-jeffries/angular-parse-interface)
+
 A module for using Parse.com in AngularJS applications.
 
 NB: This is pre-pre-alpha.
