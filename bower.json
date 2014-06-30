@@ -15,7 +15,7 @@
   "ignore": [
     "**/.*",
     "src",
-    "demo",
+    "dev_app",
     "test",
     "AUTHORS.txt",
     "Gruntfile.js",
