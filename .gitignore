@@ -1,6 +1,7 @@
 node_modules
 .tmp
 dev_app/bower_components
+dev_app/scripts/debug.js
 .test_env
 .idea
 src_legacy
