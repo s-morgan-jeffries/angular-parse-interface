@@ -124,6 +124,7 @@ angular
 
       return User;
     };
+    
 
     return parseUser;
   });
