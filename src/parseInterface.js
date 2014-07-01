@@ -1,6 +1,6 @@
 angular
   .module('angularParseInterface')
-  .factory('parseInterface', function (ParseAppEventBus, parseResource, parseObjectFactory, parseUser, parseQueryBuilder) {
+  .factory('parseInterface', function (ParseAppEventBus, parseResource, parseObjectFactory, parseUser, parseQueryBuilder, parseCloud) {
     'use strict';
 
     var parseInterface = {};
@@ -44,6 +44,7 @@ angular
         User: parseUser.createUserModel(appResource, appStorage, appEventBus),
         // A constructor that takes a Resource and returns a query builder.
         Query: parseQueryBuilder.Query
+//        cloudCallerFactory: parseCloud.createCallerFactory(appResource)
       };
 
       return appInterface;

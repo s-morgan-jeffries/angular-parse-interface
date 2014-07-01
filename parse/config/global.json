@@ -1,0 +1,14 @@
+{
+    "applications": {
+        "_default": {
+            "link": "angularParseInterfaceTest"
+        }, 
+        "angularParseInterfaceTest": {
+            "applicationId": "I7nfCeLupxz0EEL33ADtaOtytoZlZMIKGilruUFR", 
+            "masterKey": "es3Yf5zuSceoBbjgKAySKd2VACwjQ16Z47z89y2S"
+        }
+    }, 
+    "global": {
+        "parseVersion": "1.2.18"
+    }
+}

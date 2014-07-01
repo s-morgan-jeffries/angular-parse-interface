@@ -20,6 +20,7 @@
   "smarttabs": true,
   "white": true,
   "globals": {
-    "angular": true
+    "angular": true,
+    "_": true
   }
 }
