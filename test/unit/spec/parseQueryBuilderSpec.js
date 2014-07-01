@@ -1,6 +1,5 @@
 'use strict';
 
-// t0d0: Go over the parseQueryBuilderSpec and make sure you're using spies in the correct places
 describe('Factory: parseQueryBuilder', function () {
   var parseQueryBuilder;
 

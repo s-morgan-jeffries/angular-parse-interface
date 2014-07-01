@@ -377,7 +377,6 @@ describe('Factory: parseResource', function () {
     });
   });
 
-  // t0d0: Write tests for parseResource.createAppResourceFactory
   describe('createAppResourceFactory function', function () {
     var appConfig, appStorage, appEventBus, appResourceFactory;
 

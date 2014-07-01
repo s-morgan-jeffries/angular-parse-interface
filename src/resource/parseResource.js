@@ -1,5 +1,5 @@
 angular.module('angularParseInterface')
-  .factory('parseResource', function ($resource, parseRequestHeaders, parseDataEncoding, parseResourceDecorator/*, $log*/) {
+  .factory('parseResource', function ($resource, parseRequestHeaders, parseDataEncoding, parseResourceDecorator) {
     'use strict';
 
     var parseResource = {};
@@ -21,7 +21,6 @@ angular.module('angularParseInterface')
           // isn't defined)
           angular.extend(actionConfigs, action.actionConfigs);
         });
-//        $log.log(actionConfigs);
 
         // Create the Resource
         Resource = coreAppResourceFactory(url, defaultParams, actionConfigs);
