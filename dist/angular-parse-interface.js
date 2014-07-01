@@ -1073,7 +1073,7 @@ angular.module('angularParseInterface')
 
     // This creates the core app resource. It's concerned with encoding/decoding of data and the addition of the
     // appropriate headers. A separate function deals with actions.
-    parseResource.createCoreAppResourceFactory = function (appConfig, appStorage, appEventBus) {
+    parseResource.createAppResourceFactory = function (appConfig, appStorage, appEventBus) {
 
       var hasRequestBody = function (action) {
         // For Parse, these are currently the only methods for which a request body has any meaning

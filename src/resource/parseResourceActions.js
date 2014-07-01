@@ -45,7 +45,7 @@ angular.module('angularParseInterface')
     };
 
     parseResourceActions.get = {
-      actions: {
+      actionConfigs: {
 //        get: (function () {
 //          var Resource;
 //
@@ -67,7 +67,7 @@ angular.module('angularParseInterface')
     };
 
     parseResourceActions.delete = {
-      actions: {
+      actionConfigs: {
         delete: {
           method: 'DELETE'
         }
@@ -78,7 +78,7 @@ angular.module('angularParseInterface')
     //  tricky, because the Resource instance is what gets updated, but you could have it return an object with own
     // properties and then, on resolution, iterate through the Resource's own properties again and update the object
     parseResourceActions.POST = {
-      actions: {
+      actionConfigs: {
         POST: {
           method: 'POST'
         }
@@ -90,7 +90,7 @@ angular.module('angularParseInterface')
     };
 
     parseResourceActions.PUT = {
-      actions: {
+      actionConfigs: {
         PUT: {
           method: 'PUT'
         }
@@ -153,7 +153,7 @@ angular.module('angularParseInterface')
     };
 
     parseResourceActions.query = {
-      actions: {
+      actionConfigs: {
         query: (function () {
           var Resource;
 
@@ -212,7 +212,7 @@ angular.module('angularParseInterface')
 
     // A test
     parseResourceActions.save = {
-      actions: {
+      actionConfigs: {
         save: {
           method: 'POST'
         },

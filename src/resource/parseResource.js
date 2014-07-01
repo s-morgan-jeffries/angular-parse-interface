@@ -1,5 +1,5 @@
 angular.module('angularParseInterface')
-  .factory('parseResource', function ($resource, parseRequestHeaders, parseDataEncoding, parseResourceDecorator) {
+  .factory('parseResource', function ($resource, parseRequestHeaders, parseDataEncoding, parseResourceDecorator/*, $log*/) {
     'use strict';
 
     var parseResource = {};
@@ -11,24 +11,25 @@ angular.module('angularParseInterface')
 
       // Okay for now. What do you want this to do ultimately? You probably don't want to leave customActions in its
       // current state. For example, you probably want objects to have certain actions but not others.
-      return function appResourceFactory(url, defaultParams, actionAdders) {
+      return function appResourceFactory(url, defaultParams, actions) {
         var Resource,
-          customActions = {};
+          actionConfigs = {};
 
         // Add actions
-        angular.forEach(actionAdders, function (actionAdder) {
+        angular.forEach(actions, function (action) {
           // Extend the customActions with any actions defined on the actionAdder (will work even if that property
           // isn't defined)
-          angular.extend(customActions, actionAdder.actions);
+          angular.extend(actionConfigs, action.actionConfigs);
         });
+//        $log.log(actionConfigs);
 
         // Create the Resource
-        Resource = coreAppResourceFactory(url, defaultParams, customActions);
+        Resource = coreAppResourceFactory(url, defaultParams, actionConfigs);
 
         // Decorate with decorators
-        angular.forEach(actionAdders, function (actionAdder) {
-          if (angular.isFunction(actionAdder.decorator)) {
-            actionAdder.decorator(Resource);
+        angular.forEach(actions, function (action) {
+          if (angular.isFunction(action.decorator)) {
+            action.decorator(Resource);
           }
         });
 
@@ -37,7 +38,7 @@ angular.module('angularParseInterface')
           var isAction = function (name) {
             return Resource.hasOwnProperty(name) && Resource.prototype.hasOwnProperty('$' + name);
           };
-          if (isAction(k) && !actionAdders[k]) {
+          if (isAction(k) && !actions[k]) {
             delete Resource[k];
             delete Resource.prototype['$' + k];
           }
@@ -52,6 +53,9 @@ angular.module('angularParseInterface')
 
     // This creates the core app resource. It's concerned with encoding/decoding of data and the addition of the
     // appropriate headers. A separate function deals with actions.
+    // I'm not crazy about exposing this on the service when it's actually only used within this file, but it does make
+    // it very testable. Also, I briefly toyed with combining this function with createAppResourceFactory, but it was an
+    // inscrutable mess.
     parseResource.createCoreAppResourceFactory = function (appConfig, appStorage, appEventBus) {
 
       var hasRequestBody = function (action) {

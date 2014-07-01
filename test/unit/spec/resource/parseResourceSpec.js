@@ -11,6 +11,10 @@ describe('Factory: parseResource', function () {
       return mocks.Resource;
     };
     spyOn(mocks, '$resource').andCallThrough();
+    mocks.coreAppResourceFactory = function () {
+      return mocks.Resource;
+    };
+    spyOn(mocks, 'coreAppResourceFactory').andCallThrough();
     mocks.addRequestHeaders = function () {};
     mocks.parseRequestHeaders = {
       getTransformRequest: function (/*appConfig, appStorage, appEventBus*/) {
@@ -27,20 +31,18 @@ describe('Factory: parseResource', function () {
         return mocks.dataEncodingFunctions;
       }
     };
+    mocks.parseResourceDecorator = jasmine.createSpy();
     module('angularParseInterface', function ($provide) {
       $provide.value('$resource', mocks.$resource);
       $provide.value('parseRequestHeaders', mocks.parseRequestHeaders);
       $provide.value('parseDataEncoding', mocks.parseDataEncoding);
+      $provide.value('parseResourceDecorator', mocks.parseResourceDecorator);
+      $provide.value('$log', console);
     });
     inject(function ($injector) {
       parseResource = $injector.get('parseResource');
     });
   });
-
-  // t0d0: Write tests for parseResource.createAppResourceFactory
-  // t0d0: Rewrite all the tests for createCoreAppResourceFactory in terms of that
-  // t0d0: Refactor the module so createCoreAppResourceFactory is not directly accessible
-  xdescribe('createAppResourceFactory function', function () {});
 
   describe('createCoreAppResourceFactory function', function () {
     var appConfig, appStorage, appEventBus;
@@ -67,18 +69,18 @@ describe('Factory: parseResource', function () {
     });
 
     describe('coreAppResourceFactory function', function () {
-      var url, defaultParams, actions, appResourceFactory, Resource;
+      var url, defaultParams, actions, coreAppResourceFactory, Resource;
 
       beforeEach(function () {
         url = 'a/url/for/you';
         defaultParams = {};
         actions = {};
-        appResourceFactory = parseResource.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
+        coreAppResourceFactory = parseResource.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
       });
 
       it('should call the getTransformFunctions method from the parseDataEncoding module', function () {
         spyOn(mocks.parseDataEncoding, 'getTransformFunctions').andCallThrough();
-        Resource = appResourceFactory(url, defaultParams, actions);
+        Resource = coreAppResourceFactory(url, defaultParams, actions);
         expect(mocks.parseDataEncoding.getTransformFunctions).toHaveBeenCalled();
       });
 
@@ -89,21 +91,21 @@ describe('Factory: parseResource', function () {
         // No leading slash
         url = 'a/url';
         expectedUrl = baseUrl + '/' + url;
-        Resource = appResourceFactory(url, defaultParams, actions);
+        Resource = coreAppResourceFactory(url, defaultParams, actions);
         actualUrl = mocks.$resource.argsForCall[0][0];
         mocks.$resource.reset();
         expect(actualUrl).toEqual(expectedUrl);
         // Single leading slash
         url = '/another/url';
         expectedUrl = baseUrl + url;
-        Resource = appResourceFactory(url, defaultParams, actions);
+        Resource = coreAppResourceFactory(url, defaultParams, actions);
         actualUrl = mocks.$resource.argsForCall[0][0];
         mocks.$resource.reset();
         expect(actualUrl).toEqual(expectedUrl);
         // Double leading slash
         url = '//yet/another/url';
         expectedUrl = baseUrl + '/' + url.slice(2);
-        Resource = appResourceFactory(url, defaultParams, actions);
+        Resource = coreAppResourceFactory(url, defaultParams, actions);
         actualUrl = mocks.$resource.argsForCall[0][0];
         mocks.$resource.reset();
         expect(actualUrl).toEqual(expectedUrl);
@@ -115,7 +117,7 @@ describe('Factory: parseResource', function () {
         // undefined
         defaultParams = undefined;
         expectedParams = {};
-        Resource = appResourceFactory(url, defaultParams, actions);
+        Resource = coreAppResourceFactory(url, defaultParams, actions);
         actualParams = mocks.$resource.argsForCall[0][1];
         mocks.$resource.reset();
         expect(actualParams).toEqual(expectedParams);
@@ -124,7 +126,7 @@ describe('Factory: parseResource', function () {
           b: 2
         };
         expectedParams = defaultParams;
-        Resource = appResourceFactory(url, defaultParams, actions);
+        Resource = coreAppResourceFactory(url, defaultParams, actions);
         actualParams = mocks.$resource.argsForCall[0][1];
         mocks.$resource.reset();
         expect(actualParams).toEqual(expectedParams);
@@ -134,7 +136,7 @@ describe('Factory: parseResource', function () {
         var expectedActions,
           actualActions;
         expectedActions = actions;
-        Resource = appResourceFactory(url, defaultParams, actions);
+        Resource = coreAppResourceFactory(url, defaultParams, actions);
         actualActions = mocks.$resource.argsForCall[0][2];
         expect(actualActions).toEqual(expectedActions);
       });
@@ -218,7 +220,7 @@ describe('Factory: parseResource', function () {
               transformRequest: [foo, placeHolder, mocks.dataEncodingFunctions.transformRequest, placeHolder, mocks.addRequestHeaders]
             }
           };
-          Resource = appResourceFactory(url, defaultParams, actions);
+          Resource = coreAppResourceFactory(url, defaultParams, actions);
           actualActions = mocks.$resource.argsForCall[0][2];
           angular.forEach(expectedActions, function (action, actionName) {
             var expectedFxAr = action.transformRequest;
@@ -321,7 +323,7 @@ describe('Factory: parseResource', function () {
               transformResponse: [placeHolder, mocks.dataEncodingFunctions.transformResponse, foo]
             }
           };
-          Resource = appResourceFactory(url, defaultParams, actions);
+          Resource = coreAppResourceFactory(url, defaultParams, actions);
           actualActions = mocks.$resource.argsForCall[0][2];
           angular.forEach(expectedActions, function (action, actionName) {
             var expectedFxAr = action.transformResponse;
@@ -358,19 +360,120 @@ describe('Factory: parseResource', function () {
       });
 
       it('should call the $resource function', function () {
-        Resource = appResourceFactory(url, defaultParams, actions);
+        Resource = coreAppResourceFactory(url, defaultParams, actions);
         expect(mocks.$resource).toHaveBeenCalled();
       });
 
       it('should call the setResource method on dataEncodingFunctions with Resource', function () {
         spyOn(mocks.dataEncodingFunctions, 'setResource');
-        Resource = appResourceFactory(url, defaultParams, actions);
+        Resource = coreAppResourceFactory(url, defaultParams, actions);
         expect(mocks.dataEncodingFunctions.setResource).toHaveBeenCalledWith(Resource);
       });
 
       it('should return the Resource returned by the $resource factory function', function () {
-        Resource = appResourceFactory(url, defaultParams, actions);
+        Resource = coreAppResourceFactory(url, defaultParams, actions);
         expect(Resource).toBe(mocks.Resource);
+      });
+    });
+  });
+
+  // t0d0: Write tests for parseResource.createAppResourceFactory
+  describe('createAppResourceFactory function', function () {
+    var appConfig, appStorage, appEventBus, appResourceFactory;
+
+    beforeEach(function () {
+      appConfig = {};
+      appStorage = {};
+      appEventBus = {};
+    });
+
+    it('should be a function', function () {
+      expect(parseResource.createAppResourceFactory).toBeFunction();
+    });
+
+    it('should call the createCoreAppResourceFactory', function () {
+      spyOn(parseResource, 'createCoreAppResourceFactory').andCallThrough();
+      parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
+      expect(parseResource.createCoreAppResourceFactory).toHaveBeenCalledWith(appConfig, appStorage, appEventBus);
+    });
+
+    it('should return a function', function () {
+      appResourceFactory = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
+      expect(appResourceFactory).toBeFunction();
+    });
+
+    describe('appResourceFactory function', function () {
+      var url, defaultParams, actions, Resource;
+
+      beforeEach(function () {
+        url = 'a/url/for/you';
+        defaultParams = {};
+        actions = {
+          firstAction: {
+            actionConfigs: {
+              create: {
+                method: 'POST'
+              }
+            },
+            decorator: jasmine.createSpy()
+          },
+          secondAction: {
+            actionConfigs: {
+              update: {
+                method: 'PUT'
+              }
+            }
+          }
+        };
+        spyOn(parseResource, 'createCoreAppResourceFactory').andReturn(mocks.coreAppResourceFactory);
+        appResourceFactory = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
+      });
+
+      it('should call the coreAppResourceFactory function', function () {
+        Resource = appResourceFactory(url, defaultParams, actions);
+        expect(mocks.coreAppResourceFactory).toHaveBeenCalled();
+      });
+
+      it('should pass the url and defaultParams to the coreAppResourceFactory unchanged', function () {
+        var urlArg, defaultParamsArg;
+        Resource = appResourceFactory(url, defaultParams, actions);
+        urlArg = mocks.coreAppResourceFactory.argsForCall[0][0];
+        defaultParamsArg = mocks.coreAppResourceFactory.argsForCall[0][1];
+        expect(urlArg).toEqual(url);
+        expect(defaultParamsArg).toEqual(defaultParams);
+      });
+
+      it('should pass all the actionConfigs from actions to coreAppResourceFactory', function () {
+        var expectedActions, actualActions;
+        expectedActions = {
+          create: {
+            method: 'POST'
+          },
+          update: {
+            method: 'PUT'
+          }
+        };
+        Resource = appResourceFactory(url, defaultParams, actions);
+        actualActions = mocks.coreAppResourceFactory.argsForCall[0][2];
+        expect(actualActions).toEqual(expectedActions);
+      });
+
+      it('should call the decorator for any action that has one', function () {
+        Resource = appResourceFactory(url, defaultParams, actions);
+        expect(actions.firstAction.decorator).toHaveBeenCalledWith(Resource);
+      });
+
+      it('it should remove any actions that weren\'t included in the actions object', function () {
+        mocks.Resource.foo = function () {};
+        mocks.Resource.prototype.$foo = function () {};
+        Resource = appResourceFactory(url, defaultParams, actions);
+        expect(Resource.foo).toBeUndefined();
+        expect(Resource.prototype.$foo).toBeUndefined();
+      });
+
+      it('it should call parseResourceDecorator with the Resource', function () {
+        Resource = appResourceFactory(url, defaultParams, actions);
+        expect(mocks.parseResourceDecorator).toHaveBeenCalledWith(Resource);
       });
     });
   });
