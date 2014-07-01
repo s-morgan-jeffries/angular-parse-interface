@@ -108,15 +108,99 @@ describe('Factory: parseResourceActions', function () {
     });
 
     describe('decorator', function () {
+
       beforeEach(function () {
         decoratorFx = mainAction.decorator;
-      });
-      it('should remove the $POST method from the prototype', function () {
         mocks.Resource.POST = function () {};
         mocks.Resource.prototype.$POST = function () {};
+      });
+
+      it('should remove the $POST method from the prototype', function () {
         decoratorFx(mocks.Resource);
         expect(mocks.Resource.POST).toBeFunction();
         expect(mocks.Resource.prototype.$POST).toBeUndefined();
+      });
+
+      it('should create a new POST method on Resource', function () {
+        var POST = mocks.Resource.POST;
+        decoratorFx(mocks.Resource);
+        expect(mocks.Resource.POST).not.toBe(POST);
+      });
+
+      describe('decorated POST method', function () {
+        var instance, promise, POST, params, data, onSuccess, onError, res;
+
+        beforeEach(function () {
+          promise = {
+            then: jasmine.createSpy()
+          };
+          instance = {
+            $promise: promise,
+            $resolved: false
+          };
+          mocks.Resource.POST = function () {
+            return instance;
+          };
+          spyOn(mocks.Resource, 'POST').andCallThrough();
+          params = {};
+          data = {};
+          onSuccess = function () {};
+          onError = function () {};
+          POST = mocks.Resource.POST;
+          decoratorFx(mocks.Resource);
+        });
+
+        it('should pass its arguments to the original POST method', function () {
+          res = mocks.Resource.POST(params, data, onSuccess, onError);
+          expect(POST).toHaveBeenCalledWith(params, data, onSuccess, onError);
+        });
+
+        it('should return an object that is not the instance but that contains its $promise and $resolved properties', function () {
+          res = mocks.Resource.POST(params, data, onSuccess, onError);
+          expect(res).not.toBe(instance);
+          expect(res.$promise).toBe(instance.$promise);
+          expect(res.$resolved).toBe(instance.$resolved);
+        });
+
+        it('should copy all data properties except for $promise to the response on success', function () {
+          var successFx,
+            successData = {
+              a: {},
+              b: {},
+              $promise: {}
+            };
+          res = mocks.Resource.POST(params, data, onSuccess, onError);
+          successFx = promise.then.argsForCall[0][0];
+          successFx(successData);
+          expect(res.a).toBe(successData.a);
+          expect(res.b).toBe(successData.b);
+          // This should be true for the mock successData. For real successData, the promises might be the same.
+          expect(res.$promise).not.toBe(successData.$promise);
+          expect(res.$promise).toBe(instance.$promise);
+        });
+
+        it('should copy error properties to the response and set $resolved to true on error', function () {
+          var errorFx,
+            error = {
+              data: {},
+              status: 401,
+              headers: function () {},
+              config: {},
+              statusText: 'badness'
+            };
+          res = mocks.Resource.POST(params, data, onSuccess, onError);
+          errorFx = promise.then.argsForCall[0][1];
+          errorFx(error);
+          expect(res.data).toBe(error.data);
+          expect(res.status).toEqual(error.status);
+          expect(res.headersGetter).toBe(error.headers);
+          expect(res.config).toBe(error.config);
+          expect(res.statusText).toEqual(error.statusText);
+          expect(res.$resolved).toBeTrue();
+          // This shouldn't change
+          expect(res.$promise).toBe(instance.$promise);
+        });
+
       });
     });
   });
@@ -156,6 +240,12 @@ describe('Factory: parseResourceActions', function () {
         expect(mocks.Resource.prototype.$PUT).not.toBe($PUT);
       });
 
+      it('should create a new PUT method on Resource', function () {
+        var PUT = mocks.Resource.PUT;
+        decoratorFx(mocks.Resource);
+        expect(mocks.Resource.PUT).not.toBe(PUT);
+      });
+
       describe('$PUT method', function () {
         var objectId,
           data,
@@ -188,6 +278,83 @@ describe('Factory: parseResourceActions', function () {
           expect(PUTargs[1]).toBe(data);
           expect(PUTargs[2]).toBe(successFx);
           expect(PUTargs[3]).toBe(errorFx);
+        });
+
+      });
+
+
+      describe('decorated PUT method', function () {
+        var instance, promise, PUT, params, data, onSuccess, onError, res;
+
+        beforeEach(function () {
+          promise = {
+            then: jasmine.createSpy()
+          };
+          instance = {
+            $promise: promise,
+            $resolved: false
+          };
+          mocks.Resource.PUT = function () {
+            return instance;
+          };
+          spyOn(mocks.Resource, 'PUT').andCallThrough();
+          params = {};
+          data = {};
+          onSuccess = function () {};
+          onError = function () {};
+          PUT = mocks.Resource.PUT;
+          decoratorFx(mocks.Resource);
+        });
+
+        it('should pass its arguments to the original PUT method', function () {
+          res = mocks.Resource.PUT(params, data, onSuccess, onError);
+          expect(PUT).toHaveBeenCalledWith(params, data, onSuccess, onError);
+        });
+
+        it('should return an object that is not the instance but that contains its $promise and $resolved properties', function () {
+          res = mocks.Resource.PUT(params, data, onSuccess, onError);
+          expect(res).not.toBe(instance);
+          expect(res.$promise).toBe(instance.$promise);
+          expect(res.$resolved).toBe(instance.$resolved);
+        });
+
+        it('should copy all data properties except for $promise to the response on success', function () {
+          var successFx,
+            successData = {
+              a: {},
+              b: {},
+              $promise: {}
+            };
+          res = mocks.Resource.PUT(params, data, onSuccess, onError);
+          successFx = promise.then.argsForCall[0][0];
+          successFx(successData);
+          expect(res.a).toBe(successData.a);
+          expect(res.b).toBe(successData.b);
+          // This should be true for the mock successData. For real successData, the promises might be the same.
+          expect(res.$promise).not.toBe(successData.$promise);
+          expect(res.$promise).toBe(instance.$promise);
+        });
+
+        it('should copy error properties to the response and set $resolved to true on error', function () {
+          var errorFx,
+            error = {
+              data: {},
+              status: 401,
+              headers: function () {},
+              config: {},
+              statusText: 'badness'
+            };
+          res = mocks.Resource.PUT(params, data, onSuccess, onError);
+          errorFx = promise.then.argsForCall[0][1];
+          errorFx(error);
+          expect(res.data).toBe(error.data);
+          expect(res.status).toEqual(error.status);
+          expect(res.headersGetter).toBe(error.headers);
+          expect(res.config).toBe(error.config);
+          expect(res.statusText).toEqual(error.statusText);
+          expect(res.$resolved).toBeTrue();
+          // This shouldn't change
+          expect(res.$promise).toBe(instance.$promise);
         });
 
       });

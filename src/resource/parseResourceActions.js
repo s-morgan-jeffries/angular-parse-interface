@@ -66,6 +66,9 @@ angular.module('angularParseInterface')
       }
     };
 
+    // Could do a GET action here analogous to POST and PUT below, but I don't know where I would use it, and I don't
+    // want to write extra tests right now. But this is a pin in it.
+
     parseResourceActions.delete = {
       actionConfigs: {
         delete: {
@@ -74,9 +77,7 @@ angular.module('angularParseInterface')
       }
     };
 
-    // t0d0: Update this so it returns something other than a Resource
-    //  tricky, because the Resource instance is what gets updated, but you could have it return an object with own
-    // properties and then, on resolution, iterate through the Resource's own properties again and update the object
+    // A POST action for posting arbitrary data to the server
     parseResourceActions.POST = {
       actionConfigs: {
         POST: {
@@ -86,6 +87,50 @@ angular.module('angularParseInterface')
       decorator: function (Resource) {
         // The prototype doesn't need to have this.
         delete Resource.prototype.$POST;
+
+        // Create a modified POST static method
+        Resource.POST = (function () {
+          // The original POST method
+          var POST = Resource.POST;
+
+          // Since we're not interested in a Resource for arbitrary POST data, this function returns a non-Resource
+          // object.
+          return function () {
+            // Delegate to the original POST method. This returns an instance of Resource.
+            var instance = POST.apply(this, arguments),
+              // This is the POJO we'll actually be returning.
+              res = {
+                $promise: instance.$promise,
+                $resolved: instance.$resolved
+              };
+            // NB: Both of the handlers leave the $promise object on the POJO.
+            // This copies all the own properties from the response data (which is an instance of Resource) to the POJO
+            var onSuccess = function (data) {
+              // "Data" is actually just the instance again.
+              angular.forEach(data, function (v, k) {
+                // This *should* be the same promise object, but just in case...
+                if (k === '$promise') {
+                  return;
+                }
+                // Otherwise, copy the property to the result
+                res[k] = v;
+              });
+            };
+            // This copies some useful information about the error to the POJO.
+            var onError = function (err) {
+              res.data = err.data;
+              res.status = err.status;
+              res.headersGetter = err.headers;
+              res.config = err.config;
+              res.statusText = err.statusText;
+              res.$resolved = true;
+            };
+            instance.$promise.then(onSuccess, onError);
+            // Return the POJO
+            return res;
+            // POJO!
+          };
+        }());
       }
     };
 
@@ -95,60 +140,60 @@ angular.module('angularParseInterface')
           method: 'PUT'
         }
       },
-      // This is sort of magical, and the PUT request itself is actually kind of weird. Instead of doing it this way,
-      // it might be better to call the function directly on the Resource the way it's written in the last line:
-      //    return put.call(this, params, data, successFunc, errorFunc);
-      // If the instance needs to use this, it could do something like this:
-      //    instance.constructor.PUT({objectId: instance.objectId}, data, successFunc, errorFunc);
-      // Is there any way to prevent it from returning a Resource? And is that worth it? If you want to do that, you're
-      // going to have to use promises. Arguably not worth it for now. Just make sure you don't give the Resource method
-      // the actual instance.
       decorator: function (Resource) {
-        Resource.PUT = (function () {
-          var PUT = Resource.PUT;
 
-          // backburner: Rewrite this so it returns something other than a Resource instance.
-          return PUT;
-//          return function () {
-//            var args,
-//              data,
-//              instance,
-//              params,
-//              successFunc,
-//              errorFunc;
-//
-//            var returnVal = {};
-//
-//            // Turn arguments into an actual array
-//            args = [].slice.call(arguments);
-//            // Get the data for the put request
-//            data = find(args, isParams);
-//            // Figure out which argument is the instance; this has to exist so we can get its objectId
-//            instance = find(args, isInstance);
-//            // Create the parameters
-//            params = {
-//              objectId: instance.objectId
-//            };
-//
-//            // The success function that was passed in, or a do-nothing function if there wasn't one
-//            successFunc = find(args, angular.isFunction) || angular.noop;
-//            // The error function that was passed in, or a do-nothing function if there wasn't one
-//            errorFunc = findLast(args, angular.isFunction) || angular.noop;
-//            // If the error function is the same as the save function, set errorFunc to angular.noop
-//            errorFunc = (errorFunc === successFunc) ? angular.noop : errorFunc;
-//
-//            // Delegate to the original function...
-//            return put.call(this, params, data, successFunc, errorFunc);
-//          };
-        }());
-
-        // Maybe?
+        // For the instance method, we just want to delegate to the static method but with an objectId parameter set to
+        // the instance's objectId (possibly other params in the future).
         Resource.prototype.$PUT = function (data, successFunc, errorFunc) {
           var params = {
             objectId: this.objectId
           };
           return Resource.PUT(params, data, successFunc, errorFunc);
         };
+
+        // Create a modified PUT static method
+        Resource.PUT = (function () {
+          // The original PUT method
+          var PUT = Resource.PUT;
+
+          // Since we're not interested in a Resource for arbitrary PUT data, this function returns a non-Resource
+          // object.
+          return function () {
+            // Delegate to the original PUT method. This returns an instance of Resource.
+            var instance = PUT.apply(this, arguments),
+            // This is the POJO we'll actually be returning.
+              res = {
+                $promise: instance.$promise,
+                $resolved: instance.$resolved
+              };
+            // NB: Both of the handlers leave the $promise object on the POJO.
+            // This copies all the own properties from the response data (which is an instance of Resource) to the POJO
+            var onSuccess = function (data) {
+              // "Data" is actually just the instance again.
+              angular.forEach(data, function (v, k) {
+                // This *should* be the same promise object, but just in case...
+                if (k === '$promise') {
+                  return;
+                }
+                // Otherwise, copy the property to the result
+                res[k] = v;
+              });
+            };
+            // This copies some useful information about the error to the POJO.
+            var onError = function (err) {
+              res.data = err.data;
+              res.status = err.status;
+              res.headersGetter = err.headers;
+              res.config = err.config;
+              res.statusText = err.statusText;
+              res.$resolved = true;
+            };
+            instance.$promise.then(onSuccess, onError);
+            // Return the POJO
+            return res;
+          };
+        }());
+
       }
     };
 
@@ -210,7 +255,10 @@ angular.module('angularParseInterface')
       }
     };
 
-    // A test
+    // ngResource uses save to persist data, which is nice and clean. Unfortunately, Parse.com uses POSTs for object
+    // creation and PUT for updates (even though it lets you make partial updates, where PATCH would be more
+    // appropriate). Anyway, this action does the hard work of making those two interfaces work together. The save
+    // action this creates can be used just like the ngResource save action.
     parseResourceActions.save = {
       actionConfigs: {
         save: {
@@ -225,21 +273,26 @@ angular.module('angularParseInterface')
       },
       decorator: function (Resource) {
 
-//        console.log(Resource);
+        // No changes to the instance method
 
-        // Have to do something smart here so that:
-        // 1) save delegates to separate functions under the hood for creating (using POST) and updating (using PUT), and
-        // 2) instance properties are restored after a successful save
-        // The first issue is easy to fix. You always get the instance as one of the arguments, so you just check to see if
-        // it's new and call the appropriate function accordingly.
-        // The second issue is a little trickier. For reasons I don't fully understand yet, when you save an instance to
-        // Parse, you wind up losing all of its properties, except for the ones that are returned from the server. That only
-        // happens when you call the instance method (so probably related to "this" within angular-resource.js).
-        // Key point to remember is that you want this to behave just like $resource's built-in save function.
+        // The static method has to do two things:
+        // 1) delegate to separate functions under the hood for creating (using POST) and updating (using PUT), and
+        // 2) restore instance properties after success or failure
+        //    The first issue is easy to deal with. You just check to see if the data (or instance) has an objectId. If
+        // it doesn't, use create; if it does, use update.
+        //    The second issue is a little trickier. What we want is for the local instance to be in sync with the saved
+        // data, except for client-side changes that haven't been saved yet. On success, it should be updated with any
+        // updated properties (the ones we saved, plus server-generated stuff like createdAt, updatedAt, etc.). On
+        // error, it should revert to its pre-save state. Parse only sends createdAt and objectId in the response to
+        // successful creation, and it only sends updatedAt in the response to successful updates. Angular takes that
+        // and assumes that's all there is to the instance, so it deletes any other properties. So what we have to do
+        // here of this is keep track of the pre-save properties so we can restore them afterwards.
         Resource.save = (function () {
+          // Capture these methods here so we can delegate to them below.
           var create = Resource.create,
             update = Resource.update;
 
+          // These shouldn't be directly accessible
           delete Resource.create;
           delete Resource.update;
           delete Resource.prototype.$create;
