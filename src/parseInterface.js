@@ -43,8 +43,8 @@ angular
         // methods.
         User: parseUser.createUserModel(appResource, appStorage, appEventBus),
         // A constructor that takes a Resource and returns a query builder.
-        Query: parseQueryBuilder.Query
-//        cloudCallerFactory: parseCloud.createCallerFactory(appResource)
+        Query: parseQueryBuilder.Query,
+        getCloudCaller: parseCloud.createCallerFactory(appResource)
       };
 
       return appInterface;

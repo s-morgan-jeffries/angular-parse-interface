@@ -37,10 +37,10 @@ describe('Factory: parseInterface', function () {
     mocks.parseQueryBuilder = {
       Query: function () {}
     };
-    mocks.cloudCallerFactory = {};
+    mocks.getCloudCaller = {};
     mocks.parseCloud = {
       createCallerFactory: function () {
-        return mocks.cloudCallerFactory;
+        return mocks.getCloudCaller;
       }
     };
     spyOn(mocks.parseCloud, 'createCallerFactory').andCallThrough();
@@ -110,15 +110,9 @@ describe('Factory: parseInterface', function () {
       expect(mocks.parseResource.createAppResourceFactory).toHaveBeenCalledWith(appConfig, appStorage, mocks.appEventBus);
     });
 
-    it('should return a new appInterface', function () {
+    it('should return an object', function () {
       appInterface = parseInterface.createAppInterface(appConfig, clientStorage);
       expect(appInterface).toBeObject();
-      expect(appInterface.objectFactory).toBeDefined();
-      expect(appInterface.User).toBeDefined();
-      expect(appInterface.Query).toBeDefined();
-//      expect(appInterface.roleFactory).toBeFunction();
-//      expect(appInterface.cloudFunctions).toBeFunction();
-//      expect(appInterface.fileUploader).toBeFunction();
     });
 
     describe('appInterface object', function () {
@@ -129,23 +123,23 @@ describe('Factory: parseInterface', function () {
         appStorage = clientStorage.parseApp[appConfig.applicationId];
       });
 
-      it('should have an objectFactory', function () {
+      it('should have an objectFactory property', function () {
         expect(mocks.parseObjectFactory.createObjectFactory).toHaveBeenCalledWith(mocks.appResource);
         expect(appInterface.objectFactory).toBe(mocks.appObjectFactory);
       });
 
-      it('should have a User', function () {
+      it('should have a User property', function () {
         expect(mocks.parseUser.createUserModel).toHaveBeenCalledWith(mocks.appResource, appStorage, mocks.appEventBus);
         expect(appInterface.User).toBe(mocks.User);
       });
 
-      it('should have a Query', function () {
+      it('should have a Query property', function () {
         expect(appInterface.Query).toBe(mocks.parseQueryBuilder.Query);
       });
 
-      xit('should have a cloudCallerFactory', function () {
+      it('should have a getCloudCaller property', function () {
         expect(mocks.parseCloud.createCallerFactory).toHaveBeenCalledWith(mocks.appResource);
-        expect(appInterface.cloudCallerFactory).toBe(mocks.cloudCallerFactory);
+        expect(appInterface.getCloudCaller).toBe(mocks.getCloudCaller);
       });
     });
   });
