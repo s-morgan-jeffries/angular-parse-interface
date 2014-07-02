@@ -132,6 +132,7 @@ module.exports = function (grunt) {
       scripts: {
         src: [
           '<%= yeoman.devApp %>/scripts/{,*/}*.js',
+          '!<%= yeoman.devApp %>/scripts/debug.js',
           'src/**/*.js'
         ]
       },
