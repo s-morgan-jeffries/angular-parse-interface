@@ -66,6 +66,10 @@ angular.module('angularParseInterface')
       // Decode a single field using its fieldName and value.
       var encodeField = function (fieldName, val) {
         var dataType, params, encoder;
+        // Don't encode operation requests
+        if (angular.isObject(val) && val.__op) {
+          return val;
+        }
         dataType = getRequestDataType(fieldName, val);
         params = {
           className: getClassName(fieldName)
@@ -82,6 +86,12 @@ angular.module('angularParseInterface')
         for (key in data) {
           if (data.hasOwnProperty(key) && (typeof data[key] !== 'function')) {
             encodedData[key] = encodeField(key, data[key]);
+            // You can implement this when you write a test for it:
+//            try {
+//              encodedData[key] = encodeField(key, data[key]);
+//            } catch (e) {
+//              throw new Error('Got error when attempting to encode "' + key + '" field: "' + e.message + '"');
+//            }
           }
         }
 //        console.log(data);
@@ -124,6 +134,11 @@ angular.module('angularParseInterface')
         for (key in data) {
           if (data.hasOwnProperty(key) && (typeof data[key] !== 'function')) {
             decodedData[key] = decodeField(key, data[key]);
+//            try {
+//              decodedData[key] = decodeField(key, data[key]);
+//            } catch (e) {
+//              throw new Error('Got error when attempting to encode "' + key + '" field: "' + e.message + '"');
+//            }
           }
         }
         return decodedData;

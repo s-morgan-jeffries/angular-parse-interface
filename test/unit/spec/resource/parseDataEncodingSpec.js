@@ -177,6 +177,15 @@ describe('Factory: parseDataEncoding', function () {
         expect(transformedData).toEqual(expectedTransformedData);
       });
 
+      it('should return operation request data unchanged', function () {
+        data.relation = {
+          __op: 'AddRelations',
+          objects: []
+        };
+        transformedData = transformRequest(data, headersGetter);
+        expect(transformedData.relation).toEqual(data.relation);
+      });
+
 //      // test that when it's given an array as the input argument that it applies the encoder to each element in the
 //      // array
 //      xit('should decode each element if the input argument is an array', function () {
