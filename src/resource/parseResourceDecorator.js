@@ -215,7 +215,7 @@ angular.module('angularParseInterface')
 //        data[fieldName] = {
 //          __op: 'Delete'
 //        };
-//        return this.$putData(data).then(function () {
+//        return this.PUT(data).then(function () {
 //          delete self[fieldName];
 //        });
 //      };

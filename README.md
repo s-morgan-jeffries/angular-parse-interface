@@ -26,11 +26,12 @@ The module creates the parseInterface service, which has a single method: create
 var appInterface = parseInterface.createAppInterface(appConfig);
 </code></pre>
 
-The appInterface has three properties:
+The appInterface has four properties:
 <ul>
 <li><strong>objectFactory</strong>: Call this with a className argument to create an angular Resource/Parse Object.</li>
 <li><strong>User</strong>: A special angular Resource decorated with signUp, signIn, signOut, and current (returns current user) methods</li>
 <li><strong>Query</strong>: A constructor that you call with a Resource argument and that returns a query builder.</li>
+<li><strong>getCloudCaller</strong>: A factory that takes a cloud function name and returns a function that will call the named cloud function asynchronously.</li>
 </ul>
 
 I'll write clearer documentation when things are a little further along. In the meantime, feel free to look at the source code.

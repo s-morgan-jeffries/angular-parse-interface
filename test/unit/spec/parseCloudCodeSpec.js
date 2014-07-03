@@ -1,7 +1,7 @@
 'use strict';
 
-describe('Factory: parseCloud', function () {
-  var parseCloud,
+describe('Factory: parseCloudCode', function () {
+  var parseCloudCode,
     mocks;
 
   beforeEach(function () {
@@ -30,7 +30,7 @@ describe('Factory: parseCloud', function () {
       $provide.value('parseResourceActions', mocks.parseResourceActions);
     });
     inject(function ($injector) {
-      parseCloud = $injector.get('parseCloud');
+      parseCloudCode = $injector.get('parseCloudCode');
     });
   });
 
@@ -44,12 +44,12 @@ describe('Factory: parseCloud', function () {
           POST: mocks.actionLib.POST
         };
       mocks.appResourceFactory.reset();
-      cloudCallerFactory = parseCloud.createCallerFactory(mocks.appResourceFactory);
+      cloudCallerFactory = parseCloudCode.createCallerFactory(mocks.appResourceFactory);
       expect(mocks.appResourceFactory).toHaveBeenCalledWith(expectedUrl, expectedParams, expectedActions);
     });
 
     it('should return a function', function () {
-      cloudCallerFactory = parseCloud.createCallerFactory(mocks.appResourceFactory);
+      cloudCallerFactory = parseCloudCode.createCallerFactory(mocks.appResourceFactory);
       expect(cloudCallerFactory).toBeFunction();
     });
 
@@ -57,7 +57,7 @@ describe('Factory: parseCloud', function () {
       var functionName, cloudCaller;
 
       beforeEach(function () {
-        cloudCallerFactory = parseCloud.createCallerFactory(mocks.appResourceFactory);
+        cloudCallerFactory = parseCloudCode.createCallerFactory(mocks.appResourceFactory);
       });
 
       it('should return a function', function () {

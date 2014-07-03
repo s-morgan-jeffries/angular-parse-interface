@@ -38,19 +38,19 @@ describe('Factory: parseInterface', function () {
       Query: function () {}
     };
     mocks.getCloudCaller = {};
-    mocks.parseCloud = {
+    mocks.parseCloudCode = {
       createCallerFactory: function () {
         return mocks.getCloudCaller;
       }
     };
-    spyOn(mocks.parseCloud, 'createCallerFactory').andCallThrough();
+    spyOn(mocks.parseCloudCode, 'createCallerFactory').andCallThrough();
     module('angularParseInterface', function ($provide) {
       $provide.value('ParseAppEventBus', mocks.ParseAppEventBus);
       $provide.value('parseResource', mocks.parseResource);
       $provide.value('parseObjectFactory', mocks.parseObjectFactory);
       $provide.value('parseUser', mocks.parseUser);
       $provide.value('parseQueryBuilder', mocks.parseQueryBuilder);
-      $provide.value('parseCloud', mocks.parseCloud);
+      $provide.value('parseCloudCode', mocks.parseCloudCode);
     });
     inject(function ($injector) {
       parseInterface = $injector.get('parseInterface');
@@ -138,7 +138,7 @@ describe('Factory: parseInterface', function () {
       });
 
       it('should have a getCloudCaller property', function () {
-        expect(mocks.parseCloud.createCallerFactory).toHaveBeenCalledWith(mocks.appResource);
+        expect(mocks.parseCloudCode.createCallerFactory).toHaveBeenCalledWith(mocks.appResource);
         expect(appInterface.getCloudCaller).toBe(mocks.getCloudCaller);
       });
     });

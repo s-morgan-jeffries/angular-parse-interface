@@ -1,11 +1,11 @@
 angular
   .module('angularParseInterface')
-  .factory('parseCloud', function (parseResourceActions/*, $log*/) {
+  .factory('parseCloudCode', function (parseResourceActions/*, $log*/) {
     'use strict';
 
-    var parseCloud = {};
+    var parseCloudCode = {};
 
-    parseCloud.createCallerFactory = function (appResourceFactory) {
+    parseCloudCode.createCallerFactory = function (appResourceFactory) {
       // We call cloud functions by posting to their url
       var url = '/functions/:functionName',
         // The only parameter we'll use is functionName, and there shouldn't be any default value for that
@@ -50,5 +50,5 @@ angular
       };
     };
 
-    return parseCloud;
+    return parseCloudCode;
   });
