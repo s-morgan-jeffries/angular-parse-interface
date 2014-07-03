@@ -132,13 +132,10 @@ angular.module('angularParseInterface')
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
       // Instance methods
-      Resource.prototype.isNew = function () {
-        return !this.objectId;
-      };
+//      Resource.prototype.isNew = function () {
+//        return !this.objectId;
+//      };
       // className
       Object.defineProperty(Resource.prototype, 'className', {
         enumerable: true,
@@ -148,63 +145,56 @@ angular.module('angularParseInterface')
         },
         set: function () {}
       });
-//      // getPointer
-//      Resource.prototype.getPointer = function () {
-//        return {
-//          __type: 'Pointer',
-//          className: this.className,
-//          objectId: this.objectId
-//        };
-//      };
+      // getPointer
+      Resource.prototype.getPointer = function () {
+        return {
+          __type: 'Pointer',
+          className: this.className,
+          objectId: this.objectId
+        };
+      };
 
-//      // Relational methods
-      // How could we do this?
+      // Relational methods
       // hasOne
       Resource.hasOne = function (fieldName, other) {
         this._setFieldDataType(fieldName, 'Pointer');
         this._setFieldClassName(fieldName, other.className);
       };
-//      // hasMany
-//      Resource.hasMany = function (fieldName, other) {
-//        this._setFieldDataType(fieldName, 'Relation');
-//        this._setFieldClassName(fieldName, other._getClassName());
-//      };
-//      // setPointer
-//      Resource.prototype.setPointer = function (fieldName, other) {
-//        this[fieldName] = other.objectId;
-//      };
-//      // addRelations
-//      Resource.prototype.addRelations = function (fieldName/*, other*/) {
-//        var relations = angular.isArray(arguments[1]) ? arguments[1] : [].slice.call(arguments, 1),
-//          data = {};
-//
-//        data[fieldName] = {
-//          __op: 'AddRelation',
-//          objects: []
-//        };
-//        angular.forEach(relations, function (o) {
-//          data[fieldName].objects.push(o.getPointer());
-//        });
-//
-//        return this.$putData(data);
-//      };
-//      // removeRelations
-//      Resource.prototype.removeRelations = function (fieldName/*, other*/) {
-//        var relations = angular.isArray(arguments[1]) ? arguments[1] : [].slice.call(arguments, 1),
-//          data = {};
-//
-//        data[fieldName] = {
-//          __op: 'RemoveRelation',
-//          objects: []
-//        };
-//        angular.forEach(relations, function (o) {
-//          data[fieldName].objects.push(o.getPointer());
-//        });
-//
-//        return this.$putData(data);
-//      };
+      // hasMany
+      Resource.hasMany = function (fieldName, other) {
+        this._setFieldDataType(fieldName, 'Relation');
+        this._setFieldClassName(fieldName, other.className);
+      };
+      // addRelations
+      Resource.prototype.addRelations = function (fieldName/*, relations */) {
+        var relations = angular.isArray(arguments[1]) ? arguments[1] : [].slice.call(arguments, 1),
+          data = {};
 
+        data[fieldName] = {
+          __op: 'AddRelation',
+          objects: []
+        };
+        angular.forEach(relations, function (o) {
+          data[fieldName].objects.push(o.getPointer());
+        });
 
+        return this.$PUT(data);
+      };
+      // removeRelations
+      Resource.prototype.removeRelations = function (fieldName/*, other*/) {
+        var relations = angular.isArray(arguments[1]) ? arguments[1] : [].slice.call(arguments, 1),
+          data = {};
+
+        data[fieldName] = {
+          __op: 'RemoveRelation',
+          objects: []
+        };
+        angular.forEach(relations, function (o) {
+          data[fieldName].objects.push(o.getPointer());
+        });
+
+        return this.$PUT(data);
+      };
 
 //      // Probably not worth using Parse's increment operator
 //      // increment

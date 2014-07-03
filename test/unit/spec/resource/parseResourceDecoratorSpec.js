@@ -540,27 +540,29 @@ describe('Factory: parseResourceDecorator', function () {
     });
   });
 
+  // I'm not crazy about this test, because it assumes a little too much, but since the decorator creates the functions
+  // before calling them, I can't spy on the internals.
   it('should add the createdAt and updatedAt properties to the request blacklist', function () {
     expect(Resource._isRequestBlacklisted('createdAt')).toBeTrue();
     expect(Resource._isRequestBlacklisted('updatedAt')).toBeTrue();
   });
 
-  describe('isNew instance method', function () {
-    it('should return false if the object has an objectId', function () {
-      var dummyObj = {
-        objectId: '12345',
-        isNew: Resource.prototype.isNew
-      };
-      expect(dummyObj.isNew()).toBeFalse();
-    });
-    it('should return true if the object does not have an objectId', function () {
-      var dummyObj = {
-        notAnObjectId: '12345',
-        isNew: Resource.prototype.isNew
-      };
-      expect(dummyObj.isNew()).toBeTrue();
-    });
-  });
+//  xdescribe('isNew instance method', function () {
+//    it('should return false if the object has an objectId', function () {
+//      var dummyObj = {
+//        objectId: '12345',
+//        isNew: Resource.prototype.isNew
+//      };
+//      expect(dummyObj.isNew()).toBeFalse();
+//    });
+//    it('should return true if the object does not have an objectId', function () {
+//      var dummyObj = {
+//        notAnObjectId: '12345',
+//        isNew: Resource.prototype.isNew
+//      };
+//      expect(dummyObj.isNew()).toBeTrue();
+//    });
+//  });
 
   describe('className instance property', function () {
     it('should return the className property of the object\'s constructor', function () {
@@ -583,4 +585,216 @@ describe('Factory: parseResourceDecorator', function () {
       expect(Resource.prototype.className).not.toEqual(otherClassName);
     });
   });
+
+  describe('getPointer method', function () {
+    it('should return a Pointer object with the correct objectId and className', function () {
+      var objectId = '12345',
+        className = 'SomeClass',
+        instance = {
+          objectId: objectId,
+          className: className,
+          getPointer: Resource.prototype.getPointer
+        },
+        pointer = instance.getPointer(),
+        expectedPointer = {
+          __type: 'Pointer',
+          className: className,
+          objectId: objectId
+        };
+      expect(pointer).toEqual(expectedPointer);
+    });
+  });
+
+  describe('hasOne method', function () {
+    var fieldName,
+      mockRelation;
+
+    beforeEach(function () {
+      fieldName = 'foo';
+      mockRelation = {
+        className: 'SomeOtherClass'
+      };
+    });
+
+    it('should set the dataType for the field to Pointer', function () {
+      spyOn(Resource, '_setFieldDataType');
+      Resource.hasOne(fieldName, mockRelation);
+      expect(Resource._setFieldDataType).toHaveBeenCalledWith(fieldName, 'Pointer');
+    });
+
+    it('should set the className for the field to the other Resource\'s className', function () {
+      spyOn(Resource, '_setFieldClassName');
+      Resource.hasOne(fieldName, mockRelation);
+      expect(Resource._setFieldClassName).toHaveBeenCalledWith(fieldName, mockRelation.className);
+    });
+  });
+
+  describe('hasMany method', function () {
+    var fieldName,
+      mockRelation;
+
+    beforeEach(function () {
+      fieldName = 'foo';
+      mockRelation = {
+        className: 'SomeOtherClass'
+      };
+    });
+
+    it('should set the dataType for the field to Relation', function () {
+      spyOn(Resource, '_setFieldDataType');
+      Resource.hasMany(fieldName, mockRelation);
+      expect(Resource._setFieldDataType).toHaveBeenCalledWith(fieldName, 'Relation');
+    });
+
+    it('should set the className for the field to the other Resource\'s className', function () {
+      spyOn(Resource, '_setFieldClassName');
+      Resource.hasMany(fieldName, mockRelation);
+      expect(Resource._setFieldClassName).toHaveBeenCalledWith(fieldName, mockRelation.className);
+    });
+  });
+
+  describe('addRelations method', function () {
+    var instance,
+      putResponse,
+      fieldName,
+      mockPointer1,
+      mockPointer2,
+      mockRelation1,
+      mockRelation2,
+      putData,
+      response;
+
+    beforeEach(function () {
+      fieldName = 'foo';
+      putResponse = {};
+      instance = {
+        $PUT: function () {
+          return putResponse;
+        },
+        addRelations: Resource.prototype.addRelations
+      };
+      spyOn(instance, '$PUT').andCallThrough();
+      mockPointer1 = {};
+      mockPointer2 = {};
+      mockRelation1 = {
+        getPointer: function () {
+          return mockPointer1;
+        }
+      };
+      spyOn(mockRelation1, 'getPointer').andCallThrough();
+      mockRelation2 = {
+        getPointer: function () {
+          return mockPointer2;
+        }
+      };
+      spyOn(mockRelation2, 'getPointer').andCallThrough();
+    });
+
+    it('should call the instance\'s $PUT method and return the results', function () {
+      response = instance.addRelations(fieldName, mockRelation1, mockRelation2);
+      expect(instance.$PUT).toHaveBeenCalled();
+      expect(response).toBe(putResponse);
+    });
+
+    it('should pass the same data to $PUT regardless of whether the relations are passed in as an array or as a list of arguments', function () {
+      var arrayPutData, argsListPutData;
+      response = instance.addRelations(fieldName, mockRelation1, mockRelation2);
+      arrayPutData = instance.$PUT.argsForCall[0][0];
+      instance.$PUT.reset();
+      response = instance.addRelations(fieldName, [mockRelation1, mockRelation2]);
+      argsListPutData = instance.$PUT.argsForCall[0][0];
+      expect(arrayPutData).toEqual(argsListPutData);
+    });
+
+    it('should set putData[fieldName].__op to AddRelation', function () {
+      response = instance.addRelations(fieldName, mockRelation1, mockRelation2);
+      putData = instance.$PUT.argsForCall[0][0];
+      expect(putData[fieldName].__op).toEqual('AddRelation');
+    });
+
+    it('should get pointers for the passed in objects by calling their getPointer methods', function () {
+      response = instance.addRelations(fieldName, mockRelation1, mockRelation2);
+      expect(mockRelation1.getPointer).toHaveBeenCalled();
+      expect(mockRelation2.getPointer).toHaveBeenCalled();
+    });
+
+    it('should set putData[fieldName].objects to an array of pointers for the passed in objects', function () {
+      response = instance.addRelations(fieldName, mockRelation1, mockRelation2);
+      putData = instance.$PUT.argsForCall[0][0];
+      expect(putData[fieldName].objects).toEqual([mockPointer1, mockPointer2]);
+    });
+  });
+
+  describe('removeRelations method', function () {
+    var instance,
+      putResponse,
+      fieldName,
+      mockPointer1,
+      mockPointer2,
+      mockRelation1,
+      mockRelation2,
+      putData,
+      response;
+
+    beforeEach(function () {
+      fieldName = 'foo';
+      putResponse = {};
+      instance = {
+        $PUT: function () {
+          return putResponse;
+        },
+        removeRelations: Resource.prototype.removeRelations
+      };
+      spyOn(instance, '$PUT').andCallThrough();
+      mockPointer1 = {};
+      mockPointer2 = {};
+      mockRelation1 = {
+        getPointer: function () {
+          return mockPointer1;
+        }
+      };
+      spyOn(mockRelation1, 'getPointer').andCallThrough();
+      mockRelation2 = {
+        getPointer: function () {
+          return mockPointer2;
+        }
+      };
+      spyOn(mockRelation2, 'getPointer').andCallThrough();
+    });
+
+    it('should call the instance\'s $PUT method and return the results', function () {
+      response = instance.removeRelations(fieldName, mockRelation1, mockRelation2);
+      expect(instance.$PUT).toHaveBeenCalled();
+      expect(response).toBe(putResponse);
+    });
+
+    it('should pass the same data to $PUT regardless of whether the relations are passed in as an array or as a list of arguments', function () {
+      var arrayPutData, argsListPutData;
+      response = instance.removeRelations(fieldName, mockRelation1, mockRelation2);
+      arrayPutData = instance.$PUT.argsForCall[0][0];
+      instance.$PUT.reset();
+      response = instance.removeRelations(fieldName, [mockRelation1, mockRelation2]);
+      argsListPutData = instance.$PUT.argsForCall[0][0];
+      expect(arrayPutData).toEqual(argsListPutData);
+    });
+
+    it('should set putData[fieldName].__op to RemoveRelation', function () {
+      response = instance.removeRelations(fieldName, mockRelation1, mockRelation2);
+      putData = instance.$PUT.argsForCall[0][0];
+      expect(putData[fieldName].__op).toEqual('RemoveRelation');
+    });
+
+    it('should get pointers for the passed in objects by calling their getPointer methods', function () {
+      response = instance.removeRelations(fieldName, mockRelation1, mockRelation2);
+      expect(mockRelation1.getPointer).toHaveBeenCalled();
+      expect(mockRelation2.getPointer).toHaveBeenCalled();
+    });
+
+    it('should set putData[fieldName].objects to an array of pointers for the passed in objects', function () {
+      response = instance.removeRelations(fieldName, mockRelation1, mockRelation2);
+      putData = instance.$PUT.argsForCall[0][0];
+      expect(putData[fieldName].objects).toEqual([mockPointer1, mockPointer2]);
+    });
+  });
+
 });
