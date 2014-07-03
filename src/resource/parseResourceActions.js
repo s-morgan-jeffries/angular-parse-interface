@@ -5,7 +5,7 @@ angular.module('angularParseInterface')
     // The point of this module is to serve as a library of actions for the parseResource service. Actions are tricky
     // to write, so this is definitely an area where you want the code to be reusable. Rather than relying inheritance,
     // these function like mixins.
-    var parseResourceActions = {};
+    var actionLib = {};
 
     // Find the first item in an array for which the predicate is true
     var find = function (ar, pred) {
@@ -44,7 +44,7 @@ angular.module('angularParseInterface')
       return objData;
     };
 
-    parseResourceActions.get = {
+    actionLib.get = {
       actionConfigs: {
 //        get: (function () {
 //          var Resource;
@@ -69,7 +69,7 @@ angular.module('angularParseInterface')
     // Could do a GET action here analogous to POST and PUT below, but I don't know where I would use it, and I don't
     // want to write extra tests right now. But this is a pin in it.
 
-    parseResourceActions.delete = {
+    actionLib.delete = {
       actionConfigs: {
         delete: {
           method: 'DELETE'
@@ -78,7 +78,7 @@ angular.module('angularParseInterface')
     };
 
     // A POST action for posting arbitrary data to the server
-    parseResourceActions.POST = {
+    actionLib.POST = {
       actionConfigs: {
         POST: {
           method: 'POST'
@@ -134,7 +134,7 @@ angular.module('angularParseInterface')
       }
     };
 
-    parseResourceActions.PUT = {
+    actionLib.PUT = {
       actionConfigs: {
         PUT: {
           method: 'PUT'
@@ -197,7 +197,7 @@ angular.module('angularParseInterface')
       }
     };
 
-    parseResourceActions.query = {
+    actionLib.query = {
       actionConfigs: {
         query: (function () {
           var Resource;
@@ -259,7 +259,7 @@ angular.module('angularParseInterface')
     // creation and PUT for updates (even though it lets you make partial updates, where PATCH would be more
     // appropriate). Anyway, this action does the hard work of making those two interfaces work together. The save
     // action this creates can be used just like the ngResource save action.
-    parseResourceActions.save = {
+    actionLib.save = {
       actionConfigs: {
         save: {
           method: 'POST'
@@ -349,9 +349,20 @@ angular.module('angularParseInterface')
             isNew = !instance.objectId;
             saveFunc = isNew ? create : update;
             // Delegate to the original function...
+//            console.log('saving');
+//            console.log('params:');
+//            console.log(params);
+//            console.log('instance:');
+//            console.log(instance);
             return saveFunc.call(this, params, instance, wrappedSuccessFunc, wrappedErrorFunc);
           };
         }());
+      }
+    };
+
+    var parseResourceActions = {
+      getActionConfig: function (actionName) {
+        return angular.copy(actionLib[actionName]);
       }
     };
 

@@ -1,5 +1,5 @@
 angular.module('angularParseInterface')
-  .factory('parseDataCodecs', function () {
+  .factory('parseDataCodecs', function ($log) {
     'use strict';
 
     // Predicate to check if an object has the keys expected (useful for checking whether it's the expected type)
@@ -130,11 +130,24 @@ angular.module('angularParseInterface')
       return function (val) {
         var objectId;
 
-        // Ad hoc polymorphism to account for two cases: 1) the value is an object ID, or 2) the value is the pointer target
+        // Ad hoc polymorphism to account for two cases: 1) the value is an object ID, or 2) the value is the actual
+        // object pointed to by the pointer
         if (angular.isString(val)) {
           objectId = val;
         } else if (angular.isObject(val)) {
           objectId = val.objectId;
+          // Throw an error if the className doesn't match (otherwise this will be harder to track down)
+//          $log.log(val);
+          if (val.className !== className) {
+            throw new Error('Object in Pointer field does not match expect class (expected ' + className +
+              ' but got ' + val.className + ').');
+          }
+          // Throw an error if there's no objectId (otherwise this will be harder to track down)
+          if (!objectId) {
+            throw new Error('No objectId found for object in Pointer field. Try saving it first.');
+          }
+          $log.warn('Objects in Pointer fields will not be automatically persisted; only their objectIds will be' +
+            'saved. If you want to save other data from those objects, you\'ll need to do so separately.');
         }
 
         // In any case, the encoder returns a pointer object

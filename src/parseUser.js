@@ -108,12 +108,12 @@ angular
         },
         // Grab custom actions from the library
         customActions = {
-          get: parseResourceActions.get,
-          query: parseResourceActions.query,
-          save: parseResourceActions.save,
-          delete: parseResourceActions.delete,
-          PUT: parseResourceActions.PUT,
-          POST: parseResourceActions.POST
+          get: parseResourceActions.getActionConfig('get'),
+          query: parseResourceActions.getActionConfig('query'),
+          save: parseResourceActions.getActionConfig('save'),
+          delete: parseResourceActions.getActionConfig('delete'),
+          PUT: parseResourceActions.getActionConfig('PUT'),
+          POST: parseResourceActions.getActionConfig('POST')
         },
         // Create the User model using our application's resource factory
         User = appResourceFactory(url, defaultParams, customActions),

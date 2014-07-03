@@ -1,6 +1,6 @@
 'use strict';
 
-describe('Factory: parseResourceActions', function () {
+xdescribe('Factory: parseResourceActions', function () {
   var parseResourceActions,
     mainAction,
     action,
@@ -29,10 +29,16 @@ describe('Factory: parseResourceActions', function () {
 //    mocks.successFx = jas
   });
 
+//  describe('getActionConfig method', function () {
+//    it('should return a different object on each call with the same arguments', function () {
+//      var firstConfig, secondConfig;
+//    });
+//  });
+
   describe('get action', function () {
 
     beforeEach(function () {
-      mainAction = parseResourceActions.get;
+      mainAction = parseResourceActions.getActionConfig('get');
     });
 
     describe('actions', function () {
@@ -67,7 +73,7 @@ describe('Factory: parseResourceActions', function () {
   describe('delete action', function () {
 
     beforeEach(function () {
-      mainAction = parseResourceActions.delete;
+      mainAction = parseResourceActions.getActionConfig('delete');
     });
 
     describe('actions', function () {
@@ -89,7 +95,7 @@ describe('Factory: parseResourceActions', function () {
   describe('POST action', function () {
 
     beforeEach(function () {
-      mainAction = parseResourceActions.POST;
+      mainAction = parseResourceActions.getActionConfig('POST');
     });
 
     describe('actions', function () {
@@ -208,7 +214,7 @@ describe('Factory: parseResourceActions', function () {
   describe('PUT action', function () {
 
     beforeEach(function () {
-      mainAction = parseResourceActions.PUT;
+      mainAction = parseResourceActions.getActionConfig('PUT');
     });
 
     describe('actions', function () {
@@ -365,7 +371,7 @@ describe('Factory: parseResourceActions', function () {
   describe('query action', function () {
 
     beforeEach(function () {
-      mainAction = parseResourceActions.query;
+      mainAction = parseResourceActions.getActionConfig('query');
     });
 
     describe('actions', function () {
@@ -506,7 +512,7 @@ describe('Factory: parseResourceActions', function () {
   describe('save action', function () {
 
     beforeEach(function () {
-      mainAction = parseResourceActions.save;
+      mainAction = parseResourceActions.getActionConfig('save');
     });
 
     describe('actions', function () {

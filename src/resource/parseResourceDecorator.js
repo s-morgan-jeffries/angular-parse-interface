@@ -2,7 +2,7 @@ angular.module('angularParseInterface')
   .factory('parseResourceDecorator', function ($log) {
     'use strict';
 
-    // t0d0: Refactor this so there are multiple decorators
+    // backburner: Refactor this so there are multiple decorators
     //    consider which methods every Resource will need, which may get easier as you add more features
     //backburner: Move this into the core resource module
     return function (Resource) {
@@ -133,18 +133,7 @@ angular.module('angularParseInterface')
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//      // Relational methods
-//      // hasOne
-//      Resource.hasOne = function (fieldName, other) {
-//        this._setFieldDataType(fieldName, 'Pointer');
-//        this._setFieldClassName(fieldName, other._getClassName());
-//        this._setFieldRelationConstructor(fieldName, other);
-//      };
-//      // hasMany
-//      Resource.hasMany = function (fieldName, other) {
-//        this._setFieldDataType(fieldName, 'Relation');
-//        this._setFieldClassName(fieldName, other._getClassName());
-//      };
+
 
       // Instance methods
       Resource.prototype.isNew = function () {
@@ -169,6 +158,17 @@ angular.module('angularParseInterface')
 //      };
 
 //      // Relational methods
+      // How could we do this?
+      // hasOne
+      Resource.hasOne = function (fieldName, other) {
+        this._setFieldDataType(fieldName, 'Pointer');
+        this._setFieldClassName(fieldName, other.className);
+      };
+//      // hasMany
+//      Resource.hasMany = function (fieldName, other) {
+//        this._setFieldDataType(fieldName, 'Relation');
+//        this._setFieldClassName(fieldName, other._getClassName());
+//      };
 //      // setPointer
 //      Resource.prototype.setPointer = function (fieldName, other) {
 //        this[fieldName] = other.objectId;
@@ -203,6 +203,8 @@ angular.module('angularParseInterface')
 //
 //        return this.$putData(data);
 //      };
+
+
 
 //      // Probably not worth using Parse's increment operator
 //      // increment

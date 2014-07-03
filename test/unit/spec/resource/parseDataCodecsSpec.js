@@ -6,11 +6,16 @@ describe('Factory: parseDataCodecs', function () {
     params,
     className,
     inputVal,
-    outputVal;
+    outputVal,
+    mockLog;
 
   beforeEach(function () {
-    module('angularParseInterface', function (/*$provide*/) {
-//      $provide.value('$rootScope', mockRootScope);
+    mockLog = {
+      warn: jasmine.createSpy()
+    };
+//    spyOn($log, 'warn').andCallThrough();
+    module('angularParseInterface', function ($provide) {
+      $provide.value('$log', mockLog);
     });
     inject(function ($injector) {
       parseDataCodecs = $injector.get('parseDataCodecs');
@@ -218,21 +223,51 @@ describe('Factory: parseDataCodecs', function () {
 
       describe('encoder function', function () {
         // String input
-        it('should treat a string input as an object ID and wrap it in a Pointer object', function () {
-          inputVal = objectId;
-          outputVal = encoder(inputVal);
-          expect(outputVal).toEqual(pointerObject);
+        describe('when passed a string value', function () {
+          it('should treat the input as an object ID and wrap it in a Pointer object', function () {
+            inputVal = objectId;
+            outputVal = encoder(inputVal);
+            expect(outputVal).toEqual(pointerObject);
+          });
         });
 
         // Object input
-        it('should treat an object input as the pointer target and should wrap its objectId in a Pointer object', function () {
-          inputVal = {
-            a: 1,
-            b: 2,
-            objectId: objectId
-          };
-          outputVal = encoder(inputVal);
-          expect(outputVal).toEqual(pointerObject);
+        describe('when passed an object value', function () {
+
+          beforeEach(function () {
+            inputVal = {
+              a: 1,
+              b: 2,
+              objectId: objectId,
+              className: className
+            };
+          });
+
+          it('should treat the input as the pointer target and should wrap its objectId in a Pointer object', function () {
+            outputVal = encoder(inputVal);
+            expect(outputVal).toEqual(pointerObject);
+          });
+
+          it('should log a warning that the input will not be saved', function () {
+            outputVal = encoder(inputVal);
+            expect(mockLog.warn).toHaveBeenCalled();
+          });
+
+          it('should throw an error if the input object does not have an objectId', function () {
+            delete inputVal.objectId;
+            var encode = function () {
+              outputVal = encoder(inputVal);
+            };
+            expect(encode).toThrowError();
+          });
+
+          it('should throw an error if the className of the input object does match the expected className', function () {
+            inputVal.className = 'NotA' + className;
+            var encode = function () {
+              outputVal = encoder(inputVal);
+            };
+            expect(encode).toThrowError();
+          });
         });
       });
     });

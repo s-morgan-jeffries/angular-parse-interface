@@ -1,14 +1,18 @@
 'use strict';
 
-//t0d0: Write parseCloud unit tests
 describe('Factory: parseCloud', function () {
   var parseCloud,
     mocks;
 
   beforeEach(function () {
     mocks = {};
-    mocks.parseResourceActions = {
+    mocks.actionLib = {
       POST: {}
+    };
+    mocks.parseResourceActions = {
+      getActionConfig: function (actionName) {
+        return mocks.actionLib[actionName];
+      }
     };
     mocks.postResponse = {};
     mocks.Function = {
@@ -37,7 +41,7 @@ describe('Factory: parseCloud', function () {
       var expectedUrl = '/functions/:functionName',
         expectedParams = {},
         expectedActions = {
-          POST: mocks.parseResourceActions.POST
+          POST: mocks.actionLib.POST
         };
       mocks.appResourceFactory.reset();
       cloudCallerFactory = parseCloud.createCallerFactory(mocks.appResourceFactory);

@@ -71,10 +71,11 @@ angular.module('angularParseInterface')
           className: getClassName(fieldName)
         };
         encoder = parseDataCodecs.getEncoderForType(dataType, params);
+//        console.log(val);
         return encoder(val);
       };
 
-      // Decode an entire object by iterating over all of its own properties
+      // Encode an entire object by iterating over all of its own properties
       var encodeData = function (data) {
         var key, encodedData;
         encodedData = {};
@@ -83,6 +84,8 @@ angular.module('angularParseInterface')
             encodedData[key] = encodeField(key, data[key]);
           }
         }
+//        console.log(data);
+//        console.log(encodedData);
         return encodedData;
       };
 

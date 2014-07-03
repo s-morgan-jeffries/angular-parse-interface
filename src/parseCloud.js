@@ -12,7 +12,7 @@ angular
         defaultParams = {},
         // The only action we need is POST
         customActions = {
-          POST: parseResourceActions.POST
+          POST: parseResourceActions.getActionConfig('POST')
         },
         // Create the Function model using our application's resource factory
         Function = appResourceFactory(url, defaultParams, customActions);
@@ -39,6 +39,10 @@ angular
           // NB: We are assuming that the only trailing arguments will be a success callback and an error callback, but
           // we're not checking for that. IF we decide to introduce some error-checking on that point, it should
           // probably go in the action definition.
+          // backburner: Update API so consumers of cloud callers can pass in streamlined handler functions
+            // The streamlined functions should only have to deal with the actual response and the actual error without
+            // having to know where they're stored within the response object. The only question is whether that change
+            // should be made here or in the definition of the POST action, which isn't yet clear to me.
 
           // Now we just call Function's POST method and return the result
           return Function.POST.apply(Function, args);

@@ -16,6 +16,8 @@ angular.module('angularParseInterface')
           actionConfigs = {};
 
         // Add actions
+//        console.log(url);
+//        console.log(actions);
         angular.forEach(actions, function (action) {
           // Extend the customActions with any actions defined on the actionAdder (will work even if that property
           // isn't defined)
@@ -154,7 +156,10 @@ angular.module('angularParseInterface')
         // In theory, this should be an error, but I'm going to leave it as is for now
         actions = actions || {};
 
+//        console.log(url);
+//        console.log(actions);
         angular.forEach(actions, function (action) {
+//          console.log(arguments[1]);
           addTransformRequestFxs(action);
           addTransformResponseFxs(action);
         });

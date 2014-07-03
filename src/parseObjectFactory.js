@@ -18,13 +18,13 @@ angular
         // Parse's URL scheme for Objects
         var url = '/classes/' + className + '/:objectId',
           defaultParams = {objectId: '@objectId'},
-          // Custom actions from the action library
+        // Custom actions from the action library
           customActions = {
-            get: parseResourceActions.get,
-            query: parseResourceActions.query,
-            save: parseResourceActions.save,
-            delete: parseResourceActions.delete,
-            PUT: parseResourceActions.PUT
+            get: parseResourceActions.getActionConfig('get'),
+            query: parseResourceActions.getActionConfig('query'),
+            save: parseResourceActions.getActionConfig('save'),
+            delete: parseResourceActions.getActionConfig('delete'),
+            PUT: parseResourceActions.getActionConfig('PUT')
           },
           ParseObject;
 

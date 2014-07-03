@@ -3,19 +3,25 @@
 describe('Factory: parseUser', function () {
   var parseUser,
     mockParseResourceActions,
+    mockActionLib,
     EVENTS = {
       SIGN_IN: 'signin',
       SIGN_OUT: 'signout'
     };
 
   beforeEach(function () {
-    mockParseResourceActions = {
+    mockActionLib = {
       get: {},
       save: {},
       query: {},
       delete: {},
       PUT: {},
       POST: {}
+    };
+    mockParseResourceActions = {
+      getActionConfig: function (actionName) {
+        return mockActionLib[actionName];
+      }
     };
     module('angularParseInterface', function ($provide) {
       $provide.value('EVENTS', EVENTS);
@@ -86,7 +92,7 @@ describe('Factory: parseUser', function () {
       expect(url).toEqual('/:urlSegment1/:urlSegment2');
       expect(defaultParams).toEqual({ urlSegment1: 'users', urlSegment2: '@objectId' });
       angular.forEach(expectedActions, function (actionName) {
-        expect(customActions[actionName]).toBe(mockParseResourceActions[actionName]);
+        expect(customActions[actionName]).toBe(mockActionLib[actionName]);
       });
     });
 

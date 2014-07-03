@@ -2,15 +2,21 @@
 
 describe('Factory: parseObjectFactory', function () {
   var parseObjectFactory,
+    mockActionLib,
     mockParseResourceActions;
 
   beforeEach(function () {
-    mockParseResourceActions = {
+    mockActionLib = {
       get: {},
       save: {},
       query: {},
       delete: {},
       PUT: {}
+    };
+    mockParseResourceActions = {
+      getActionConfig: function (actionName) {
+        return mockActionLib[actionName];
+      }
     };
     module('angularParseInterface', function ($provide) {
       $provide.value('parseResourceActions', mockParseResourceActions);
@@ -82,7 +88,7 @@ describe('Factory: parseObjectFactory', function () {
         resourceFactoryArgs = mocks.resourceFactory.argsForCall[0];
         customActionsArg = resourceFactoryArgs[2];
         angular.forEach(expectedActions, function (actionName) {
-          expect(customActionsArg[actionName]).toBe(mockParseResourceActions[actionName]);
+          expect(customActionsArg[actionName]).toBe(mockActionLib[actionName]);
         });
       });
 
