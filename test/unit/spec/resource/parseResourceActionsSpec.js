@@ -1,6 +1,6 @@
 'use strict';
 
-xdescribe('Factory: parseResourceActions', function () {
+describe('Factory: parseResourceActions', function () {
   var parseResourceActions,
     mainAction,
     action,
