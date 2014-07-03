@@ -797,4 +797,235 @@ describe('Factory: parseResourceDecorator', function () {
     });
   });
 
+  describe('_getACLMetaData method', function () {
+    it('should return the instance\'s ACL property', function () {
+      var instance = {
+          ACL: {},
+          _getACLMetaData: Resource.prototype._getACLMetaData
+        },
+        ACLMetaData = instance._getACLMetaData();
+      expect(ACLMetaData).toBe(instance.ACL);
+    });
+  });
+
+  describe('_setACLMetaData method', function () {
+    it('should set the instance\'s ACL property to the passed in value', function () {
+      var instance = {
+          _setACLMetaData: Resource.prototype._setACLMetaData
+        },
+        ACLMetaData = {};
+      instance._setACLMetaData(ACLMetaData);
+      expect(instance.ACL).toBe(ACLMetaData);
+    });
+  });
+
+  describe('_setReadPrivileges method', function () {
+    var ACLMetaData, instance, objectId, obj, canRead;
+
+    beforeEach(function () {
+      ACLMetaData = {};
+      instance = {
+        _setReadPrivileges: Resource.prototype._setReadPrivileges,
+        _getACLMetaData: function () {
+          return ACLMetaData;
+        },
+        _setACLMetaData: jasmine.createSpy()
+      };
+      spyOn(instance, '_getACLMetaData').andCallThrough();
+      objectId = '12345';
+      obj = {
+        objectId: objectId,
+        className: '_User'
+      };
+      canRead = true;
+    });
+
+    it('should error if the object\'s className is not either _User or _Role', function () {
+      var setReadPrivileges = function () {
+        instance._setReadPrivileges(obj, canRead);
+      };
+      // This should work
+      obj.className = '_User';
+      expect(setReadPrivileges).not.toThrowError();
+      // This should work
+      obj.className = '_Role';
+      expect(setReadPrivileges).not.toThrowError();
+      // This should not work
+      obj.className = 'AnyOtherClass';
+      expect(setReadPrivileges).toThrowError();
+    });
+
+    it('should call the instance\'s _getACLMetaData method', function () {
+      instance._setReadPrivileges(obj, canRead);
+      expect(instance._getACLMetaData).toHaveBeenCalled();
+    });
+
+    it('should create a property corresponding the object\'s id on ACLMetaData if it does not exist', function () {
+      expect(ACLMetaData[objectId]).not.toBeDefined();
+      instance._setReadPrivileges(obj, canRead);
+      expect(ACLMetaData[objectId]).toBeDefined();
+    });
+
+    it('should create a \'*\' property on ACLMetaData if no object is passed in', function () {
+      expect(ACLMetaData[objectId]).not.toBeDefined();
+      instance._setReadPrivileges(obj, canRead);
+      expect(ACLMetaData[objectId]).toBeDefined();
+    });
+
+    it('should set the read property of the ACLMetaData[objectId] object to the passed in boolean value', function () {
+      instance._setReadPrivileges(obj, canRead);
+      expect(ACLMetaData[objectId].read).toEqual(canRead);
+    });
+
+    it('should call the instance\'s _setACLMetaData method with ACLMetaData', function () {
+      instance._setReadPrivileges(obj, canRead);
+      expect(instance._setACLMetaData).toHaveBeenCalledWith(ACLMetaData);
+    });
+  });
+
+  describe('_setWritePrivileges method', function () {
+    var ACLMetaData, instance, objectId, obj, canWrite;
+
+    beforeEach(function () {
+      ACLMetaData = {};
+      instance = {
+        _setWritePrivileges: Resource.prototype._setWritePrivileges,
+        _getACLMetaData: function () {
+          return ACLMetaData;
+        },
+        _setACLMetaData: jasmine.createSpy()
+      };
+      spyOn(instance, '_getACLMetaData').andCallThrough();
+      objectId = '12345';
+      obj = {
+        objectId: objectId,
+        className: '_User'
+      };
+      canWrite = true;
+    });
+
+    it('should error if the object\'s className is not either _User or _Role', function () {
+      var setWritePrivileges = function () {
+        instance._setWritePrivileges(obj, canWrite);
+      };
+      // This should work
+      obj.className = '_User';
+      expect(setWritePrivileges).not.toThrowError();
+      // This should work
+      obj.className = '_Role';
+      expect(setWritePrivileges).not.toThrowError();
+      // This should not work
+      obj.className = 'AnyOtherClass';
+      expect(setWritePrivileges).toThrowError();
+    });
+
+    it('should call the instance\'s _getACLMetaData method', function () {
+      instance._setWritePrivileges(obj, canWrite);
+      expect(instance._getACLMetaData).toHaveBeenCalled();
+    });
+
+    it('should create a property corresponding the object\'s id on ACLMetaData if it does not exist', function () {
+      expect(ACLMetaData[objectId]).not.toBeDefined();
+      instance._setWritePrivileges(obj, canWrite);
+      expect(ACLMetaData[objectId]).toBeDefined();
+    });
+
+    it('should create a \'*\' property on ACLMetaData if no object is passed in', function () {
+      expect(ACLMetaData[objectId]).not.toBeDefined();
+      instance._setWritePrivileges(obj, canWrite);
+      expect(ACLMetaData[objectId]).toBeDefined();
+    });
+
+    it('should set the write property of the ACLMetaData[objectId] object to the passed in boolean value', function () {
+      instance._setWritePrivileges(obj, canWrite);
+      expect(ACLMetaData[objectId].write).toEqual(canWrite);
+    });
+
+    it('should call the instance\'s _setACLMetaData method with ACLMetaData', function () {
+      instance._setWritePrivileges(obj, canWrite);
+      expect(instance._setACLMetaData).toHaveBeenCalledWith(ACLMetaData);
+    });
+  });
+
+  describe('canBeReadBy method', function () {
+    it('should call the instance\'s _setReadPrivileges method with the object\'s ID and true', function () {
+      var objectId = '12345',
+        instance = {
+          canBeReadBy: Resource.prototype.canBeReadBy,
+          _setReadPrivileges: jasmine.createSpy()
+        },
+        obj = {
+          objectId: objectId
+        };
+      instance.canBeReadBy(obj);
+      expect(instance._setReadPrivileges).toHaveBeenCalledWith(objectId, true);
+    });
+  });
+
+  describe('cannotBeReadBy method', function () {
+    it('should call the instance\'s _setReadPrivileges method with the object\'s ID and false', function () {
+      var objectId = '12345',
+        instance = {
+          cannotBeReadBy: Resource.prototype.cannotBeReadBy,
+          _setReadPrivileges: jasmine.createSpy()
+        },
+        obj = {
+          objectId: objectId
+        };
+      instance.cannotBeReadBy(obj);
+      expect(instance._setReadPrivileges).toHaveBeenCalledWith(objectId, false);
+    });
+  });
+
+  describe('canBeWrittenBy method', function () {
+    it('should call the instance\'s _setWritePrivileges method with the object\'s ID and true', function () {
+      var objectId = '12345',
+        instance = {
+          canBeWrittenBy: Resource.prototype.canBeWrittenBy,
+          _setWritePrivileges: jasmine.createSpy()
+        },
+        obj = {
+          objectId: objectId
+        };
+      instance.canBeWrittenBy(obj);
+      expect(instance._setWritePrivileges).toHaveBeenCalledWith(objectId, true);
+    });
+  });
+
+  describe('cannotBeWrittenBy method', function () {
+    it('should call the instance\'s _setWritePrivileges method with the object\'s ID and false', function () {
+      var objectId = '12345',
+        instance = {
+          cannotBeWrittenBy: Resource.prototype.cannotBeWrittenBy,
+          _setWritePrivileges: jasmine.createSpy()
+        },
+        obj = {
+          objectId: objectId
+        };
+      instance.cannotBeWrittenBy(obj);
+      expect(instance._setWritePrivileges).toHaveBeenCalledWith(objectId, false);
+    });
+  });
+
+  describe('allCanRead method', function () {
+    it('should call the instance\'s _setReadPrivileges method with true', function () {
+      var instance = {
+        allCanRead: Resource.prototype.allCanRead,
+        _setReadPrivileges: jasmine.createSpy()
+      };
+      instance.allCanRead();
+      expect(instance._setReadPrivileges).toHaveBeenCalledWith(true);
+    });
+  });
+
+  describe('allCanWrite method', function () {
+    it('should call the instance\'s _setWritePrivileges method with true', function () {
+      var instance = {
+        allCanWrite: Resource.prototype.allCanWrite,
+        _setWritePrivileges: jasmine.createSpy()
+      };
+      instance.allCanWrite();
+      expect(instance._setWritePrivileges).toHaveBeenCalledWith(true);
+    });
+  });
 });

@@ -220,25 +220,66 @@ angular.module('angularParseInterface')
 //        });
 //      };
 
-//      // Security
-//      Resource.prototype._setPrivileges = function (name, privileges) {
-//        this.ACL = this.ACL || {};
-//        this.ACL[name] = this.ACL[name] || {};
-//        if (privileges.read) {
-//          this.ACL[name].read = privileges.read;
-//        }
-//        if (privileges.write) {
-//          this.ACL[name].write = privileges.write;
-//        }
-//      };
-//      Resource.prototype.allCanRead = function () {
-//        this._setPrivileges('*', {read: true});
-//      };
-//      Resource.prototype.allCanWrite = function () {
-//        this._setPrivileges('*', {write: true});
-//      };
-//      Resource.prototype.setUserPrivileges = function (user, privileges) {
-//        this._setPrivileges(user.objectId, privileges);
-//      };
+      // Security
+      Resource.prototype._getACLMetaData = function () {
+        return this.ACL || {};
+      };
+      Resource.prototype._setACLMetaData = function (val) {
+        this.ACL = val;
+      };
+      Resource.prototype._setReadPrivileges = function (obj, canRead) {
+        var id, ACL;
+        if (arguments.length === 1 && (typeof obj === 'boolean')) {
+          canRead = obj;
+          id = '*';
+        } else {
+          if ((obj.className !== '_User') && (obj.className !== '_Role')) {
+            throw new Error('Can only set privileges for User or Role objects');
+          }
+          id = obj.objectId;
+        }
+        ACL = this._getACLMetaData();
+        ACL[id] = ACL[id] || {};
+        ACL[id].read = canRead;
+        this._setACLMetaData(ACL);
+      };
+      Resource.prototype._setWritePrivileges = function (obj, canWrite) {
+        var id, ACL;
+        if (arguments.length === 1 && (typeof obj === 'boolean')) {
+          canWrite = obj;
+          id = '*';
+        } else {
+          if ((obj.className !== '_User') && (obj.className !== '_Role')) {
+            throw new Error('Can only set privileges for User or Role objects');
+          }
+          id = obj.objectId;
+        }
+        ACL = this._getACLMetaData();
+        ACL[id] = ACL[id] || {};
+        ACL[id].write = canWrite;
+        this._setACLMetaData(ACL);
+      };
+      Resource.prototype.canBeReadBy = function (obj) {
+        var id = obj.objectId;
+        this._setReadPrivileges(id, true);
+      };
+      Resource.prototype.cannotBeReadBy = function (obj) {
+        var id = obj.objectId;
+        this._setReadPrivileges(id, false);
+      };
+      Resource.prototype.canBeWrittenBy = function (obj) {
+        var id = obj.objectId;
+        this._setWritePrivileges(id, true);
+      };
+      Resource.prototype.cannotBeWrittenBy = function (obj) {
+        var id = obj.objectId;
+        this._setWritePrivileges(id, false);
+      };
+      Resource.prototype.allCanRead = function () {
+        this._setReadPrivileges(true);
+      };
+      Resource.prototype.allCanWrite = function () {
+        this._setWritePrivileges(true);
+      };
     };
   });
