@@ -32,6 +32,7 @@ The appInterface has four properties:
 <li><strong>User</strong>: A special angular Resource decorated with signUp, signIn, signOut, and current (returns current user) methods</li>
 <li><strong>Query</strong>: A constructor that you call with a Resource argument and that returns a query builder.</li>
 <li><strong>getCloudCaller</strong>: A factory that takes a cloud function name and returns a function that will call the named cloud function asynchronously.</li>
+<li><strong>roleFactory</strong>: A factory that creates role objects that can be used for setting permissions.</li>
 </ul>
 
 I'll write clearer documentation when things are a little further along. In the meantime, feel free to look at the source code.
