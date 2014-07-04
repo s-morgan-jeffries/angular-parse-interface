@@ -129,10 +129,14 @@ module.exports = function (grunt) {
       gruntfile: {
         src: ['Gruntfile.js']
       },
-      scripts: {
+      devApp: {
         src: [
           '<%= yeoman.devApp %>/scripts/{,*/}*.js',
-          '!<%= yeoman.devApp %>/scripts/debug.js',
+          '!<%= yeoman.devApp %>/scripts/debug.js'
+        ]
+      },
+      scripts: {
+        src: [
           'src/**/*.js'
         ]
       },
@@ -271,11 +275,12 @@ module.exports = function (grunt) {
         files: ['Gruntfile.js'],
         tasks: ['jshint:gruntfile']
       },
+      devApp: {
+        files: ['<%= yeoman.devApp %>/scripts/{,*/}*.js'],
+        tasks: ['jshint:dev_app']
+      },
       scripts: {
-        files: [
-          '<%= yeoman.devApp %>/scripts/{,*/}*.js',
-          'src/**/*.js'
-        ],
+        files: ['src/**/*.js'],
         tasks: ['jshint:scripts', 'karma:unitCI'],
         options: {
           livereload: true
