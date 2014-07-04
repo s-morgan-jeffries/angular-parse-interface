@@ -1,6 +1,6 @@
 {
   "name": "angular-parse-interface",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "main": "./dist/angular-parse-interface.js",
   "dependencies": {
     "angular-resource": "~1.2.18",
