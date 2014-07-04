@@ -3,6 +3,13 @@ angular
     'ngResource'
   ])
 ;
+
+// You still need to get cloud functions, roles, files, and user linking working at minimum. Roles are an extension of
+// ACLs, and getting working ACLs will depend on having your decorators set up correctly. The decorators will depend on
+// the behavior of non-Resource "Resources" (e.g. cloud functions and files). So you should probably save roles until
+// after you get those working.
+
+// Okay, it turns out files are pretty complicated. Do cloud functions (or FB integration) first, then roles.
 angular
   .module('angularParseInterface')
   .factory('ParseAppEventBus', function ($rootScope) {
@@ -27,20 +34,106 @@ angular
     };
 
     return ParseAppEventBus;
+  })
+  // A map of event names to the strings that are used on the event bus
+  .value('EVENTS', {
+    SIGN_IN: 'signin',
+    SIGN_OUT: 'signout'
   });
 angular
   .module('angularParseInterface')
-  .value('SIGN_IN', 'signin')
-  .value('SIGN_OUT', 'signout')
-;
-angular
-  .module('angularParseInterface')
-  .factory('parseInterface', function (ParseAppEventBus, parseResource, parseObjectFactory, parseUser, parseQueryBuilder) {
+  .factory('parseCloudCode', function (parseResourceActions/*, $log*/) {
     'use strict';
 
-    // Create a new isolated scope for the event bus
+    var parseCloudCode = {};
+
+    parseCloudCode.createCallerFactory = function (appResourceFactory) {
+      // We call cloud functions by posting to their url
+      var url = '/functions/:functionName',
+        // The only parameter we'll use is functionName, and there shouldn't be any default value for that
+        defaultParams = {},
+        // The only action we need is POST
+        customActions = {
+          POST: parseResourceActions.getActionConfig('POST')
+        },
+        // Create the Function model using our application's resource factory
+        Function = appResourceFactory(url, defaultParams, customActions);
+
+      // This is the application's cloud caller factory. It returns a function that will call the named cloud function
+      return function cloudCallerFactory(functionName) {
+        // The params for this cloud caller
+        var params = {functionName: functionName};
+        // Return a function that will call the named cloud function
+        return function (/* cloudFunctionArgs, onSuccess, onError */) {
+          // Capture the arguments that were passed in
+          var args = [].slice.call(arguments);
+          // The first argument should be an object with keys and values representing the arguments to the cloud
+          // function. If the cloud function takes no arguments, there's no need to pass this in. In that case, the
+          // arguments array could be empty, or it could contain a success callback and possibly and error callback. We
+          // have to pass an object as the first argument to the POST method, so this deals with that.
+          if (!angular.isObject(args[0])) {
+            // Push an empty object to the front of the args array
+            args.unshift({});
+          }
+          // Now push the params to the front of the arguments array.
+          args.unshift(params);
+
+          // NB: We are assuming that the only trailing arguments will be a success callback and an error callback, but
+          // we're not checking for that. IF we decide to introduce some error-checking on that point, it should
+          // probably go in the action definition.
+          // backburner: Update API so consumers of cloud callers can pass in streamlined handler functions
+            // The streamlined functions should only have to deal with the actual response and the actual error without
+            // having to know where they're stored within the response object. The only question is whether that change
+            // should be made here or in the definition of the POST action, which isn't yet clear to me.
+
+          // Now we just call Function's POST method and return the result
+          return Function.POST.apply(Function, args);
+        };
+      };
+    };
+
+    return parseCloudCode;
+  });
+angular
+  .module('angularParseInterface')
+  .factory('parseEvent', function () {
+    'use strict';
+
+    // See here:
+    // https://www.parse.com/docs/rest#analytics-custom
+    var parseEvent = {};
+
+    return parseEvent;
+  });
+angular
+  .module('angularParseInterface')
+  .factory('parseFile', function () {
+    'use strict';
+
+    // This should create the File service for an application. I need to see what's out there in terms of file
+    // uploaders, but I feel like this should only upload pre-serialized data and that something else should take
+    // responsibility for that part of it.
+    var parseFile = {};
+
+    // You could use FormData to serialize data and pass that in, but that doesn't work in some older browsers, which
+    // might bother some people.
+
+    return parseFile;
+  });
+angular
+  .module('angularParseInterface')
+  .factory('parseInterface', function (ParseAppEventBus,
+                                       parseResource,
+                                       parseObjectFactory,
+                                       parseUser,
+                                       parseQueryBuilder,
+                                       parseCloudCode,
+                                       parseRole) {
+    'use strict';
+
     var parseInterface = {};
 
+    // The only API entry point
     parseInterface.createAppInterface = function (appConfig, clientStorage) {
       var appId,
         appStorage,
@@ -62,17 +155,28 @@ angular
       clientStorage.parseApp = clientStorage.parseApp || {};
       appStorage = clientStorage.parseApp[appId] = (clientStorage.parseApp[appId] || {});
 
+      // Create an application-specific event bus
       appEventBus = new ParseAppEventBus();
 
+      // Create an application-specific resource factory (analogous to $resource). This will add headers to all requests
+      // that are specific to this application, including a sessionToken when appropriate. It will also encode and
+      // decode data with the correct format for Parse's API.
       appResource = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
 
+      // Compose the application interface
       appInterface = {};
-
+        // An object factory. This takes a className argument and returns a Resource mapped to a Parse Object
       appInterface.objectFactory = parseObjectFactory.createObjectFactory(appResource);
-
+        // A User model. It has the same capabilities as other Resources, as well as some additional user-specific
+        // methods.
       appInterface.User = parseUser.createUserModel(appResource, appStorage, appEventBus);
-
+        // A constructor that takes a Resource and returns a query builder.
       appInterface.Query = parseQueryBuilder.Query;
+        // A factory that generates functions that call cloud functions
+      appInterface.getCloudCaller = parseCloudCode.createCallerFactory(appResource);
+        // t0d0: Add test for this
+      appInterface.roleFactory = parseRole.createRoleFactory(appResource, appInterface.User);
+
 
       return appInterface;
     };
@@ -80,9 +184,6 @@ angular
     return parseInterface;
   });
 angular
-//  .module('angularParseInterface.objectFactoryMod', [
-//    'angularParseInterface.configMod'
-//  ])
   .module('angularParseInterface')
   .factory('parseObjectFactory', function (parseResourceActions) {
     'use strict';
@@ -91,7 +192,6 @@ angular
     // ParseResource (because some things just can't be added later), this might be necessary for removing some
     // functionality (e.g. making arbitrary HTTP requests).
     var parseObjectDecorator = function (ParseObject, className) {
-//      ParseObject._setClassName(className);
       ParseObject.className = className;
     };
 
@@ -103,15 +203,15 @@ angular
         // Parse's URL scheme for Objects
         var url = '/classes/' + className + '/:objectId',
           defaultParams = {objectId: '@objectId'},
+        // Custom actions from the action library
           customActions = {
-            get: parseResourceActions.get,
-            query: parseResourceActions.query,
-            save: parseResourceActions.save,
-            delete: parseResourceActions.delete
+            get: parseResourceActions.getActionConfig('get'),
+            query: parseResourceActions.getActionConfig('query'),
+            save: parseResourceActions.getActionConfig('save'),
+            delete: parseResourceActions.getActionConfig('delete'),
+            PUT: parseResourceActions.getActionConfig('PUT')
           },
           ParseObject;
-
-//        customActions.get = parseResourceActions.get;
 
         ParseObject = appResourceFactory(url, defaultParams, customActions);
 
@@ -442,7 +542,160 @@ angular
   });
 angular
   .module('angularParseInterface')
-  .factory('parseUser', function (parseResourceActions, SIGN_IN, SIGN_OUT) {
+  .factory('parseRole', function ($q, parseResourceActions, parseQueryBuilder) {
+    'use strict';
+
+    var parseRole = {};
+
+    var Query = parseQueryBuilder.Query;
+
+    var roleDecorator = function (Role, User) {
+      Role.className = '_Role';
+      Role.hasMany('roles', Role);
+      Role.hasMany('users', User);
+    };
+
+    parseRole.createRoleFactory = function (appResourceFactory, User) {
+      // NB: This is not the URL pattern described in the Parse REST API documentation. That's because the official REST
+      // endpoints don't accept OPTIONS requests. See here:
+      // https://www.parse.com/questions/creating-a-role-cors-not-allowed-by-access-control-allow-origin
+      var url = 'classes/_Role/:objectId',
+      // The only default parameter is the objectId
+        defaultParams = {
+          objectId: '@objectId'
+        },
+      // Grab custom actions from the library
+        customActions = {
+          get: parseResourceActions.getActionConfig('get'),
+          query: parseResourceActions.getActionConfig('query'),
+          save: parseResourceActions.getActionConfig('save'),
+          delete: parseResourceActions.getActionConfig('delete'),
+          PUT: parseResourceActions.getActionConfig('PUT')
+        },
+      // Create the Role model using our application's resource factory
+        Role = appResourceFactory(url, defaultParams, customActions);
+
+      // Add functionality from above decorator
+      roleDecorator(Role, User);
+
+      // What we actually return is a factory function. This function takes a name and uses it to either 1) get the
+      // named role from the server, or 2) create a new role with the provided name. For security reasons, this function
+      // doesn't return the actual role. Instead, it returns a simplified interface for interacting with the role.
+      return function roleFactory(name) {
+        // Create a Role instance
+        var role = new Role({name: name}),
+          deferred = $q.defer(),
+          roleFacade = {
+            $promise: deferred.promise,
+            $resolved: false
+          };
+
+        var onQuerySuccess = function (data) {
+          var savedRole;
+          if (data.length === 1) {
+            savedRole = data[0];
+            angular.forEach(savedRole, function (v, k) {
+              role[k] = v;
+            });
+          }
+          deferred.resolve();
+          roleFacade.$resolved = true;
+        };
+
+        var onQueryError = function (err) {
+          deferred.reject(err);
+          roleFacade.$resolved = true;
+        };
+
+        // Check the server for the named role
+        (new Query(Role))
+          .equalTo('name', name)
+          .exec().$promise
+          .then(onQuerySuccess, onQueryError);
+
+
+        // This function will be executed once the preceding query returns. I'm keeping it separate because it handles
+        // all the logic for the queryFacade.
+        var createFacadeInterface = function () {
+
+          // backburner: Add logic for making sure the object is saved before you try to addRelations
+          // backburner: Add logic for making sure the object has an ACL before you try to save it
+          // backburner: Add logic for handling errors, particularly auth errors
+
+          // name, className, and getPointer are needed to make the facade Resource-like
+          Object.defineProperty(roleFacade, 'name', {
+            get: function () {
+              return role.name;
+            },
+            set: function () {}
+          });
+
+          Object.defineProperty(roleFacade, 'className', {
+            get: function () {
+              return role.className;
+            },
+            set: function () {}
+          });
+
+          // getPointer
+          roleFacade.getPointer = function () {
+            return role.getPointer();
+          };
+
+          // $save - this should really only allow you to pass success and error callbacks. And what should be the
+          // return value?
+          roleFacade.$save = function () {
+            var args = [].slice.call(arguments);
+            role.$save.apply(role, args);
+          };
+
+          // addUsers
+          roleFacade.addUsers = function (/* users */) {
+            var args = [].slice.call(arguments);
+            args.unshift('users');
+            role.addRelations.apply(role, args);
+          };
+
+          // removeUsers
+          roleFacade.removeUsers = function (/* users */) {
+            var args = [].slice.call(arguments);
+            args.unshift('users');
+            role.removeRelations.apply(role, args);
+          };
+
+          // addIncludedRoles
+          roleFacade.addIncludedRoles = function (/* roles */) {
+            var args = [].slice.call(arguments);
+            args.unshift('roles');
+            role.addRelations.apply(role, args);
+          };
+
+          // removeIncludedRoles
+          roleFacade.removeIncludedRoles = function (/* roles */) {
+            var args = [].slice.call(arguments);
+            args.unshift('roles');
+            role.removeRelations.apply(role, args);
+          };
+        };
+
+        // This will be executed in case of a query error. Again, it's separate because it only deals with the
+        // queryFacade.
+        var processQueryError = function (err) {
+          roleFacade.error = err;
+        };
+
+        roleFacade.$promise.then(createFacadeInterface, processQueryError);
+
+        // Return the Role instance
+        return roleFacade;
+      };
+    };
+
+    return parseRole;
+  });
+angular
+  .module('angularParseInterface')
+  .factory('parseUser', function (parseResourceActions, EVENTS) {
     'use strict';
 
     var parseUser = {};
@@ -452,7 +705,7 @@ angular
       User.className = '_User';
       // These should never be sent with PUT requests
       // backburner: Maybe remove sessionToken from request blacklist (it should be deleted, anyway)
-      User._addRequestBlacklistProps('sessionToken', 'emailVerified');
+      User._addRequestBlacklistProps('emailVerified');
 
       // This both creates a user and signs in
       User.signUp = function (username, password, email) {
@@ -472,7 +725,7 @@ angular
           // Emit a SIGN_IN event with the sessionToken as data. Currently (as of this writing), the coreAppResourceFactory
           // uses this to keep track of the sessionToken, but this prevents us from having to hard-code that. The point
           // is that something else is keeping track of it.
-          eventBus.emit(SIGN_IN, data);
+          eventBus.emit(EVENTS.SIGN_IN, data);
         });
         // jshint boss:true
         // Cache the user in storage and return it
@@ -494,7 +747,7 @@ angular
           // Delete the sessionToken from the user
           delete user.sessionToken;
           // Emit a SIGN_IN event with the sessionToken as data.
-          eventBus.emit(SIGN_IN, data);
+          eventBus.emit(EVENTS.SIGN_IN, data);
         });
         // jshint boss:true
         // Cache the user in storage and return it
@@ -508,7 +761,7 @@ angular
         // Delete the user from the cache
         delete storage.user;
         // Emit a SIGN_OUT event, in case anyone else is interested (hint: they are)
-        eventBus.emit(SIGN_OUT);
+        eventBus.emit(EVENTS.SIGN_OUT);
       };
 
       // This is for retrieving the current user
@@ -534,27 +787,35 @@ angular
       };
 
       // backburner: Add the ability to link accounts (e.g. Facebook, Twitter)
-      // backburner: Add ability to request a password reset
 
+      User.resetPassword = function (email) {
+        return this.POST({urlSegment1: 'requestPasswordReset'}, {email: email});
+      };
     };
 
     parseUser.createUserModel = function (appResourceFactory, appStorage, appEventBus) {
+      // This is a slightly ugly url, but I can't think of any names that better capture what's going on here.
       var url = '/:urlSegment1/:urlSegment2',
+        // By default, the first segment is the literal string 'users'
         defaultParams = {
           urlSegment1: 'users',
           urlSegment2: '@objectId'
         },
+        // Grab custom actions from the library
         customActions = {
-          get: parseResourceActions.get,
-          query: parseResourceActions.query,
-          save: parseResourceActions.save,
-          delete: parseResourceActions.delete
+          get: parseResourceActions.getActionConfig('get'),
+          query: parseResourceActions.getActionConfig('query'),
+          save: parseResourceActions.getActionConfig('save'),
+          delete: parseResourceActions.getActionConfig('delete'),
+          PUT: parseResourceActions.getActionConfig('PUT'),
+          POST: parseResourceActions.getActionConfig('POST')
         },
         // Create the User model using our application's resource factory
-        User = appResourceFactory(url, defaultParams, customActions);
+        User = appResourceFactory(url, defaultParams, customActions),
+        moduleStorage = (appStorage.parseUser = appStorage.parseUser || {});
 
       // Add functionality from above decorator
-      userDecorator(User, appEventBus, appStorage);
+      userDecorator(User, appEventBus, moduleStorage);
 
       return User;
     };
@@ -562,7 +823,7 @@ angular
     return parseUser;
   });
 angular.module('angularParseInterface')
-  .factory('parseDataCodecs', function () {
+  .factory('parseDataCodecs', function ($log) {
     'use strict';
 
     // Predicate to check if an object has the keys expected (useful for checking whether it's the expected type)
@@ -693,11 +954,24 @@ angular.module('angularParseInterface')
       return function (val) {
         var objectId;
 
-        // Ad hoc polymorphism to account for two cases: 1) the value is an object ID, or 2) the value is the pointer target
+        // Ad hoc polymorphism to account for two cases: 1) the value is an object ID, or 2) the value is the actual
+        // object pointed to by the pointer
         if (angular.isString(val)) {
           objectId = val;
         } else if (angular.isObject(val)) {
           objectId = val.objectId;
+          // Throw an error if the className doesn't match (otherwise this will be harder to track down)
+//          $log.log(val);
+          if (val.className !== className) {
+            throw new Error('Object in Pointer field does not match expect class (expected ' + className +
+              ' but got ' + val.className + ').');
+          }
+          // Throw an error if there's no objectId (otherwise this will be harder to track down)
+          if (!objectId) {
+            throw new Error('No objectId found for object in Pointer field. Try saving it first.');
+          }
+          $log.warn('Objects in Pointer fields will not be automatically persisted; only their objectIds will be' +
+            'saved. If you want to save other data from those objects, you\'ll need to do so separately.');
         }
 
         // In any case, the encoder returns a pointer object
@@ -826,13 +1100,13 @@ angular.module('angularParseInterface')
       if (obj === null || typeof obj !== 'object') {
         return false;
       }
-      // return false if it's missing any of the Pointer properties
+      // return false if it's missing any of the expected properties
       for (i = 0, len = expectedKeys.length; i < len; i++) {
         if (!obj.hasOwnProperty(expectedKeys[i])) {
           return false;
         }
       }
-      // return false if it has any own properties not associated with Pointers
+      // return false if it has any own properties that aren't in the list
       for (key in obj) {
         if (obj.hasOwnProperty(key)) {
           if (expectedKeys.indexOf(key) < 0) {
@@ -878,23 +1152,36 @@ angular.module('angularParseInterface')
       // Decode a single field using its fieldName and value.
       var encodeField = function (fieldName, val) {
         var dataType, params, encoder;
+        // Don't encode operation requests
+        if (angular.isObject(val) && val.__op) {
+          return val;
+        }
         dataType = getRequestDataType(fieldName, val);
         params = {
           className: getClassName(fieldName)
         };
         encoder = parseDataCodecs.getEncoderForType(dataType, params);
+//        console.log(val);
         return encoder(val);
       };
 
-      // Decode an entire object by iterating over all of its own properties
+      // Encode an entire object by iterating over all of its own properties
       var encodeData = function (data) {
         var key, encodedData;
         encodedData = {};
         for (key in data) {
           if (data.hasOwnProperty(key) && (typeof data[key] !== 'function')) {
             encodedData[key] = encodeField(key, data[key]);
+            // You can implement this when you write a test for it:
+//            try {
+//              encodedData[key] = encodeField(key, data[key]);
+//            } catch (e) {
+//              throw new Error('Got error when attempting to encode "' + key + '" field: "' + e.message + '"');
+//            }
           }
         }
+//        console.log(data);
+//        console.log(encodedData);
         return encodedData;
       };
 
@@ -933,6 +1220,11 @@ angular.module('angularParseInterface')
         for (key in data) {
           if (data.hasOwnProperty(key) && (typeof data[key] !== 'function')) {
             decodedData[key] = decodeField(key, data[key]);
+//            try {
+//              decodedData[key] = decodeField(key, data[key]);
+//            } catch (e) {
+//              throw new Error('Got error when attempting to encode "' + key + '" field: "' + e.message + '"');
+//            }
           }
         }
         return decodedData;
@@ -977,33 +1269,35 @@ angular.module('angularParseInterface')
     return parseDataEncoding;
   });
 angular.module('angularParseInterface')
-  .factory('parseRequestHeaders', function (SIGN_IN, SIGN_OUT) {
+  .factory('parseRequestHeaders', function (EVENTS) {
     'use strict';
 
+    // The service has only one method, getTransformRequest. It returns a transformRequest function that will add the
+    // correct headers to the request but will not otherwise modify the headers or data
     var parseRequestHeaders = {};
 
-    // The service has only one method, getTransformRequest. It returns a requestTransform function that will add the
-    // correct headers to the request but will not otherwise modify the headers or data
     parseRequestHeaders.getTransformRequest = function (appConfig, appStorage, appEventBus) {
       // Capture the application ID and REST API key
       var appId = appConfig.applicationId,
-        restKey = appConfig.restKey;
+        restKey = appConfig.restKey,
+        // Create module-specific namespace for storage
+        modStorage = appStorage.parseRequestHeaders = (appStorage.parseRequestHeaders || {});
 
       // Register event handlers
       // On a SIGN_IN event, cache the sessionToken
-      appEventBus.on(SIGN_IN, function (e, data) {
-        appStorage.sessionToken = data.sessionToken;
+      appEventBus.on(EVENTS.SIGN_IN, function (e, data) {
+        modStorage.sessionToken = data.sessionToken;
       });
       // On a SIGN_OUT event, delete the sessionToken from the cache
-      appEventBus.on(SIGN_OUT, function (/*e, data*/) {
-        delete appStorage.sessionToken;
+      appEventBus.on(EVENTS.SIGN_OUT, function (/*e, data*/) {
+        delete modStorage.sessionToken;
       });
 
-      // The requestTransform function
+      // The transformRequest function
       return function (data, headersGetter) {
         var headers = headersGetter(),
           // Get the current value of the session token
-          sessionToken = appStorage.sessionToken;
+          sessionToken = modStorage.sessionToken;
 
         // Set the application ID and REST key headers
         headers['X-Parse-Application-Id'] = appId;
@@ -1026,30 +1320,33 @@ angular.module('angularParseInterface')
 
     var parseResource = {};
 
-
+    //   The purpose of this function is to modify the $resource service so that it adds appropriate headers and
+    // encodes/decodes data in the correct format for Parse.
     parseResource.createAppResourceFactory = function (appConfig, appStorage, appEventBus) {
       var coreAppResourceFactory = this.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
 
       // Okay for now. What do you want this to do ultimately? You probably don't want to leave customActions in its
       // current state. For example, you probably want objects to have certain actions but not others.
-      return function appResourceFactory(url, defaultParams, actionAdders) {
+      return function appResourceFactory(url, defaultParams, actions) {
         var Resource,
-          customActions = {};
+          actionConfigs = {};
 
         // Add actions
-        angular.forEach(actionAdders, function (actionAdder) {
+//        console.log(url);
+//        console.log(actions);
+        angular.forEach(actions, function (action) {
           // Extend the customActions with any actions defined on the actionAdder (will work even if that property
           // isn't defined)
-          angular.extend(customActions, actionAdder.actions);
+          angular.extend(actionConfigs, action.actionConfigs);
         });
 
         // Create the Resource
-        Resource = coreAppResourceFactory(url, defaultParams, customActions);
+        Resource = coreAppResourceFactory(url, defaultParams, actionConfigs);
 
         // Decorate with decorators
-        angular.forEach(actionAdders, function (actionAdder) {
-          if (angular.isFunction(actionAdder.decorator)) {
-            actionAdder.decorator(Resource);
+        angular.forEach(actions, function (action) {
+          if (angular.isFunction(action.decorator)) {
+            action.decorator(Resource);
           }
         });
 
@@ -1058,7 +1355,7 @@ angular.module('angularParseInterface')
           var isAction = function (name) {
             return Resource.hasOwnProperty(name) && Resource.prototype.hasOwnProperty('$' + name);
           };
-          if (isAction(k) && !actionAdders[k]) {
+          if (isAction(k) && !actions[k]) {
             delete Resource[k];
             delete Resource.prototype['$' + k];
           }
@@ -1073,7 +1370,10 @@ angular.module('angularParseInterface')
 
     // This creates the core app resource. It's concerned with encoding/decoding of data and the addition of the
     // appropriate headers. A separate function deals with actions.
-    parseResource.createAppResourceFactory = function (appConfig, appStorage, appEventBus) {
+    // I'm not crazy about exposing this on the service when it's actually only used within this file, but it does make
+    // it very testable. Also, I briefly toyed with combining this function with createAppResourceFactory, but it was an
+    // inscrutable mess.
+    parseResource.createCoreAppResourceFactory = function (appConfig, appStorage, appEventBus) {
 
       var hasRequestBody = function (action) {
         // For Parse, these are currently the only methods for which a request body has any meaning
@@ -1097,10 +1397,8 @@ angular.module('angularParseInterface')
 
       var addRequestHeaders = parseRequestHeaders.getTransformRequest(appConfig, appStorage, appEventBus);
 
-      return function coreAppResourceFactory(url, defaultParams, customActions) {
+      return function coreAppResourceFactory(url, defaultParams, actions) {
         var restApiBaseUrl = 'https://api.parse.com/1',
-          baseActions,
-          actions,
           Resource;
 
         var prependBaseUrl = function (url) {
@@ -1168,50 +1466,16 @@ angular.module('angularParseInterface')
           // The "first" step (the final step in this function) is parsing the JSON
           transformResArray.unshift(parseJSON);
         };
-        //   From here to the end of the comment is basically code that deals with custom actions. Something interesting
-        // here: you could almost wrap the definition of each of these actions around the underlying code, with the call
-        // to coreAppResourceFactory in the middle, except for the fact that some of the actions use Resource in their
-        // definitions. So you may have to think of a way to pass them in so that Resource can be passed to them as an
-        // argument. (Maybe pass an argument to customActions that are functions?)
-        //   In any case, these don't really belong here, as they require this function to do too much. The purpose of
-        // this function is to modify the $resource service so that it adds appropriate headers and encodes/decodes data
-        // in the correct format for Parse.
-        //   Right, so how to do that? The request headers part is easy. Every action will get the transformRequest for
-        // adding headers. Every non-GET action will also get a transformRequest function to convert the data to JSON if
-        // it isn't already (since they all get at least one transformRequest function, angular won't do this
-        // automatically). Data encoding transformRequests only need to be added to non-GET requests, since GET requests
-        // don't have a body. Conversely, data decoding has to be applied to every response.
 
         url = prependBaseUrl(url);
         defaultParams = defaultParams || {};
-        customActions = customActions || {};
+        // In theory, this should be an error, but I'm going to leave it as is for now
+        actions = actions || {};
 
-        // backburner: Get rid of these, and rewrite your tests to deal with the change.
-        // In order for us to add the required transformRequest and transformResponse functions to our actions, they
-        // have to be visible inside this function. That means we have to re-define all the built-in actions here.
-        baseActions = {
-          get: {
-            method: 'GET'
-          },
-          save: {
-            method: 'POST'
-          },
-          query: {
-            method: 'GET',
-            isArray: true
-          },
-          remove: {
-            method: 'DELETE'
-          },
-          delete: {
-            method: 'DELETE'
-          }
-        };
-
-        // This allows us to override the above definitions with any customActions that were passed in:
-        actions = angular.extend(baseActions, customActions);
-
+//        console.log(url);
+//        console.log(actions);
         angular.forEach(actions, function (action) {
+//          console.log(arguments[1]);
           addTransformRequestFxs(action);
           addTransformResponseFxs(action);
         });
@@ -1240,7 +1504,10 @@ angular.module('angularParseInterface')
   .factory('parseResourceActions', function () {
     'use strict';
 
-    var parseResourceActions = {};
+    // The point of this module is to serve as a library of actions for the parseResource service. Actions are tricky
+    // to write, so this is definitely an area where you want the code to be reusable. Rather than relying inheritance,
+    // these function like mixins.
+    var actionLib = {};
 
     // Find the first item in an array for which the predicate is true
     var find = function (ar, pred) {
@@ -1268,19 +1535,6 @@ angular.module('angularParseInterface')
       return dst;
     };
 
-//    var isIn = function (val, col) {
-//      if (col.indexOf) {
-//        return col.indexOf(val) >= 0;
-//      } else {
-//        for (var k in col) {
-//          if (col.hasOwnProperty(k) && (col[k] === val)) {
-//            return true;
-//          }
-//        }
-//        return false;
-//      }
-//    };
-
     // Return an object with the non-method own properties of an object
     var ownDataProps = function (obj) {
       var objData = {};
@@ -1292,30 +1546,8 @@ angular.module('angularParseInterface')
       return objData;
     };
 
-//    // jshint bitwise:false
-//    var pick = function (obj, keys) {
-//      var newObj = {};
-//      angular.forEach(obj, function (v, k) {
-//        if (~keys.indexOf(k)) {
-//          newObj[k] = v;
-//        }
-//      });
-//      return newObj;
-//    };
-//    // jshint bitwise:true
-
-//    var omit = function (obj, keys) {
-//      var newObj = {};
-//      angular.forEach(obj, function (v, k) {
-//        if (keys.indexOf(k) < 0) {
-//          newObj[k] = v;
-//        }
-//      });
-//      return newObj;
-//    };
-
-    parseResourceActions.get = {
-      actions: {
+    actionLib.get = {
+      actionConfigs: {
 //        get: (function () {
 //          var Resource;
 //
@@ -1336,16 +1568,20 @@ angular.module('angularParseInterface')
       }
     };
 
-    parseResourceActions.delete = {
-      actions: {
+    // Could do a GET action here analogous to POST and PUT below, but I don't know where I would use it, and I don't
+    // want to write extra tests right now. But this is a pin in it.
+
+    actionLib.delete = {
+      actionConfigs: {
         delete: {
           method: 'DELETE'
         }
       }
     };
 
-    parseResourceActions.POST = {
-      actions: {
+    // A POST action for posting arbitrary data to the server
+    actionLib.POST = {
+      actionConfigs: {
         POST: {
           method: 'POST'
         }
@@ -1353,74 +1589,118 @@ angular.module('angularParseInterface')
       decorator: function (Resource) {
         // The prototype doesn't need to have this.
         delete Resource.prototype.$POST;
+
+        // Create a modified POST static method
+        Resource.POST = (function () {
+          // The original POST method
+          var POST = Resource.POST;
+
+          // Since we're not interested in a Resource for arbitrary POST data, this function returns a non-Resource
+          // object.
+          return function () {
+            // Delegate to the original POST method. This returns an instance of Resource.
+            var instance = POST.apply(this, arguments),
+              // This is the POJO we'll actually be returning.
+              res = {
+                $promise: instance.$promise,
+                $resolved: instance.$resolved
+              };
+            // NB: Both of the handlers leave the $promise object on the POJO.
+            // This copies all the own properties from the response data (which is an instance of Resource) to the POJO
+            var onSuccess = function (data) {
+              // "Data" is actually just the instance again.
+              angular.forEach(data, function (v, k) {
+                // This *should* be the same promise object, but just in case...
+                if (k === '$promise') {
+                  return;
+                }
+                // Otherwise, copy the property to the result
+                res[k] = v;
+              });
+            };
+            // This copies some useful information about the error to the POJO.
+            var onError = function (err) {
+              res.data = err.data;
+              res.status = err.status;
+              res.headersGetter = err.headers;
+              res.config = err.config;
+              res.statusText = err.statusText;
+              res.$resolved = true;
+            };
+            instance.$promise.then(onSuccess, onError);
+            // Return the POJO
+            return res;
+            // POJO!
+          };
+        }());
       }
     };
 
-    parseResourceActions.PUT = {
-      actions: {
+    actionLib.PUT = {
+      actionConfigs: {
         PUT: {
           method: 'PUT'
         }
       },
-      // This is sort of magical, and the PUT request itself is actually kind of weird. Instead of doing it this way,
-      // it might be better to call the function directly on the Resource the way it's written in the last line:
-      //    return put.call(this, params, data, successFunc, errorFunc);
-      // If the instance needs to use this, it could do something like this:
-      //    instance.constructor.PUT({objectId: instance.objectId}, data, successFunc, errorFunc);
-      // Is there any way to prevent it from returning a Resource? And is that worth it? If you want to do that, you're
-      // going to have to use promises. Arguably not worth it for now. Just make sure you don't give the Resource method
-      // the actual instance.
       decorator: function (Resource) {
-        Resource.PUT = (function () {
-          var PUT = Resource.PUT;
 
-          // backburner: Rewrite this so it returns something other than a Resource instance.
-          return PUT;
-//          return function () {
-//            var args,
-//              data,
-//              instance,
-//              params,
-//              successFunc,
-//              errorFunc;
-//
-//            var returnVal = {};
-//
-//            // Turn arguments into an actual array
-//            args = [].slice.call(arguments);
-//            // Get the data for the put request
-//            data = find(args, isParams);
-//            // Figure out which argument is the instance; this has to exist so we can get its objectId
-//            instance = find(args, isInstance);
-//            // Create the parameters
-//            params = {
-//              objectId: instance.objectId
-//            };
-//
-//            // The success function that was passed in, or a do-nothing function if there wasn't one
-//            successFunc = find(args, angular.isFunction) || angular.noop;
-//            // The error function that was passed in, or a do-nothing function if there wasn't one
-//            errorFunc = findLast(args, angular.isFunction) || angular.noop;
-//            // If the error function is the same as the save function, set errorFunc to angular.noop
-//            errorFunc = (errorFunc === successFunc) ? angular.noop : errorFunc;
-//
-//            // Delegate to the original function...
-//            return put.call(this, params, data, successFunc, errorFunc);
-//          };
-        }());
-
-        // Maybe?
+        // For the instance method, we just want to delegate to the static method but with an objectId parameter set to
+        // the instance's objectId (possibly other params in the future).
         Resource.prototype.$PUT = function (data, successFunc, errorFunc) {
           var params = {
             objectId: this.objectId
           };
           return Resource.PUT(params, data, successFunc, errorFunc);
         };
+
+        // Create a modified PUT static method
+        Resource.PUT = (function () {
+          // The original PUT method
+          var PUT = Resource.PUT;
+
+          // Since we're not interested in a Resource for arbitrary PUT data, this function returns a non-Resource
+          // object.
+          return function () {
+            // Delegate to the original PUT method. This returns an instance of Resource.
+            var instance = PUT.apply(this, arguments),
+            // This is the POJO we'll actually be returning.
+              res = {
+                $promise: instance.$promise,
+                $resolved: instance.$resolved
+              };
+            // NB: Both of the handlers leave the $promise object on the POJO.
+            // This copies all the own properties from the response data (which is an instance of Resource) to the POJO
+            var onSuccess = function (data) {
+              // "Data" is actually just the instance again.
+              angular.forEach(data, function (v, k) {
+                // This *should* be the same promise object, but just in case...
+                if (k === '$promise') {
+                  return;
+                }
+                // Otherwise, copy the property to the result
+                res[k] = v;
+              });
+            };
+            // This copies some useful information about the error to the POJO.
+            var onError = function (err) {
+              res.data = err.data;
+              res.status = err.status;
+              res.headersGetter = err.headers;
+              res.config = err.config;
+              res.statusText = err.statusText;
+              res.$resolved = true;
+            };
+            instance.$promise.then(onSuccess, onError);
+            // Return the POJO
+            return res;
+          };
+        }());
+
       }
     };
 
-    parseResourceActions.query = {
-      actions: {
+    actionLib.query = {
+      actionConfigs: {
         query: (function () {
           var Resource;
 
@@ -1477,9 +1757,12 @@ angular.module('angularParseInterface')
       }
     };
 
-    // A test
-    parseResourceActions.save = {
-      actions: {
+    // ngResource uses save to persist data, which is nice and clean. Unfortunately, Parse.com uses POSTs for object
+    // creation and PUT for updates (even though it lets you make partial updates, where PATCH would be more
+    // appropriate). Anyway, this action does the hard work of making those two interfaces work together. The save
+    // action this creates can be used just like the ngResource save action.
+    actionLib.save = {
+      actionConfigs: {
         save: {
           method: 'POST'
         },
@@ -1492,21 +1775,26 @@ angular.module('angularParseInterface')
       },
       decorator: function (Resource) {
 
-//        console.log(Resource);
+        // No changes to the instance method
 
-        // Have to do something smart here so that:
-        // 1) save delegates to separate functions under the hood for creating (using POST) and updating (using PUT), and
-        // 2) instance properties are restored after a successful save
-        // The first issue is easy to fix. You always get the instance as one of the arguments, so you just check to see if
-        // it's new and call the appropriate function accordingly.
-        // The second issue is a little trickier. For reasons I don't fully understand yet, when you save an instance to
-        // Parse, you wind up losing all of its properties, except for the ones that are returned from the server. That only
-        // happens when you call the instance method (so probably related to "this" within angular-resource.js).
-        // Key point to remember is that you want this to behave just like $resource's built-in save function.
+        // The static method has to do two things:
+        // 1) delegate to separate functions under the hood for creating (using POST) and updating (using PUT), and
+        // 2) restore instance properties after success or failure
+        //    The first issue is easy to deal with. You just check to see if the data (or instance) has an objectId. If
+        // it doesn't, use create; if it does, use update.
+        //    The second issue is a little trickier. What we want is for the local instance to be in sync with the saved
+        // data, except for client-side changes that haven't been saved yet. On success, it should be updated with any
+        // updated properties (the ones we saved, plus server-generated stuff like createdAt, updatedAt, etc.). On
+        // error, it should revert to its pre-save state. Parse only sends createdAt and objectId in the response to
+        // successful creation, and it only sends updatedAt in the response to successful updates. Angular takes that
+        // and assumes that's all there is to the instance, so it deletes any other properties. So what we have to do
+        // here of this is keep track of the pre-save properties so we can restore them afterwards.
         Resource.save = (function () {
+          // Capture these methods here so we can delegate to them below.
           var create = Resource.create,
             update = Resource.update;
 
+          // These shouldn't be directly accessible
           delete Resource.create;
           delete Resource.update;
           delete Resource.prototype.$create;
@@ -1563,9 +1851,20 @@ angular.module('angularParseInterface')
             isNew = !instance.objectId;
             saveFunc = isNew ? create : update;
             // Delegate to the original function...
+//            console.log('saving');
+//            console.log('params:');
+//            console.log(params);
+//            console.log('instance:');
+//            console.log(instance);
             return saveFunc.call(this, params, instance, wrappedSuccessFunc, wrappedErrorFunc);
           };
         }());
+      }
+    };
+
+    var parseResourceActions = {
+      getActionConfig: function (actionName) {
+        return angular.copy(actionLib[actionName]);
       }
     };
 
@@ -1576,6 +1875,8 @@ angular.module('angularParseInterface')
   .factory('parseResourceDecorator', function ($log) {
     'use strict';
 
+    // backburner: Refactor this so there are multiple decorators
+    //    consider which methods every Resource will need, which may get easier as you add more features
     //backburner: Move this into the core resource module
     return function (Resource) {
       // Static methods
@@ -1600,16 +1901,6 @@ angular.module('angularParseInterface')
         resourceMetaData[propName] = val;
         this._setMetaData(resourceMetaData);
       };
-
-//      Resource._getClassName = function () {
-//        return this._getMetaDataProp('className');
-//      };
-
-//      // Not sure I'm crazy about how I'm implementing this. Might be going overboard with security.
-//      // backburner: Consider specifying some allowed inputs here
-//      Resource._setClassName = function (val) {
-//        return this._setMetaDataProp('className', val);
-//      };
 
       // A self-defining function
       var setClassName = function (val) {
@@ -1695,13 +1986,11 @@ angular.module('angularParseInterface')
       };
 
       Resource._addRequestBlacklistProps = function () {
-        var props = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments);
-//        var addBlacklistProp = this._addRequestBlacklistProp.bind(this);
-        var self = this;
-        var addBlacklistProp = function (propName) {
-          self._addRequestBlacklistProp(propName);
-        };
-
+        var props = angular.isArray(arguments[0]) ? arguments[0] : [].slice.call(arguments),
+          self = this,
+          addBlacklistProp = function (propName) {
+            self._addRequestBlacklistProp(propName);
+          };
         angular.forEach(props, addBlacklistProp);
       };
 
@@ -1716,24 +2005,10 @@ angular.module('angularParseInterface')
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//      // Relational methods
-//      // hasOne
-//      Resource.hasOne = function (fieldName, other) {
-//        this._setFieldDataType(fieldName, 'Pointer');
-//        this._setFieldClassName(fieldName, other._getClassName());
-//        this._setFieldRelationConstructor(fieldName, other);
-//      };
-//      // hasMany
-//      Resource.hasMany = function (fieldName, other) {
-//        this._setFieldDataType(fieldName, 'Relation');
-//        this._setFieldClassName(fieldName, other._getClassName());
-//      };
-
       // Instance methods
-      Resource.prototype.isNew = function () {
-        return !this.objectId;
-      };
+//      Resource.prototype.isNew = function () {
+//        return !this.objectId;
+//      };
       // className
       Object.defineProperty(Resource.prototype, 'className', {
         enumerable: true,
@@ -1743,50 +2018,56 @@ angular.module('angularParseInterface')
         },
         set: function () {}
       });
-//      // getPointer
-//      Resource.prototype.getPointer = function () {
-//        return {
-//          __type: 'Pointer',
-//          className: this.className,
-//          objectId: this.objectId
-//        };
-//      };
+      // getPointer
+      Resource.prototype.getPointer = function () {
+        return {
+          __type: 'Pointer',
+          className: this.className,
+          objectId: this.objectId
+        };
+      };
 
-//      // Relational methods
-//      // setPointer
-//      Resource.prototype.setPointer = function (fieldName, other) {
-//        this[fieldName] = other.objectId;
-//      };
-//      // addRelations
-//      Resource.prototype.addRelations = function (fieldName/*, other*/) {
-//        var relations = angular.isArray(arguments[1]) ? arguments[1] : [].slice.call(arguments, 1),
-//          data = {};
-//
-//        data[fieldName] = {
-//          __op: 'AddRelation',
-//          objects: []
-//        };
-//        angular.forEach(relations, function (o) {
-//          data[fieldName].objects.push(o.getPointer());
-//        });
-//
-//        return this.$putData(data);
-//      };
-//      // removeRelations
-//      Resource.prototype.removeRelations = function (fieldName/*, other*/) {
-//        var relations = angular.isArray(arguments[1]) ? arguments[1] : [].slice.call(arguments, 1),
-//          data = {};
-//
-//        data[fieldName] = {
-//          __op: 'RemoveRelation',
-//          objects: []
-//        };
-//        angular.forEach(relations, function (o) {
-//          data[fieldName].objects.push(o.getPointer());
-//        });
-//
-//        return this.$putData(data);
-//      };
+      // Relational methods
+      // hasOne
+      Resource.hasOne = function (fieldName, other) {
+        this._setFieldDataType(fieldName, 'Pointer');
+        this._setFieldClassName(fieldName, other.className);
+      };
+      // hasMany
+      Resource.hasMany = function (fieldName, other) {
+        this._setFieldDataType(fieldName, 'Relation');
+        this._setFieldClassName(fieldName, other.className);
+      };
+      // addRelations
+      Resource.prototype.addRelations = function (fieldName/*, relations */) {
+        var relations = angular.isArray(arguments[1]) ? arguments[1] : [].slice.call(arguments, 1),
+          data = {};
+
+        data[fieldName] = {
+          __op: 'AddRelation',
+          objects: []
+        };
+        angular.forEach(relations, function (o) {
+          data[fieldName].objects.push(o.getPointer());
+        });
+
+        return this.$PUT(data);
+      };
+      // removeRelations
+      Resource.prototype.removeRelations = function (fieldName/*, other*/) {
+        var relations = angular.isArray(arguments[1]) ? arguments[1] : [].slice.call(arguments, 1),
+          data = {};
+
+        data[fieldName] = {
+          __op: 'RemoveRelation',
+          objects: []
+        };
+        angular.forEach(relations, function (o) {
+          data[fieldName].objects.push(o.getPointer());
+        });
+
+        return this.$PUT(data);
+      };
 
 //      // Probably not worth using Parse's increment operator
 //      // increment
@@ -1807,30 +2088,71 @@ angular.module('angularParseInterface')
 //        data[fieldName] = {
 //          __op: 'Delete'
 //        };
-//        return this.$putData(data).then(function () {
+//        return this.PUT(data).then(function () {
 //          delete self[fieldName];
 //        });
 //      };
 
-//      // Security
-//      Resource.prototype._setPrivileges = function (name, privileges) {
-//        this.ACL = this.ACL || {};
-//        this.ACL[name] = this.ACL[name] || {};
-//        if (privileges.read) {
-//          this.ACL[name].read = privileges.read;
-//        }
-//        if (privileges.write) {
-//          this.ACL[name].write = privileges.write;
-//        }
-//      };
-//      Resource.prototype.allCanRead = function () {
-//        this._setPrivileges('*', {read: true});
-//      };
-//      Resource.prototype.allCanWrite = function () {
-//        this._setPrivileges('*', {write: true});
-//      };
-//      Resource.prototype.setUserPrivileges = function (user, privileges) {
-//        this._setPrivileges(user.objectId, privileges);
-//      };
+      // Security
+      Resource.prototype._getACLMetaData = function () {
+        return this.ACL || {};
+      };
+      Resource.prototype._setACLMetaData = function (val) {
+        this.ACL = val;
+      };
+      Resource.prototype._setReadPrivileges = function (obj, canRead) {
+        var id, ACL;
+        if (arguments.length === 1 && (typeof obj === 'boolean')) {
+          canRead = obj;
+          id = '*';
+        } else {
+          if ((obj.className !== '_User') && (obj.className !== '_Role')) {
+            throw new Error('Can only set privileges for User or Role objects');
+          }
+          id = obj.objectId;
+        }
+        ACL = this._getACLMetaData();
+        ACL[id] = ACL[id] || {};
+        ACL[id].read = canRead;
+        this._setACLMetaData(ACL);
+      };
+      Resource.prototype._setWritePrivileges = function (obj, canWrite) {
+        var id, ACL;
+        if (arguments.length === 1 && (typeof obj === 'boolean')) {
+          canWrite = obj;
+          id = '*';
+        } else {
+          if ((obj.className !== '_User') && (obj.className !== '_Role')) {
+            throw new Error('Can only set privileges for User or Role objects');
+          }
+          id = obj.objectId;
+        }
+        ACL = this._getACLMetaData();
+        ACL[id] = ACL[id] || {};
+        ACL[id].write = canWrite;
+        this._setACLMetaData(ACL);
+      };
+      Resource.prototype.canBeReadBy = function (obj) {
+        var id = obj.objectId;
+        this._setReadPrivileges(id, true);
+      };
+      Resource.prototype.cannotBeReadBy = function (obj) {
+        var id = obj.objectId;
+        this._setReadPrivileges(id, false);
+      };
+      Resource.prototype.canBeWrittenBy = function (obj) {
+        var id = obj.objectId;
+        this._setWritePrivileges(id, true);
+      };
+      Resource.prototype.cannotBeWrittenBy = function (obj) {
+        var id = obj.objectId;
+        this._setWritePrivileges(id, false);
+      };
+      Resource.prototype.allCanRead = function () {
+        this._setReadPrivileges(true);
+      };
+      Resource.prototype.allCanWrite = function () {
+        this._setWritePrivileges(true);
+      };
     };
   });
