@@ -1,6 +1,12 @@
 angular
   .module('angularParseInterface')
-  .factory('parseInterface', function (ParseAppEventBus, parseResource, parseObjectFactory, parseUser, parseQueryBuilder, parseCloudCode) {
+  .factory('parseInterface', function (ParseAppEventBus,
+                                       parseResource,
+                                       parseObjectFactory,
+                                       parseUser,
+                                       parseQueryBuilder,
+                                       parseCloudCode,
+                                       parseRole) {
     'use strict';
 
     var parseInterface = {};
@@ -36,16 +42,19 @@ angular
       appResource = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
 
       // Compose the application interface
-      appInterface = {
+      appInterface = {};
         // An object factory. This takes a className argument and returns a Resource mapped to a Parse Object
-        objectFactory: parseObjectFactory.createObjectFactory(appResource),
+      appInterface.objectFactory = parseObjectFactory.createObjectFactory(appResource);
         // A User model. It has the same capabilities as other Resources, as well as some additional user-specific
         // methods.
-        User: parseUser.createUserModel(appResource, appStorage, appEventBus),
+      appInterface.User = parseUser.createUserModel(appResource, appStorage, appEventBus);
         // A constructor that takes a Resource and returns a query builder.
-        Query: parseQueryBuilder.Query,
-        getCloudCaller: parseCloudCode.createCallerFactory(appResource)
-      };
+      appInterface.Query = parseQueryBuilder.Query;
+        // A factory that generates functions that call cloud functions
+      appInterface.getCloudCaller = parseCloudCode.createCallerFactory(appResource);
+        // t0d0: Add test for this
+      appInterface.roleFactory = parseRole.createRoleFactory(appResource, appInterface.User);
+
 
       return appInterface;
     };

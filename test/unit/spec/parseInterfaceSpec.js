@@ -44,6 +44,13 @@ describe('Factory: parseInterface', function () {
       }
     };
     spyOn(mocks.parseCloudCode, 'createCallerFactory').andCallThrough();
+    mocks.roleFactory = {};
+    mocks.parseRole = {
+      createRoleFactory: function () {
+        return mocks.roleFactory;
+      }
+    };
+    spyOn(mocks.parseRole, 'createRoleFactory').andCallThrough();
     module('angularParseInterface', function ($provide) {
       $provide.value('ParseAppEventBus', mocks.ParseAppEventBus);
       $provide.value('parseResource', mocks.parseResource);
@@ -51,6 +58,7 @@ describe('Factory: parseInterface', function () {
       $provide.value('parseUser', mocks.parseUser);
       $provide.value('parseQueryBuilder', mocks.parseQueryBuilder);
       $provide.value('parseCloudCode', mocks.parseCloudCode);
+      $provide.value('parseRole', mocks.parseRole);
     });
     inject(function ($injector) {
       parseInterface = $injector.get('parseInterface');
