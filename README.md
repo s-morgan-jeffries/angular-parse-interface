@@ -8,9 +8,12 @@ To use, either clone the repository, or do:
 
 <pre><code>$ bower install --save s-morgan-jeffries/angular-parse-interface</code></pre>
 
-Include the built module file in your index.html:
+Include both the ngResource source file and the built module file in your index.html:
 
-<pre><code>&lt;script src="bower_components/angular-parse-interface/dist/angular-parse-interface.js"&gt;&lt;/script&gt;</code></pre>
+<pre><code>
+&lt;script src="bower_components/angular-resource/angular-resource.js"&gt;&lt;/script&gt;
+&lt;script src="bower_components/angular-parse-interface/dist/angular-parse-interface.js"&gt;&lt;/script&gt;
+</code></pre>
 
 Then include the module as a dependency of your app module:
 
