@@ -10,8 +10,7 @@ To use, either clone the repository, or do:
 
 Include both the ngResource source file and the built module file in your index.html:
 
-<pre><code>
-&lt;script src="bower_components/angular-resource/angular-resource.js"&gt;&lt;/script&gt;
+<pre><code>&lt;script src="bower_components/angular-resource/angular-resource.js"&gt;&lt;/script&gt;
 &lt;script src="bower_components/angular-parse-interface/dist/angular-parse-interface.js"&gt;&lt;/script&gt;
 </code></pre>
 
