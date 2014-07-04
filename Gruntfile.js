@@ -175,20 +175,6 @@ module.exports = function (grunt) {
           // Utilities
           '../../dev_app/bower_components/lodash/dist/lodash.js',
           // The source files for the modules
-//          // config module
-//          '../../src/modules/config.js',
-//          // eventBus module
-//          '../../src/modules/eventBus/ParseAppEventBus.js',
-//          // resource module
-//          '../../src/modules/resource/resourceModule.js',
-//          '../../src/modules/resource/*.js',
-//          // objectFactory module
-//          '../../src/modules/objectFactory/parseObjectFactory.js',
-//          // user module
-//          '../../src/modules/user/parseUser.js',
-//          // queryBuilder module
-//          '../../src/modules/queryBuilder/parseQueryBuilder.js',
-          // main module
           '../../src/angularParseInterface.js',
           '../../src/**/*.js',
           // These are all the tests.
@@ -206,6 +192,24 @@ module.exports = function (grunt) {
       unitTravis: {
         configFile: 'test/unit/karma.unit.travis.conf.js',
         singleRun: true
+//        options: {
+//          files: [
+//            // Add jasmine-matchers
+//            '../../node_modules/jasmine-expect/dist/jasmine-matchers.js',
+//            // This is obviously the core angular module
+//            '../../dev_app/bower_components/angular/angular.js',
+//            // This is the angular-mocks module, which adds a couple of utility functions (module, inject, maybe others)
+//            '../../dev_app/bower_components/angular-mocks/angular-mocks.js',
+//            // Other dependencies
+//            '../../dev_app/bower_components/angular-resource/angular-resource.js',
+//            // Utilities
+//            '../../dev_app/bower_components/lodash/dist/lodash.js',
+//            // The source files for the modules
+//            '../../dist/angular-parse-interface.js',
+//            // These are all the tests.
+//            'spec/**/*.js'
+//          ]
+//        }
       },
       integrationCI: {
         configFile: 'test/integration/karma.integration.ci.conf.js',
@@ -218,6 +222,24 @@ module.exports = function (grunt) {
       integrationTravis: {
         configFile: 'test/integration/karma.integration.travis.conf.js',
         singleRun: true
+//        options: {
+//          files: [
+//            // Add jasmine-matchers
+//            '../../node_modules/jasmine-expect/dist/jasmine-matchers.js',
+//            // This is obviously the core angular module
+//            '../../dev_app/bower_components/angular/angular.js',
+//            // This is the angular-mocks module, which adds a couple of utility functions (module, inject, maybe others)
+//            '../../dev_app/bower_components/angular-mocks/angular-mocks.js',
+//            // Other dependencies
+//            '../../dev_app/bower_components/angular-resource/angular-resource.js',
+//            // Utilities
+//            '../../dev_app/bower_components/lodash/dist/lodash.js',
+//            // The source files for the modules
+//            '../../dist/angular-parse-interface.js',
+//            // These are all the tests.
+//            'spec/**/*.js'
+//          ]
+//        }
       }
     },
 
