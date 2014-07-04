@@ -1,11 +1,11 @@
 angular
   .module('angularParseInterface')
-  .factory('parseEvents', function () {
+  .factory('parseEvent', function () {
     'use strict';
 
     // See here:
     // https://www.parse.com/docs/rest#analytics-custom
-    var parseEvents = {};
+    var parseEvent = {};
 
-    return parseEvents;
+    return parseEvent;
   });
