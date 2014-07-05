@@ -1,7 +1,8 @@
 'use strict';
 
-describe('Factory: parseRequestHeaders', function () {
-  var parseRequestHeaders;
+describe('Factory: parseRESTHeaders', function () {
+  var parseRESTHeaders,
+    moduleName = 'parseRESTHeaders';
 
   var PARSE_APP_EVENTS = {
     SIGN_IN: 'SIGN_IN',
@@ -18,7 +19,7 @@ describe('Factory: parseRequestHeaders', function () {
       $provide.value('$log', console);
     });
     inject(function ($injector) {
-      parseRequestHeaders = $injector.get('parseRequestHeaders');
+      parseRESTHeaders = $injector.get('parseRESTHeaders');
     });
   });
 
@@ -32,6 +33,7 @@ describe('Factory: parseRequestHeaders', function () {
       transformRequest;
 
     beforeEach(function () {
+//      console.log(parseRESTHeaders);
       appId = '12345';
       restKey = 'abcde';
       appConfig = {
@@ -51,32 +53,33 @@ describe('Factory: parseRequestHeaders', function () {
     });
 
     it('should be a function', function () {
-      expect(parseRequestHeaders.getTransformRequest).toBeFunction();
+//      console.log(parseRESTHeaders);
+      expect(parseRESTHeaders.getTransformRequest).toBeFunction();
     });
 
     it('should create a module-specific namespace for storage', function () {
-      transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
-      expect(appStorage.parseRequestHeaders).toBeObject();
+      transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
+      expect(appStorage[moduleName]).toBeObject();
     });
 
     it('should return a transformRequest function', function () {
-      transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+      transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
       expect(transformRequest).toBeFunction();
     });
 
     it('should emit a MODULE_REGISTERED event with its module name', function () {
-      var moduleName = 'parseRequestHeaders';
-      transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+      var moduleName = 'parseRESTHeaders';
+      transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
       expect(appEventBus.emit).toHaveBeenCalledWith(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
     });
 
     describe('MODULE_INIT handler', function () {
-      var moduleName = 'parseRequestHeaders',
+      var moduleName = 'parseRESTHeaders',
         eventName = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName;
 
       it('should be registered as an event handler for a namespaced MODULE_INIT event', function () {
         var eventHasHandler = false;
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         expect(appEventBus.on).toHaveBeenCalled();
         angular.forEach(appEventBus.on.argsForCall, function (args) {
           eventHasHandler = eventHasHandler || (args[0] === eventName);
@@ -88,7 +91,7 @@ describe('Factory: parseRequestHeaders', function () {
       it('should cause itself to be deregistered as an event handler', function () {
         var handler,
           mockEvent = {};
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         angular.forEach(appEventBus.on.argsForCall, function (args) {
           if (args[0] === eventName) {
             handler = args[1];
@@ -105,12 +108,12 @@ describe('Factory: parseRequestHeaders', function () {
         eventName = PARSE_APP_EVENTS.SIGN_IN;
 
       beforeEach(function () {
-        modStorage = appStorage.parseRequestHeaders = {};
+        modStorage = appStorage[moduleName] = {};
       });
 
       it('should be registered as an event handler for the SIGN_IN event', function () {
         var eventHasHandler = false;
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         expect(appEventBus.on).toHaveBeenCalled();
         angular.forEach(appEventBus.on.argsForCall, function (args) {
           eventHasHandler = eventHasHandler || (args[0] === eventName);
@@ -125,7 +128,7 @@ describe('Factory: parseRequestHeaders', function () {
           data = {
             sessionToken: sessionToken
           };
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         angular.forEach(appEventBus.on.argsForCall, function (args) {
           if (args[0] === eventName) {
             handler = args[1];
@@ -143,7 +146,7 @@ describe('Factory: parseRequestHeaders', function () {
           data = {
             sessionToken: newSessionToken
           };
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         angular.forEach(appEventBus.on.argsForCall, function (args) {
           if (args[0] === eventName) {
             handler = args[1];
@@ -160,12 +163,12 @@ describe('Factory: parseRequestHeaders', function () {
         eventName = PARSE_APP_EVENTS.SIGN_OUT;
 
       beforeEach(function () {
-        modStorage = appStorage.parseRequestHeaders = {};
+        modStorage = appStorage[moduleName] = {};
       });
 
       it('should be registered as an event handler for the SIGN_OUT event', function () {
         var eventHasHandler = false;
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         expect(appEventBus.on).toHaveBeenCalled();
         angular.forEach(appEventBus.on.argsForCall, function (args) {
           eventHasHandler = eventHasHandler || (args[0] === eventName);
@@ -178,7 +181,7 @@ describe('Factory: parseRequestHeaders', function () {
         var handler,
           mockEvent = {},
           data = {};
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         angular.forEach(appEventBus.on.argsForCall, function (args) {
           if (args[0] === eventName) {
             handler = args[1];
@@ -195,7 +198,7 @@ describe('Factory: parseRequestHeaders', function () {
 
       it('should be registered as an event handler for the SIGN_OUT event', function () {
         var eventHasHandler = false;
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         expect(appEventBus.on).toHaveBeenCalled();
         angular.forEach(appEventBus.on.argsForCall, function (args) {
           eventHasHandler = eventHasHandler || (args[0] === eventName);
@@ -210,7 +213,7 @@ describe('Factory: parseRequestHeaders', function () {
 
       it('should be registered as an event handler for the SIGN_OUT event', function () {
         var eventHasHandler = false;
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         expect(appEventBus.on).toHaveBeenCalled();
         angular.forEach(appEventBus.on.argsForCall, function (args) {
           eventHasHandler = eventHasHandler || (args[0] === eventName);
@@ -245,9 +248,9 @@ describe('Factory: parseRequestHeaders', function () {
           }
         };
         headers = {};
-        modStorage = appStorage.parseRequestHeaders = {};
+        modStorage = appStorage[moduleName] = {};
         modStorage.sessionToken = sessionToken;
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         initializeMod = appEventBus.on.argsForCall[0][1];
         initializeMod(null, appConfig);
       });
@@ -313,7 +316,7 @@ describe('Factory: parseRequestHeaders', function () {
         headers['X-Some-Header'] = 'aValue';
         // Make a copy
         origHeaders = angular.copy(headers);
-//        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+//        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         transformedData = transformRequest(data, headersGetter);
         // Not technically necessary, but explicit is better than implicit
         transformedHeaders = angular.copy(headers);
@@ -331,7 +334,7 @@ describe('Factory: parseRequestHeaders', function () {
 
         // First, to show that the headers are usually modified
         appEventBus.on.reset();
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         initializeMod = appEventBus.on.argsForCall[0][1];
         // Use REST for currentAPI
         appConfig.currentAPI = 'REST';
@@ -346,7 +349,7 @@ describe('Factory: parseRequestHeaders', function () {
 
         // Now, reinitialize the module
         appEventBus.on.reset();
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         initializeMod = appEventBus.on.argsForCall[0][1];
         // Instead of REST, we'll use JS here
         appConfig.currentAPI = 'JS';
@@ -364,7 +367,7 @@ describe('Factory: parseRequestHeaders', function () {
 
         // First, to show that the headers are usually modified
         appEventBus.on.reset();
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         initializeMod = appEventBus.on.argsForCall[0][1];
         // Use REST for currentAPI
         appConfig.currentAPI = 'REST';
@@ -394,7 +397,7 @@ describe('Factory: parseRequestHeaders', function () {
 
         // First, to show that the headers are usually modified
         appEventBus.on.reset();
-        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
         initializeMod = appEventBus.on.argsForCall[0][1];
         // Use JS for currentAPI
         appConfig.currentAPI = 'JS';
@@ -427,7 +430,7 @@ describe('Factory: parseRequestHeaders', function () {
 //          eventHandler,
 //          callIdx = 1;
 //        delete modStorage.sessionToken;
-////        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+////        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
 //        // NB: If this fails, make sure the order of the event registrations hasn't changed.
 //        eventName = appEventBus.on.argsForCall[callIdx][0];
 //        expect(eventName).toEqual(PARSE_APP_EVENTS.SIGN_IN);
@@ -440,7 +443,7 @@ describe('Factory: parseRequestHeaders', function () {
 //        var eventName,
 //          eventHandler,
 //          callIdx = 2;
-////        transformRequest = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
+////        transformRequest = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
 //        // NB: If this fails, make sure the order of the event registrations hasn't changed.
 //        eventName = appEventBus.on.argsForCall[callIdx][0];
 //        expect(eventName).toEqual(PARSE_APP_EVENTS.SIGN_OUT);

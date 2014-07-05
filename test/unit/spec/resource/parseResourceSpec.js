@@ -16,7 +16,7 @@ describe('Factory: parseResource', function () {
     };
     spyOn(mocks, 'coreAppResourceFactory').andCallThrough();
     mocks.addRequestHeaders = function () {};
-    mocks.parseRequestHeaders = {
+    mocks.parseRESTHeaders = {
       getTransformRequest: function (/*appConfig, appStorage, appEventBus*/) {
         return mocks.addRequestHeaders;
       }
@@ -34,7 +34,7 @@ describe('Factory: parseResource', function () {
     mocks.parseResourceDecorator = jasmine.createSpy();
     module('angularParseInterface', function ($provide) {
       $provide.value('$resource', mocks.$resource);
-      $provide.value('parseRequestHeaders', mocks.parseRequestHeaders);
+      $provide.value('parseRESTHeaders', mocks.parseRESTHeaders);
       $provide.value('parseDataEncoding', mocks.parseDataEncoding);
       $provide.value('parseResourceDecorator', mocks.parseResourceDecorator);
       $provide.value('$log', console);
@@ -57,10 +57,10 @@ describe('Factory: parseResource', function () {
       expect(parseResource.createCoreAppResourceFactory).toBeFunction();
     });
 
-    it('should call parseRequestHeaders\' getTransformRequest function with appConfig, appStorage, and appEventBus', function () {
-      spyOn(mocks.parseRequestHeaders, 'getTransformRequest').andCallThrough();
+    it('should call parseRequestHeaders\' getTransformRequest function with appEventBus and appStorage', function () {
+      spyOn(mocks.parseRESTHeaders, 'getTransformRequest').andCallThrough();
       parseResource.createCoreAppResourceFactory(appEventBus, appStorage);
-      expect(mocks.parseRequestHeaders.getTransformRequest).toHaveBeenCalledWith(appEventBus, appStorage);
+      expect(mocks.parseRESTHeaders.getTransformRequest).toHaveBeenCalledWith(appEventBus, appStorage);
     });
 
     it('should return a function', function () {

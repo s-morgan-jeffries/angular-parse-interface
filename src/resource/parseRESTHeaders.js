@@ -1,17 +1,17 @@
 angular.module('angularParseInterface')
-  .factory('parseRequestHeaders', function (PARSE_APP_EVENTS) {
+  .factory('parseRESTHeaders', function (PARSE_APP_EVENTS) {
     'use strict';
 
     // The service has only one method, getTransformRequest. It returns a transformRequest function that will add the
     // correct headers to the request but will not otherwise modify the headers or data
-    var parseRequestHeaders = {};
+    var parseRESTHeaders = {};
 
-    parseRequestHeaders.getTransformRequest = function (appEventBus, appStorage) {
+    parseRESTHeaders.getTransformRequest = function (appEventBus, appStorage) {
       var APPLICATION_ID,
         REST_KEY,
         // Whether we're using the REST API
         useRestApi = false,
-        moduleName = 'parseRequestHeaders',
+        moduleName = 'parseRESTHeaders',
         // Namespaced initialization event. The appInterface will emit this with the appConfig when the
         // MODULE_REGISTERED event is emitted with our moduleName.
         INIT_EVENT = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName,
@@ -75,5 +75,5 @@ angular.module('angularParseInterface')
       };
     };
 
-    return parseRequestHeaders;
+    return parseRESTHeaders;
   });
