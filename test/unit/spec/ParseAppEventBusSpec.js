@@ -2,88 +2,170 @@
 
 describe('Factory: ParseAppEventBus', function () {
   var ParseAppEventBus,
-    mockRootScope = {
-      $new: function () {
-        return {
-          _registered: [],
-          $on: function (event, action) {
-            var registeredEvents = this._registered;
-            registeredEvents.push({
-              event: event,
-              action: action
-            });
-          },
-          _emitted: [],
-          $emit: function (event/*, args */) {
-            var emitted = this._emitted,
-              args = [].slice.call(arguments, 1);
-
-            emitted.push({
-              event: event,
-              args: args
-            });
-          }
-        };
-      }
-    };
+    mocks,
+    appEventBus;
 
   beforeEach(function () {
+    mocks = {};
+    mocks.unregisterHandler = function () {};
+    mocks.$scope = {
+      $on: function () {
+        return mocks.unregisterHandler;
+      },
+      $emit: jasmine.createSpy()
+    };
+    spyOn(mocks.$scope, '$on').andCallThrough();
+    mocks.$rootScope = {
+      $new: function () {
+        return mocks.$scope;
+      }
+    };
+    spyOn(mocks.$rootScope, '$new').andCallThrough();
     module('angularParseInterface', function ($provide) {
-      $provide.value('$rootScope', mockRootScope);
+      $provide.value('$rootScope', mocks.$rootScope);
     });
     inject(function ($injector) {
       ParseAppEventBus = $injector.get('ParseAppEventBus');
     });
   });
 
-  it('should return an event bus', function () {
-    var eventBus = new ParseAppEventBus();
-    expect(eventBus).toBeObject();
-    expect(eventBus.on).toBeFunction();
-    expect(eventBus.emit).toBeFunction();
+  it('should call the $rootScope.$new method with true', function () {
+    appEventBus = new ParseAppEventBus();
+    expect(mocks.$rootScope.$new).toHaveBeenCalledWith(true);
   });
 
-  describe('eventBus', function () {
-    var eventBus;
+  it('should return an event bus', function () {
+    appEventBus = new ParseAppEventBus();
+    expect(appEventBus).toBeObject();
+    expect(appEventBus.on).toBeFunction();
+    expect(appEventBus.emit).toBeFunction();
+  });
+
+  describe('appEventBus', function () {
 
     beforeEach(function () {
-      eventBus = new ParseAppEventBus();
+      appEventBus = new ParseAppEventBus();
     });
 
-    it('should have its own _$scope', function () {
-      var scope = eventBus._$scope;
-      expect(scope).toBeObject();
-      expect(scope.$on).toBeFunction();
-      expect(scope.$emit).toBeFunction();
+    it('should have a _$scope property set to the return value of $rootScope.$new', function () {
+      var scope = appEventBus._$scope;
+      expect(scope).toBe(mocks.$scope);
+    });
+
+    it('should have an _events property set to an empty object', function () {
+      var events = appEventBus._events;
+      expect(events).toEqual({});
     });
 
     describe('on method', function () {
-      it('should register an event with its _$scope', function () {
-        var scope = eventBus._$scope,
-          registeredEvents = scope._registered,
-          event = 'foo',
-          handler = function () {},
-          thisEvent;
+      var scope, events, eventName, handler;
 
-        eventBus.on(event, handler);
-        thisEvent = registeredEvents.pop();
-        expect(thisEvent.event).toEqual(event);
-        expect(thisEvent.action).toEqual(handler);
+      beforeEach(function () {
+        scope = appEventBus._$scope;
+        events = appEventBus._events;
+        eventName = 'foo';
+        handler = function () {};
+      });
+
+      it('should delegate to its _$scope\'s $on method', function () {
+        appEventBus.on(eventName, handler);
+        expect(scope.$on).toHaveBeenCalledWith(eventName, handler);
+      });
+
+      it('should create an array-valued property sharing the eventName\'s name on the _event object if it does not exist', function () {
+        expect(events[eventName]).toBeUndefined();
+        appEventBus.on(eventName, handler);
+        expect(events[eventName]).toBeDefined();
+        expect(events[eventName]).toBeArray();
+      });
+
+      it('should add an object with the handler and a deregistration function to the event handler array', function () {
+        var handlerArray, handlerObj;
+        appEventBus.on(eventName, handler);
+        handlerArray = events[eventName];
+        handlerObj = handlerArray[0];
+        expect(handlerObj.handler).toBe(handler);
+        expect(handlerObj.unregisterHandler).toBe(mocks.unregisterHandler);
       });
     });
 
-    describe('emit method', function () {
-      it('should trigger the event on its _$scope', function () {
-        var scope = eventBus._$scope,
-          emittedEvents = scope._emitted,
-          event = 'foo',
-          args = [1, 'a', null],
-          thisEvent;
+    describe('off method', function () {
+      var events, eventName, handler, handler2, unregisterHandler, unregisterHandler2;
 
-        eventBus.emit(event, args[0], args[1], args[2]);
-        thisEvent = emittedEvents.pop();
-        expect(thisEvent.event).toEqual(event);
-        expect(thisEvent.args).toEqual(args);
+      beforeEach(function () {
+        var handlerArray;
+        eventName = 'foo';
+        handler = function () {};
+        handler2 = function () {};
+        unregisterHandler = jasmine.createSpy();
+        unregisterHandler2 = function () {};
+        events = appEventBus._events;
+        handlerArray = events[eventName] = [];
+        handlerArray.push({
+          handler: handler,
+          unregisterHandler: unregisterHandler
+        });
+        handlerArray.push({
+          handler: handler2,
+          unregisterHandler: unregisterHandler2
+        });
+      });
+
+      it('should call the unregisterHandler function for the supplied handler on the supplied eventName', function () {
+        appEventBus.off(eventName, handler);
+        expect(unregisterHandler).toHaveBeenCalled();
+      });
+
+      it('should remove the handler object for the supplied handler on the supplied eventName from the handlerArray', function () {
+        var inArray = false,
+          handlerArray = appEventBus._events[eventName];
+        angular.forEach(handlerArray, function (handlerObj) {
+          inArray = inArray || (handlerObj.handler === handler);
+        });
+        // It should be there
+        expect(inArray).toBeTrue();
+
+        appEventBus.off(eventName, handler);
+        // We have to update our reference to this
+        handlerArray = appEventBus._events[eventName];
+        inArray = false;
+        angular.forEach(handlerArray, function (handlerObj) {
+          inArray = inArray || (handlerObj.handler === handler);
+        });
+        // Now it should not be there
+        expect(inArray).toBeFalse();
+      });
+
+      it('should not remove any other handler objects from the handlerArray', function () {
+        var inArray = false,
+          handlerArray = appEventBus._events[eventName];
+        angular.forEach(handlerArray, function (handlerObj) {
+          inArray = inArray || (handlerObj.handler === handler2);
+        });
+        // It should be there
+        expect(inArray).toBeTrue();
+
+        appEventBus.off(eventName, handler);
+        // We have to update our reference to this
+        handlerArray = appEventBus._events[eventName];
+        inArray = false;
+        angular.forEach(handlerArray, function (handlerObj) {
+          inArray = inArray || (handlerObj.handler === handler2);
+        });
+        // It should still be there
+        expect(inArray).toBeTrue();
+      });
+
+    });
+
+    describe('emit method', function () {
+      it('should delegate to its _$scope\'s $emit method', function () {
+        var scope = appEventBus._$scope,
+          event = 'foo',
+          data1 = {},
+          data2 = {};
+        appEventBus.emit(event, data1, data2);
+        expect(scope.$emit).toHaveBeenCalledWith(event, data1, data2);
       });
     });
   });

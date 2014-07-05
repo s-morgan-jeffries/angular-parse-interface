@@ -306,6 +306,9 @@ angular
       params.className = this._Resource.className;
       return params;
     };
+    // backburner: Update Query.prototype.exec so it can take callback functinos
+    // backburner: Rename Query.prototype.exec to find
+    // backburner: Refactor Query.prototype.count so it executes the query
     Query.prototype.exec = function () {
       var params = this._yieldParams();
       delete params.className;

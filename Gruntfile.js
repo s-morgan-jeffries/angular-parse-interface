@@ -299,7 +299,7 @@ module.exports = function (grunt) {
       },
       devApp: {
         files: ['<%= yeoman.devApp %>/scripts/{,*/}*.js'],
-        tasks: ['jshint:dev_app']
+        tasks: ['jshint:devApp']
       },
       scripts: {
         files: ['src/**/*.js'],

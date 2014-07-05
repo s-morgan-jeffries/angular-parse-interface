@@ -59,8 +59,8 @@ describe('Factory: parseResource', function () {
 
     it('should call parseRequestHeaders\' getTransformRequest function with appConfig, appStorage, and appEventBus', function () {
       spyOn(mocks.parseRequestHeaders, 'getTransformRequest').andCallThrough();
-      parseResource.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
-      expect(mocks.parseRequestHeaders.getTransformRequest).toHaveBeenCalledWith(appConfig, appStorage, appEventBus);
+      parseResource.createCoreAppResourceFactory(appEventBus, appStorage);
+      expect(mocks.parseRequestHeaders.getTransformRequest).toHaveBeenCalledWith(appEventBus, appStorage);
     });
 
     it('should return a function', function () {
@@ -392,8 +392,8 @@ describe('Factory: parseResource', function () {
 
     it('should call the createCoreAppResourceFactory', function () {
       spyOn(parseResource, 'createCoreAppResourceFactory').andCallThrough();
-      parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
-      expect(parseResource.createCoreAppResourceFactory).toHaveBeenCalledWith(appConfig, appStorage, appEventBus);
+      parseResource.createAppResourceFactory(appEventBus, appStorage);
+      expect(parseResource.createCoreAppResourceFactory).toHaveBeenCalledWith(appEventBus, appStorage);
     });
 
     it('should return a function', function () {

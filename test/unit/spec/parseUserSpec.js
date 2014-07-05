@@ -4,7 +4,7 @@ describe('Factory: parseUser', function () {
   var parseUser,
     mockParseResourceActions,
     mockActionLib,
-    EVENTS = {
+    PARSE_APP_EVENTS = {
       SIGN_IN: 'signin',
       SIGN_OUT: 'signout'
     };
@@ -24,7 +24,7 @@ describe('Factory: parseUser', function () {
       }
     };
     module('angularParseInterface', function ($provide) {
-      $provide.value('EVENTS', EVENTS);
+      $provide.value('PARSE_APP_EVENTS', PARSE_APP_EVENTS);
       $provide.value('parseResourceActions', mockParseResourceActions);
     });
     inject(function ($injector) {
@@ -129,7 +129,7 @@ describe('Factory: parseUser', function () {
         });
 
         it('should emit a SIGN_IN event with the sessionToken', function () {
-          expect(mocks.eventBus.emit).toHaveBeenCalledWith(EVENTS.SIGN_IN, {
+          expect(mocks.eventBus.emit).toHaveBeenCalledWith(PARSE_APP_EVENTS.SIGN_IN, {
             sessionToken: sessionToken
           });
         });
@@ -158,7 +158,7 @@ describe('Factory: parseUser', function () {
         });
 
         it('should emit a SIGN_IN event with the sessionToken', function () {
-          expect(mocks.eventBus.emit).toHaveBeenCalledWith(EVENTS.SIGN_IN, {
+          expect(mocks.eventBus.emit).toHaveBeenCalledWith(PARSE_APP_EVENTS.SIGN_IN, {
             sessionToken: sessionToken
           });
         });
@@ -181,7 +181,7 @@ describe('Factory: parseUser', function () {
 
         it('should trigger the SIGN_OUT event on the eventBus', function () {
           User.signOut();
-          expect(mocks.eventBus.emit).toHaveBeenCalledWith(EVENTS.SIGN_OUT);
+          expect(mocks.eventBus.emit).toHaveBeenCalledWith(PARSE_APP_EVENTS.SIGN_OUT);
         });
       });
 

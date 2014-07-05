@@ -6,8 +6,8 @@ angular.module('angularParseInterface')
 
     //   The purpose of this function is to modify the $resource service so that it adds appropriate headers and
     // encodes/decodes data in the correct format for Parse.
-    parseResource.createAppResourceFactory = function (appConfig, appStorage, appEventBus) {
-      var coreAppResourceFactory = this.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
+    parseResource.createAppResourceFactory = function (appEventBus, appStorage) {
+      var coreAppResourceFactory = this.createCoreAppResourceFactory(appEventBus, appStorage);
 
       // Okay for now. What do you want this to do ultimately? You probably don't want to leave customActions in its
       // current state. For example, you probably want objects to have certain actions but not others.
@@ -57,7 +57,7 @@ angular.module('angularParseInterface')
     // I'm not crazy about exposing this on the service when it's actually only used within this file, but it does make
     // it very testable. Also, I briefly toyed with combining this function with createAppResourceFactory, but it was an
     // inscrutable mess.
-    parseResource.createCoreAppResourceFactory = function (appConfig, appStorage, appEventBus) {
+    parseResource.createCoreAppResourceFactory = function (appEventBus, appStorage) {
 
       var hasRequestBody = function (action) {
         // For Parse, these are currently the only methods for which a request body has any meaning
@@ -79,7 +79,7 @@ angular.module('angularParseInterface')
         return data;
       };
 
-      var addRequestHeaders = parseRequestHeaders.getTransformRequest(appConfig, appStorage, appEventBus);
+      var addRequestHeaders = parseRequestHeaders.getTransformRequest(appEventBus, appStorage);
 
       return function coreAppResourceFactory(url, defaultParams, actions) {
         var restApiBaseUrl = 'https://api.parse.com/1',

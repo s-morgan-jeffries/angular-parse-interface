@@ -1,6 +1,6 @@
 angular
   .module('angularParseInterface')
-  .factory('parseUser', function (parseResourceActions, EVENTS) {
+  .factory('parseUser', function (parseResourceActions, PARSE_APP_EVENTS) {
     'use strict';
 
     var parseUser = {};
@@ -30,7 +30,7 @@ angular
           // Emit a SIGN_IN event with the sessionToken as data. Currently (as of this writing), the coreAppResourceFactory
           // uses this to keep track of the sessionToken, but this prevents us from having to hard-code that. The point
           // is that something else is keeping track of it.
-          eventBus.emit(EVENTS.SIGN_IN, data);
+          eventBus.emit(PARSE_APP_EVENTS.SIGN_IN, data);
         });
         // jshint boss:true
         // Cache the user in storage and return it
@@ -52,7 +52,7 @@ angular
           // Delete the sessionToken from the user
           delete user.sessionToken;
           // Emit a SIGN_IN event with the sessionToken as data.
-          eventBus.emit(EVENTS.SIGN_IN, data);
+          eventBus.emit(PARSE_APP_EVENTS.SIGN_IN, data);
         });
         // jshint boss:true
         // Cache the user in storage and return it
@@ -66,7 +66,7 @@ angular
         // Delete the user from the cache
         delete storage.user;
         // Emit a SIGN_OUT event, in case anyone else is interested (hint: they are)
-        eventBus.emit(EVENTS.SIGN_OUT);
+        eventBus.emit(PARSE_APP_EVENTS.SIGN_OUT);
       };
 
       // This is for retrieving the current user
