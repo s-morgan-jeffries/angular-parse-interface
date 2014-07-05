@@ -11,6 +11,9 @@ angular
                                        parseEvent) {
     'use strict';
 
+    // Version string (JS SDK uses this)
+    var JS_SDK_VERSION = 'js1.2.18';
+
     var parseInterface = {};
 
     // The only API entry point
@@ -41,6 +44,11 @@ angular
         // Otherwise, throw an error
         throw new Error('appConfig must have either a "REST_KEY" or a "JS_KEY" property');
       }
+      // Installation ID used by JS SDK
+      //t0d0: Figure out how to set INSTALLATION_ID
+      appConfig.INSTALLATION_ID = '';
+      // Version string
+      appConfig.CLIENT_VERSION = JS_SDK_VERSION;
 
       // We need a way to pass initial configuration info to the rest of the app. Rather than pass the appConfig to the
       // different modules, I'm using an event bus. Once a module is up and running, it should trigger a

@@ -1,5 +1,5 @@
 angular.module('angularParseInterface')
-  .factory('parseResource', function ($resource, parseRESTHeaders, parseDataEncoding, parseResourceDecorator) {
+  .factory('parseResource', function ($resource, parseRESTAuth, parseDataEncoding, parseResourceDecorator) {
     'use strict';
 
     var parseResource = {};
@@ -79,7 +79,7 @@ angular.module('angularParseInterface')
         return data;
       };
 
-      var addRESTHeaders = parseRESTHeaders.getTransformRequest(appEventBus, appStorage);
+      var addRESTHeaders = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
 
       return function coreAppResourceFactory(url, defaultParams, actions) {
         var restApiBaseUrl = 'https://api.parse.com/1',
