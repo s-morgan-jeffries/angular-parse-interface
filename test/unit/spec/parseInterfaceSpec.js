@@ -3,9 +3,15 @@
 describe('Factory: parseInterface', function () {
   var parseInterface,
     mocks;
+  // KEEP THIS IN SYNC WITH THE VALUE IN parseInterface.js
+  var JS_SDK_VERSION = 'js1.2.18';
 
   beforeEach(function () {
     mocks = {};
+    mocks.parseStorage = {
+      localStorage: {},
+      sessionStorage: {}
+    };
     mocks.appEventBus = {
       on: function () {},
       emit: function () {}
@@ -70,6 +76,7 @@ describe('Factory: parseInterface', function () {
     };
     spyOn(mocks.parseEvent, 'createEventFactory').andCallThrough();
     module('angularParseInterface', function ($provide) {
+      $provide.value('parseStorage', mocks.parseStorage);
       $provide.value('ParseAppEventBus', mocks.ParseAppEventBus);
       $provide.value('PARSE_APP_EVENTS', mocks.PARSE_APP_EVENTS);
       $provide.value('parseResource', mocks.parseResource);
@@ -88,7 +95,9 @@ describe('Factory: parseInterface', function () {
   describe('createAppInterface', function () {
     var appInterface,
       appConfig,
-      clientStorage;
+//      clientStorage,
+      clientLocalStorage,
+      clientSessionStorage;
 
     beforeEach(function () {
       appConfig = {
@@ -96,18 +105,19 @@ describe('Factory: parseInterface', function () {
         REST_KEY: 'abcde',
         JS_KEY: 'fghijk'
       };
-      clientStorage = {};
+      clientLocalStorage = mocks.parseStorage.localStorage;
+      clientSessionStorage = mocks.parseStorage.sessionStorage;
     });
 
     it('should create a new ParseAppEventBus', function () {
-      appInterface = parseInterface.createAppInterface(appConfig, clientStorage);
+      appInterface = parseInterface.createAppInterface(appConfig);
       expect(mocks.ParseAppEventBus).toHaveBeenCalled();
       expect(mocks.appEventBus.ctx).toEqual({});
     });
 
     it('should error if appConfig does not have an APPLICATION_ID property', function () {
       var create = function () {
-          parseInterface.createAppInterface(badConfig, clientStorage);
+          parseInterface.createAppInterface(badConfig);
         },
         badConfig = angular.copy(appConfig);
 
@@ -116,38 +126,39 @@ describe('Factory: parseInterface', function () {
     });
 
     it('should set appConfig.currentAPI to "REST" if appConfig has a REST_KEY', function () {
-      parseInterface.createAppInterface(appConfig, clientStorage);
+      parseInterface.createAppInterface(appConfig);
       expect(appConfig.currentAPI).toEqual('REST');
     });
 
     it('should set appConfig.currentAPI to "JS" if appConfig has a JS_KEY but no REST_KEY', function () {
       delete appConfig.REST_KEY;
-      parseInterface.createAppInterface(appConfig, clientStorage);
+      parseInterface.createAppInterface(appConfig);
       expect(appConfig.currentAPI).toEqual('JS');
     });
 
     it('should error if appConfig is missing both JS_KEY and REST_KEY properties', function () {
       var create = function () {
-        parseInterface.createAppInterface(appConfig, clientStorage);
+        parseInterface.createAppInterface(appConfig);
       };
       delete appConfig.REST_KEY;
       delete appConfig.JS_KEY;
       expect(create).toThrowError();
     });
 
-    it('should create a namespace for application storage within the provided clientStorage object', function () {
+    it('should create a namespace for application storage within the parseStorage.localStorage object', function () {
       var appId = appConfig.APPLICATION_ID,
-        appStorage;
-      appInterface = parseInterface.createAppInterface(appConfig, clientStorage);
-      appStorage = clientStorage.parseApp[appId];
-      expect(appStorage).toBeObject();
+        appLocalStorage;
+      appInterface = parseInterface.createAppInterface(appConfig);
+      appLocalStorage = clientLocalStorage.parseApp[appId];
+      expect(appLocalStorage).toBeObject();
     });
 
-    it('should not error if no clientStorage object is provided', function () {
-      var create = function () {
-        appInterface = parseInterface.createAppInterface(appConfig);
-      };
-      expect(create).not.toThrowError();
+    it('should create a namespace for application storage within the parseStorage.sessionStorage object', function () {
+      var appId = appConfig.APPLICATION_ID,
+        appSessionStorage;
+      appInterface = parseInterface.createAppInterface(appConfig);
+      appSessionStorage = clientSessionStorage.parseApp[appId];
+      expect(appSessionStorage).toBeObject();
     });
 
     it('should respond to a MODULE_REGISTERED event by emitting a namespaced MODULE_INIT event with appConfig', function () {
@@ -168,23 +179,49 @@ describe('Factory: parseInterface', function () {
       expect(mocks.appEventBus.emit).toHaveBeenCalledWith(expectedEmitEvent, appConfig);
     });
 
+    it('should set the CLIENT_VERSION key on appConfig to the current JS SDK version', function () {
+      appInterface = parseInterface.createAppInterface(appConfig);
+      expect(appConfig.CLIENT_VERSION).toEqual(JS_SDK_VERSION);
+    });
+
+    it('should set the INSTALLATION_ID key on appConfig to the value stored in appLocalStorage if it exists', function () {
+      var installationId = 'asdfjk;l;',
+        appId = appConfig.APPLICATION_ID,
+        appLocalStorage;
+      clientLocalStorage.parseApp = {};
+      appLocalStorage = clientLocalStorage.parseApp[appId] = {};
+      appLocalStorage.INSTALLATION_ID = installationId;
+      appInterface = parseInterface.createAppInterface(appConfig, clientLocalStorage);
+      expect(appConfig.INSTALLATION_ID).toEqual(installationId);
+    });
+
+    it('should create a new INSTALLATION_ID if it does not exist and add it both to appConfig and to appLocalStorage', function () {
+      var appId = appConfig.APPLICATION_ID,
+        appLocalStorage;
+      appInterface = parseInterface.createAppInterface(appConfig, clientLocalStorage);
+      appLocalStorage = clientLocalStorage.parseApp[appId];
+      expect(appConfig.INSTALLATION_ID).toBeNonEmptyString();
+      expect(appLocalStorage.INSTALLATION_ID).toBeNonEmptyString();
+      expect(appConfig.INSTALLATION_ID).toEqual(appLocalStorage.INSTALLATION_ID);
+    });
+
     it('should create a new appResource', function () {
-      appInterface = parseInterface.createAppInterface(appConfig, clientStorage);
-      var appStorage = clientStorage.parseApp[appConfig.APPLICATION_ID];
-      expect(mocks.parseResource.createAppResourceFactory).toHaveBeenCalledWith(mocks.appEventBus, appStorage);
+      appInterface = parseInterface.createAppInterface(appConfig);
+      var appSessionStorage = clientSessionStorage.parseApp[appConfig.APPLICATION_ID];
+      expect(mocks.parseResource.createAppResourceFactory).toHaveBeenCalledWith(mocks.appEventBus, appSessionStorage);
     });
 
     it('should return an object', function () {
-      appInterface = parseInterface.createAppInterface(appConfig, clientStorage);
+      appInterface = parseInterface.createAppInterface(appConfig);
       expect(appInterface).toBeObject();
     });
 
     describe('appInterface object', function () {
-      var appStorage;
+      var appSessionStorage;
 
       beforeEach(function () {
-        appInterface = parseInterface.createAppInterface(appConfig, clientStorage);
-        appStorage = clientStorage.parseApp[appConfig.APPLICATION_ID];
+        appInterface = parseInterface.createAppInterface(appConfig);
+        appSessionStorage = clientSessionStorage.parseApp[appConfig.APPLICATION_ID];
       });
 
       it('should have an objectFactory property', function () {
@@ -193,7 +230,7 @@ describe('Factory: parseInterface', function () {
       });
 
       it('should have a User property', function () {
-        expect(mocks.parseUser.createUserModel).toHaveBeenCalledWith(mocks.appResource, appStorage, mocks.appEventBus);
+        expect(mocks.parseUser.createUserModel).toHaveBeenCalledWith(mocks.appResource, appSessionStorage, mocks.appEventBus);
         expect(appInterface.User).toBe(mocks.User);
       });
 

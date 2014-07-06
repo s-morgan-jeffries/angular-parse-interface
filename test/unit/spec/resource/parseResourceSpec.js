@@ -15,10 +15,16 @@ describe('Factory: parseResource', function () {
       return mocks.Resource;
     };
     spyOn(mocks, 'coreAppResourceFactory').andCallThrough();
-    mocks.addRequestHeaders = function () {};
+    mocks.addRESTAuth = function () {};
     mocks.parseRESTAuth = {
       getTransformRequest: function (/*appConfig, appStorage, appEventBus*/) {
-        return mocks.addRequestHeaders;
+        return mocks.addRESTAuth;
+      }
+    };
+    mocks.addJSAuth = function () {};
+    mocks.parseJSAuth = {
+      getTransformRequest: function (/*appConfig, appStorage, appEventBus*/) {
+        return mocks.addJSAuth;
       }
     };
     mocks.dataEncodingFunctions = {
@@ -35,6 +41,7 @@ describe('Factory: parseResource', function () {
     module('angularParseInterface', function ($provide) {
       $provide.value('$resource', mocks.$resource);
       $provide.value('parseRESTAuth', mocks.parseRESTAuth);
+      $provide.value('parseJSAuth', mocks.parseJSAuth);
       $provide.value('parseDataEncoding', mocks.parseDataEncoding);
       $provide.value('parseResourceDecorator', mocks.parseResourceDecorator);
       $provide.value('$log', console);
@@ -185,39 +192,39 @@ describe('Factory: parseResource', function () {
             getWoTR: {
               method: 'GET',
               // The only required transformRequest function is for adding headers
-              transformRequest: [mocks.addRequestHeaders]
+              transformRequest: [mocks.addRESTAuth, mocks.addJSAuth]
             },
             // GET with transformRequest function
             getWTRFx: {
               method: 'GET',
-              // The preset transformRequest fx + addRequestHeaders
-              transformRequest: [foo, mocks.addRequestHeaders]
+              // The preset transformRequest fx + addRESTAuth
+              transformRequest: [foo, mocks.addRESTAuth, mocks.addJSAuth]
             },
             // GET with transformRequest array
             getWTRAr: {
               method: 'GET',
-              // The preset transformRequest fx + addRequestHeaders
-              transformRequest: [foo, mocks.addRequestHeaders]
+              // The preset transformRequest fx + addRESTAuth
+              transformRequest: [foo, mocks.addRESTAuth, mocks.addJSAuth]
             },
             // POST with no transformRequest
             postWoTR: {
               method: 'POST',
-              // The dataEncoding transformRequest + the function to stringify the data + addRequestHeaders
-              transformRequest: [mocks.dataEncodingFunctions.transformRequest, placeHolder, mocks.addRequestHeaders]
+              // The dataEncoding transformRequest + the function to stringify the data + addRESTAuth
+              transformRequest: [mocks.dataEncodingFunctions.transformRequest, placeHolder, mocks.addRESTAuth, mocks.addJSAuth]
             },
             // POST with transformRequest function
             postWTRFx: {
               method: 'POST',
               // The preset transformRequest + the function to parse the JSON (if needed) + the dataEncoding
-              // transformRequest + the function to stringify the data + addRequestHeaders
-              transformRequest: [foo, placeHolder, mocks.dataEncodingFunctions.transformRequest, placeHolder, mocks.addRequestHeaders]
+              // transformRequest + the function to stringify the data + addRESTAuth
+              transformRequest: [foo, placeHolder, mocks.dataEncodingFunctions.transformRequest, placeHolder, mocks.addRESTAuth, mocks.addJSAuth]
             },
             // POST with transformRequest array
             postWTRAr: {
               method: 'POST',
               // The preset transformRequest + the function to parse the JSON (if needed) + the dataEncoding
-              // transformRequest + the function to stringify the data + addRequestHeaders
-              transformRequest: [foo, placeHolder, mocks.dataEncodingFunctions.transformRequest, placeHolder, mocks.addRequestHeaders]
+              // transformRequest + the function to stringify the data + addRESTAuth
+              transformRequest: [foo, placeHolder, mocks.dataEncodingFunctions.transformRequest, placeHolder, mocks.addRESTAuth, mocks.addJSAuth]
             }
           };
           Resource = coreAppResourceFactory(url, defaultParams, actions);

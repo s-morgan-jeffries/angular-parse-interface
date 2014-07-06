@@ -172,6 +172,7 @@ module.exports = function (grunt) {
           '../../dev_app/bower_components/angular-mocks/angular-mocks.js',
           // Other dependencies
           '../../dev_app/bower_components/angular-resource/angular-resource.js',
+          '../../dev_app/bower_components/ngstorage/ngStorage.js',
           // Utilities
           '../../dev_app/bower_components/lodash/dist/lodash.js',
           // The source files for the modules
@@ -299,7 +300,10 @@ module.exports = function (grunt) {
       },
       devApp: {
         files: ['<%= yeoman.devApp %>/scripts/{,*/}*.js'],
-        tasks: ['jshint:devApp']
+        tasks: ['jshint:devApp'],
+        options: {
+          livereload: true
+        }
       },
       scripts: {
         files: ['src/**/*.js'],

@@ -349,17 +349,14 @@ angular.module('angularParseInterface')
             isNew = !instance.objectId;
             saveFunc = isNew ? create : update;
             // Delegate to the original function...
-//            console.log('saving');
-//            console.log('params:');
-//            console.log(params);
-//            console.log('instance:');
-//            console.log(instance);
             return saveFunc.call(this, params, instance, wrappedSuccessFunc, wrappedErrorFunc);
           };
         }());
       }
     };
 
+    // t0d0: Modify this so it makes two versions (REST and JS) of each action
+      // But it's also going to have to know when to use which. Where should that happen?
     var parseResourceActions = {
       getActionConfig: function (actionName) {
         return angular.copy(actionLib[actionName]);

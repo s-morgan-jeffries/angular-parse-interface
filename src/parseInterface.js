@@ -1,6 +1,7 @@
 angular
   .module('angularParseInterface')
-  .factory('parseInterface', function (ParseAppEventBus,
+  .factory('parseInterface', function (parseStorage,
+                                       ParseAppEventBus,
                                        PARSE_APP_EVENTS,
                                        parseResource,
                                        parseObjectFactory,
@@ -12,14 +13,22 @@ angular
     'use strict';
 
     // Version string (JS SDK uses this)
+    // KEEP THIS IN SYNC WITH THE VALUE IN parseInterfaceSpec.js
     var JS_SDK_VERSION = 'js1.2.18';
+
+    var clientLocalStorage = parseStorage.localStorage;
+    clientLocalStorage.parseApp = clientLocalStorage.parseApp || {};
+
+    var clientSessionStorage = parseStorage.sessionStorage;
+    clientSessionStorage.parseApp = clientSessionStorage.parseApp || {};
 
     var parseInterface = {};
 
     // The only API entry point
-    parseInterface.createAppInterface = function (appConfig, clientStorage) {
+    parseInterface.createAppInterface = function (appConfig) {
       var appId,
-        appStorage,
+        appLocalStorage,
+        appSessionStorage,
         appEventBus,
         appResource,
         appInterface;
@@ -44,9 +53,31 @@ angular
         // Otherwise, throw an error
         throw new Error('appConfig must have either a "REST_KEY" or a "JS_KEY" property');
       }
+
+      // Get or create appLocalStorage object
+      appLocalStorage = clientLocalStorage.parseApp[appId] = (clientLocalStorage.parseApp[appId] || {});
+
+      // Get or create appSessionStorage object
+      appSessionStorage = clientSessionStorage.parseApp[appId] = (clientSessionStorage.parseApp[appId] || {});
+
+      //t0d0: Update this so it's using localStorage
       // Installation ID used by JS SDK
-      //t0d0: Figure out how to set INSTALLATION_ID
-      appConfig.INSTALLATION_ID = '';
+      if (!appLocalStorage.INSTALLATION_ID || appLocalStorage.INSTALLATION_ID === '') {
+        // It wasn't in localStorage, so create a new one.
+        var hexOctet = function () {
+          return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        };
+        // This is how the Parse JS SDK does it
+        appLocalStorage.INSTALLATION_ID = (
+          hexOctet() + hexOctet() + '-' +
+          hexOctet() + '-' +
+          hexOctet() + '-' +
+          hexOctet() + '-' +
+          hexOctet() + hexOctet() + hexOctet());
+      }
+      // Now set INSTALLATION_ID on appConfig
+      appConfig.INSTALLATION_ID = appLocalStorage.INSTALLATION_ID;
+
       // Version string
       appConfig.CLIENT_VERSION = JS_SDK_VERSION;
 
@@ -59,15 +90,10 @@ angular
         appEventBus.emit(eventName, appConfig);
       });
 
-      // Get or create appStorage object
-      clientStorage = clientStorage || {};
-      clientStorage.parseApp = clientStorage.parseApp || {};
-      appStorage = clientStorage.parseApp[appId] = (clientStorage.parseApp[appId] || {});
-
       // Create an application-specific resource factory (analogous to $resource). This will add headers to all requests
       // that are specific to this application, including a sessionToken when appropriate. It will also encode and
       // decode data with the correct format for Parse's API.
-      appResource = parseResource.createAppResourceFactory(appEventBus, appStorage);
+      appResource = parseResource.createAppResourceFactory(appEventBus, appSessionStorage);
 
       // Compose the application interface
       appInterface = {};
@@ -75,7 +101,7 @@ angular
       appInterface.objectFactory = parseObjectFactory.createObjectFactory(appResource);
       // A User model. It has the same capabilities as other Resources, as well as some additional user-specific
       // methods.
-      appInterface.User = parseUser.createUserModel(appResource, appStorage, appEventBus);
+      appInterface.User = parseUser.createUserModel(appResource, appSessionStorage, appEventBus);
       // A constructor that takes a Resource and returns a query builder.
       appInterface.Query = parseQueryBuilder.Query;
       // A factory that generates functions that call cloud functions
@@ -84,16 +110,18 @@ angular
       appInterface.roleFactory = parseRole.createRoleFactory(appResource, appInterface.User);
       // A factory that generates custom event objects
       appInterface.eventFactory = parseEvent.createEventFactory(appResource);
-      // This allows you to trigger an event that tells the rest of the application we're using the JS API.
+      // This allows you to switch to using the JS API at runtime.
       appInterface.useJsApi = function () {
         if (appConfig.JS_KEY) {
+          // For any modules that haven't yet registered
           appConfig.currentAPI = 'JS';
           appEventBus.emit(PARSE_APP_EVENTS.USE_JS_API);
         }
       };
-      // This allows you to trigger an event that tells the rest of the application we're using the REST API.
+      // This allows you to switch to using the REST API at runtime.
       appInterface.useRestApi = function () {
         if (appConfig.REST_KEY) {
+          // For any modules that haven't yet registered
           appConfig.currentAPI = 'REST';
           appEventBus.emit(PARSE_APP_EVENTS.USE_REST_API);
         }

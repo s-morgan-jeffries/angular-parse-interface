@@ -1,5 +1,5 @@
 angular.module('angularParseInterface')
-  .factory('parseResource', function ($resource, parseRESTAuth, parseDataEncoding, parseResourceDecorator) {
+  .factory('parseResource', function ($resource, parseRESTAuth, parseJSAuth, parseDataEncoding, parseResourceDecorator) {
     'use strict';
 
     var parseResource = {};
@@ -79,7 +79,9 @@ angular.module('angularParseInterface')
         return data;
       };
 
-      var addRESTHeaders = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
+      var addRESTAuth = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
+
+      var addJSAuth = parseJSAuth.getTransformRequest(appEventBus, appStorage);
 
       return function coreAppResourceFactory(url, defaultParams, actions) {
         var restApiBaseUrl = 'https://api.parse.com/1',
@@ -118,8 +120,9 @@ angular.module('angularParseInterface')
             // And this is for stringifying the data
             transformReqArray.push(stringifyData);
           }
-          // Every request will add headers
-          transformReqArray.push(addRESTHeaders);
+          // Every request will add the auth transforms
+          transformReqArray.push(addRESTAuth);
+          transformReqArray.push(addJSAuth);
         };
 
         var addTransformResponseFxs = function (action) {
@@ -156,10 +159,7 @@ angular.module('angularParseInterface')
         // In theory, this should be an error, but I'm going to leave it as is for now
         actions = actions || {};
 
-//        console.log(url);
-//        console.log(actions);
         angular.forEach(actions, function (action) {
-//          console.log(arguments[1]);
           addTransformRequestFxs(action);
           addTransformResponseFxs(action);
         });

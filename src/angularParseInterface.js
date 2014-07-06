@@ -1,6 +1,7 @@
 angular
   .module('angularParseInterface', [
-    'ngResource'
+    'ngResource',
+    'ngStorage'
   ])
 ;
 

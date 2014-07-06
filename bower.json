@@ -4,7 +4,8 @@
   "main": "./dist/angular-parse-interface.js",
   "dependencies": {
     "angular-resource": "~1.2.18",
-    "angular": "~1.2.18"
+    "angular": "~1.2.18",
+    "ngstorage": "~0.3.0"
   },
   "devDependencies": {
     "bootstrap": "~3.1.1",
