@@ -384,6 +384,215 @@ describe('Factory: parseResource', function () {
     });
   });
 
+  describe('_getPseudoMethodTransform function', function () {
+    var method,
+      transformFunction;
+
+    beforeEach(function () {
+      method = 'foo';
+      transformFunction = parseResource._getPseudoMethodTransform(method);
+    });
+
+    it('should return a function', function () {
+      expect(transformFunction).toBeFunction();
+    });
+
+    describe('transformFunction', function () {
+      var data,
+        headers,
+        headersGetter;
+
+      beforeEach(function () {
+        data = {a: 1, b: 2};
+        headers = {c: 3, d: 4};
+        headersGetter = function () {
+          return headers;
+        };
+      });
+
+      it('should add the method to data as _method', function () {
+        var transformedData = transformFunction(data, headersGetter);
+        expect(transformedData._method).toEqual(method);
+      });
+
+      it('should not otherwise modify data', function () {
+        var origData = angular.copy(data),
+          transformedData = transformFunction(data, headersGetter);
+        delete transformedData._method;
+        expect(transformedData).toEqual(origData);
+      });
+
+      it('should not modify the headers', function () {
+        var origHeaders = angular.copy(headers);
+        transformFunction(data, headersGetter);
+        expect(headers).toEqual(origHeaders);
+      });
+    });
+  });
+
+  describe('_namespaceBaseActions function', function () {
+    var action, nameSpace, nameSpacedAction;
+
+    beforeEach(function () {
+      action = {
+        baseActions: {
+          get: {
+            method: 'GET'
+          },
+          put: {
+            method: 'PUT'
+          }
+        },
+        decorator: function () {}
+      };
+      nameSpace = 'foo';
+    });
+
+    it('should return a new action', function () {
+      nameSpacedAction = parseResource._namespaceBaseActions(action, nameSpace);
+      expect(nameSpacedAction).not.toBe(action);
+    });
+
+    it('should not modify the action\'s decorator', function () {
+      nameSpacedAction = parseResource._namespaceBaseActions(action, nameSpace);
+      expect(nameSpacedAction.decorator).toEqual(action.decorator);
+    });
+
+    it('should rename the baseActions by prefixing their names with nameSpace', function () {
+      var baseActions = action.baseActions,
+        nameSpacedBaseActions;
+      nameSpacedAction = parseResource._namespaceBaseActions(action, nameSpace);
+      nameSpacedBaseActions = nameSpacedAction.baseActions;
+      angular.forEach(baseActions, function (baseAction, baseActionName) {
+        var nameSpacedBaseActionName = nameSpace + baseActionName;
+        expect(nameSpacedBaseActions[baseActionName]).toBeUndefined();
+        expect(nameSpacedBaseActions[nameSpacedBaseActionName]).toEqual(baseAction);
+      });
+    });
+
+    it('should use a copy of the original baseActions rather than the baseActions themselves', function () {
+      var baseActions = action.baseActions,
+        nameSpacedBaseActions;
+      nameSpacedAction = parseResource._namespaceBaseActions(action, nameSpace);
+      nameSpacedBaseActions = nameSpacedAction.baseActions;
+      angular.forEach(baseActions, function (baseAction, baseActionName) {
+        var nameSpacedBaseActionName = nameSpace + baseActionName;
+        expect(nameSpacedBaseActions[nameSpacedBaseActionName]).toEqual(baseAction);
+        expect(nameSpacedBaseActions[nameSpacedBaseActionName]).not.toBe(baseAction);
+      });
+    });
+  });
+
+  describe('_generateRESTAction function', function () {
+    it('should delegate to the _namespaceBaseActions function', function () {
+      var action = {
+          baseActions: {
+            get: {
+              method: 'GET'
+            }
+          },
+          decorator: function () {}
+        },
+        nameSpace = 'foo';
+      spyOn(parseResource, '_namespaceBaseActions');
+      parseResource._generateRESTAction(action, nameSpace);
+      expect(parseResource._namespaceBaseActions).toHaveBeenCalledWith(action, nameSpace);
+    });
+  });
+
+  describe('_generateJSAction function', function () {
+    var action, nameSpace, transformFunction;
+
+    beforeEach(function () {
+      action = {
+        baseActions: {
+          get: {
+            method: 'GET'
+          },
+          post: {
+            method: 'POST'
+          }
+        },
+        decorator: function () {}
+      };
+      nameSpace = 'foo';
+      transformFunction = function () {};
+      spyOn(parseResource, '_getPseudoMethodTransform').andReturn(transformFunction);
+    });
+
+    it('should call the _namespaceBaseActions function with the same arguments it received', function () {
+      spyOn(parseResource, '_namespaceBaseActions').andCallThrough();
+      parseResource._generateJSAction(action, nameSpace);
+      expect(parseResource._namespaceBaseActions).toHaveBeenCalledWith(action, nameSpace);
+    });
+
+    it('should set the method to POST for any non-POST actions', function () {
+      var transformedAction = parseResource._generateJSAction(action, nameSpace);
+      angular.forEach(transformedAction.baseActions, function (baseAction) {
+        expect(baseAction.method).toEqual('POST');
+      });
+    });
+
+    it('should call the _getPseudoMethodTransform function with the method name of any non-POST actions', function () {
+      parseResource._generateJSAction(action, nameSpace);
+      expect(parseResource._getPseudoMethodTransform).toHaveBeenCalledWith('GET');
+    });
+
+    it('should create a transformRequest array for any non-POST actions if it doesn\'t exist', function () {
+      var transformedAction = parseResource._generateJSAction(action, nameSpace);
+      expect(transformedAction.baseActions[nameSpace + 'get'].transformRequest).toBeArray();
+    });
+
+    it('should push the transform function from _getPseudoMethodTransform to the end of the transformRequest array for any non-POST actions', function () {
+      var transformedAction,
+        lastTransformRequest;
+      action = {
+        baseActions: {
+          get: {
+            method: 'GET',
+            transformRequest: [function () {}, function () {}]
+          },
+          post: {
+            method: 'POST'
+          }
+        },
+        decorator: function () {}
+      };
+      transformedAction = parseResource._generateJSAction(action, nameSpace);
+      lastTransformRequest = transformedAction.baseActions[nameSpace + 'get'].transformRequest.pop();
+      expect(lastTransformRequest).toBe(transformFunction);
+    });
+  });
+
+  describe('_generateAPIAction function', function () {
+    var action, API;
+
+    beforeEach(function () {
+      action = {
+        baseActions: {
+          get: {
+            method: 'GET'
+          }
+        },
+        decorator: function () {}
+      };
+    });
+
+    it('should call _generateRESTAction with both its arguments when its second argument is "REST"', function () {
+      API = 'REST';
+      spyOn(parseResource, '_generateRESTAction');
+      parseResource._generateAPIAction(action, API);
+      expect(parseResource._generateRESTAction).toHaveBeenCalledWith(action, API);
+    });
+
+    it('should call _generateJSAction with both its arguments when its second argument is "JS"', function () {
+      API = 'JS';
+      spyOn(parseResource, '_generateJSAction');
+      parseResource._generateAPIAction(action, API);
+      expect(parseResource._generateJSAction).toHaveBeenCalledWith(action, API);
+    });
+  });
+
   describe('createAppResourceFactory function', function () {
     var appConfig, appStorage, appEventBus, appResourceFactory;
 
@@ -399,7 +608,6 @@ describe('Factory: parseResource', function () {
 
     it('should call the _createCoreAppResourceFactory', function () {
       spyOn(parseResource, '_createCoreAppResourceFactory').andCallThrough();
-//      console.log(parseResource);
       parseResource.createAppResourceFactory(appEventBus, appStorage);
       expect(parseResource._createCoreAppResourceFactory).toHaveBeenCalledWith(appEventBus, appStorage);
     });

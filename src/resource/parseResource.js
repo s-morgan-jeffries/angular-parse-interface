@@ -4,6 +4,7 @@ angular.module('angularParseInterface')
 
     var parseResource = {};
 
+    // t0d0: Make this a module-level method
     // This removes the namespacing from the baseActions. This is done so that the decorators, which aren't written
     // with any assumptions about namespacing, will still work (otherwise they couldn't find the properties they
     // reference).
@@ -23,8 +24,9 @@ angular.module('angularParseInterface')
       });
     };
 
+    // t0d0: Make this a module-level method
     // This deletes the action from Resource and its prototype and returns the static action
-    var getAndDestroyAction = function (Resource, actionName) {
+    var deleteAndReturnAction = function (Resource, actionName) {
       var instanceActionName = '$' + actionName,
         staticAction = Resource[actionName];
       delete Resource[actionName];
@@ -32,6 +34,7 @@ angular.module('angularParseInterface')
       return staticAction;
     };
 
+    // t0d0: Make this a module-level method
     // Creates the named action on the prototype. This is copied with minimal modifications from
     // angular-resource.js.
     var createInstanceAction = function (Resource, actionName) {
@@ -49,10 +52,6 @@ angular.module('angularParseInterface')
     //   The purpose of this function is to modify the $resource service so that it adds appropriate headers and
     // encodes/decodes data in the correct format for Parse.
     parseResource.createAppResourceFactory = function (appEventBus, appStorage) {
-//      $log.log(this._generateAPIAction);
-//      $log.log(this._generateAPIAction.bind);
-//      $log.log(this._generateAPIAction instanceof Function);
-//      $log.log(Function.prototype.bind);
       var coreAppResourceFactory = this._createCoreAppResourceFactory(appEventBus, appStorage),
         generateAPIAction = this._generateAPIAction.bind(this);
 
@@ -76,8 +75,6 @@ angular.module('angularParseInterface')
             angular.extend(baseActions, action.apiActions[apiName].baseActions);
           });
         });
-//        console.log(actions);
-//        console.log(baseActions);
 
         // Create the Resource
         Resource = coreAppResourceFactory(url, defaultParams, baseActions);
@@ -87,7 +84,6 @@ angular.module('angularParseInterface')
         // which API we're using. At the end of this, all the namespaced properties should be deleted from both Resource
         // and its prototype.
         angular.forEach(actions, function (action, actionName) {
-          // t0d0: Rename this. It's confusing.
           var apiActions = {};
           angular.forEach(apiNames, function (apiName) {
             var apiAction = action.apiActions[apiName];
@@ -95,7 +91,7 @@ angular.module('angularParseInterface')
             if (angular.isFunction(apiAction.decorator)) {
               apiAction.decorator(Resource);
             }
-            apiActions[apiName] = getAndDestroyAction(Resource, actionName);
+            apiActions[apiName] = deleteAndReturnAction(Resource, actionName);
           });
           // Now you've got namespaced versions of your actions. This creates a new static method that delegates to
           // delegate to the correct action based on which API we're using.
@@ -131,7 +127,6 @@ angular.module('angularParseInterface')
       };
     };
 
-    // t0d0: Test this
     parseResource._getPseudoMethodTransform = function (method) {
       return function (data/*, headersGetter */) {
         data._method = method;
@@ -139,7 +134,6 @@ angular.module('angularParseInterface')
       };
     };
 
-    // t0d0: Test this
     // This should generate a set of namespaced actions
     parseResource._namespaceBaseActions = function (action, nameSpace) {
       var namespacedAction = angular.copy(action);
@@ -152,14 +146,13 @@ angular.module('angularParseInterface')
       return namespacedAction;
     };
 
-    // t0d0: Test this
-    // This should delegate to _namespaceBaseActions
+    // Generates a REST API-specific version of an action
     parseResource._generateRESTAction = function (action, nameSpace) {
       var namespaceBaseActions = this._namespaceBaseActions;
       return namespaceBaseActions(action, nameSpace);
     };
 
-    // t0d0: Test this
+    // Generates a JS API-specific version of an action
     parseResource._generateJSAction = function (action, nameSpace) {
       var namespaceBaseActions = this._namespaceBaseActions,
         getPseudoMethodTransform = this._getPseudoMethodTransform,
@@ -169,14 +162,14 @@ angular.module('angularParseInterface')
           var addPseudoMethod = getPseudoMethodTransform(subAction.method);
           subAction.method = 'POST';
           subAction.transformRequest = subAction.transformRequest || [];
-          // t0d0: Figure out if you need to add any other transform here
+          // Add the addPseudoMethod function to the transformRequest array
           subAction.transformRequest.push(addPseudoMethod);
         }
       });
       return jsAction;
     };
 
-    //t0d0: Test this
+    // Delegates to API-specific methods for generating API-specific actions from actions
     parseResource._generateAPIAction = function (action, API) {
       var generateRESTAction = this._generateRESTAction.bind(this),
         generateJSAction = this._generateJSAction.bind(this),
