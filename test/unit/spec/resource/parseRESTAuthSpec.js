@@ -47,6 +47,7 @@ describe('Factory: parseRESTHeaders', function () {
       };
       appEventBus = {
         on: jasmine.createSpy(),
+        once: jasmine.createSpy(),
         off: jasmine.createSpy(),
         emit: jasmine.createSpy()
       };
@@ -73,34 +74,17 @@ describe('Factory: parseRESTHeaders', function () {
       expect(appEventBus.emit).toHaveBeenCalledWith(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
     });
 
-    describe('MODULE_INIT handler', function () {
+    it('should register a one-time event handler for a namespaced MODULE_INIT event', function () {
       var moduleName = 'parseRESTAuth',
-        eventName = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName;
-
-      it('should be registered as an event handler for a namespaced MODULE_INIT event', function () {
-        var eventHasHandler = false;
-        transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
-        expect(appEventBus.on).toHaveBeenCalled();
-        angular.forEach(appEventBus.on.argsForCall, function (args) {
-          eventHasHandler = eventHasHandler || (args[0] === eventName);
-          eventHasHandler = eventHasHandler && angular.isFunction(args[1]);
-        });
-        expect(eventHasHandler).toBeTrue();
+        eventName = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName,
+        eventHasHandler = false;
+      transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
+      expect(appEventBus.once).toHaveBeenCalled();
+      angular.forEach(appEventBus.once.argsForCall, function (args) {
+        eventHasHandler = eventHasHandler || (args[0] === eventName);
+        eventHasHandler = eventHasHandler && angular.isFunction(args[1]);
       });
-
-      it('should cause itself to be deregistered as an event handler', function () {
-        var handler,
-          mockEvent = {};
-        transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
-        angular.forEach(appEventBus.on.argsForCall, function (args) {
-          if (args[0] === eventName) {
-            handler = args[1];
-          }
-        });
-        expect(appEventBus.off).not.toHaveBeenCalled();
-        handler(mockEvent, appConfig);
-        expect(appEventBus.off).toHaveBeenCalledWith(eventName, handler);
-      });
+      expect(eventHasHandler).toBeTrue();
     });
 
     describe('SIGN_IN handler', function () {
@@ -251,7 +235,7 @@ describe('Factory: parseRESTHeaders', function () {
         modStorage = appStorage[moduleName] = {};
         modStorage.sessionToken = sessionToken;
         transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
-        initializeMod = appEventBus.on.argsForCall[0][1];
+        initializeMod = appEventBus.once.argsForCall[0][1];
         initializeMod(null, appConfig);
       });
 
@@ -333,9 +317,9 @@ describe('Factory: parseRESTHeaders', function () {
         var origHeaders;
 
         // First, to show that the headers are usually modified
-        appEventBus.on.reset();
+        appEventBus.once.reset();
         transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
-        initializeMod = appEventBus.on.argsForCall[0][1];
+        initializeMod = appEventBus.once.argsForCall[0][1];
         // Use REST for currentAPI
         appConfig.currentAPI = 'REST';
         initializeMod(null, appConfig);
@@ -348,9 +332,9 @@ describe('Factory: parseRESTHeaders', function () {
         expect(headers).not.toEqual(origHeaders);
 
         // Now, reinitialize the module
-        appEventBus.on.reset();
+        appEventBus.once.reset();
         transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
-        initializeMod = appEventBus.on.argsForCall[0][1];
+        initializeMod = appEventBus.once.argsForCall[0][1];
         // Instead of REST, we'll use JS here
         appConfig.currentAPI = 'JS';
         initializeMod(null, appConfig);
@@ -366,9 +350,10 @@ describe('Factory: parseRESTHeaders', function () {
         var origHeaders, handler;
 
         // First, to show that the headers are usually modified
+        appEventBus.once.reset();
         appEventBus.on.reset();
         transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
-        initializeMod = appEventBus.on.argsForCall[0][1];
+        initializeMod = appEventBus.once.argsForCall[0][1];
         // Use REST for currentAPI
         appConfig.currentAPI = 'REST';
         initializeMod(null, appConfig);
@@ -381,7 +366,7 @@ describe('Factory: parseRESTHeaders', function () {
         expect(headers).not.toEqual(origHeaders);
 
         // Now, call the handler for the USE_JS_API event
-        handler = appEventBus.on.argsForCall[4][1];
+        handler = appEventBus.on.argsForCall[3][1];
         handler();
         // Reset the headers
         headers = {};
@@ -396,9 +381,10 @@ describe('Factory: parseRESTHeaders', function () {
         var origHeaders, handler;
 
         // First, to show that the headers are usually modified
+        appEventBus.once.reset();
         appEventBus.on.reset();
         transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
-        initializeMod = appEventBus.on.argsForCall[0][1];
+        initializeMod = appEventBus.once.argsForCall[0][1];
         // Use JS for currentAPI
         appConfig.currentAPI = 'JS';
         initializeMod(null, appConfig);
@@ -411,7 +397,7 @@ describe('Factory: parseRESTHeaders', function () {
         expect(headers).toEqual(origHeaders);
 
         // Now, call the handler for the USE_REST_API event
-        handler = appEventBus.on.argsForCall[3][1];
+        handler = appEventBus.on.argsForCall[2][1];
         handler();
         // Reset the headers
         headers = {};
@@ -421,36 +407,6 @@ describe('Factory: parseRESTHeaders', function () {
         // Now the function should modify the headers
         expect(headers).not.toEqual(origHeaders);
       });
-
-//      xit('should register an event handler that caches the sessionToken to modStorage on SIGN_IN', function () {
-//        var data = {
-//            sessionToken: modStorage.sessionToken
-//          },
-//          eventName,
-//          eventHandler,
-//          callIdx = 1;
-//        delete modStorage.sessionToken;
-////        transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
-//        // NB: If this fails, make sure the order of the event registrations hasn't changed.
-//        eventName = appEventBus.on.argsForCall[callIdx][0];
-//        expect(eventName).toEqual(PARSE_APP_EVENTS.SIGN_IN);
-//        eventHandler = appEventBus.on.argsForCall[callIdx][1];
-//        eventHandler(null, data);
-//        expect(modStorage.sessionToken).toEqual(data.sessionToken);
-//      });
-
-//      xit('should register an event handler that deletes the sessionToken from modStorage on SIGN_OUT', function () {
-//        var eventName,
-//          eventHandler,
-//          callIdx = 2;
-////        transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
-//        // NB: If this fails, make sure the order of the event registrations hasn't changed.
-//        eventName = appEventBus.on.argsForCall[callIdx][0];
-//        expect(eventName).toEqual(PARSE_APP_EVENTS.SIGN_OUT);
-//        eventHandler = appEventBus.on.argsForCall[callIdx][1];
-//        eventHandler();
-//        expect(modStorage.sessionToken).toBeUndefined();
-//      });
     });
   });
 });

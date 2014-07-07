@@ -20,19 +20,15 @@ angular.module('angularParseInterface')
 
 
       // Register event handlers
-      // This is the handler for the INIT_EVENT
-      var initializeMod = function (event, appConfig) {
+      // Register a one-time handler for the INIT_EVENT
+      appEventBus.once(INIT_EVENT, function (event, appConfig) {
         // Get the APPLICATION_ID
         APPLICATION_ID = appConfig.APPLICATION_ID;
         // Get the REST_KEY
         REST_KEY = appConfig.REST_KEY;
         // Determine whether we're using the REST API
         useRestApi = appConfig.currentAPI === 'REST';
-        // Once this handler is called, it should unregister itself
-        appEventBus.off(INIT_EVENT, initializeMod);
-      };
-      // Register the handler for the INIT_EVENT
-      appEventBus.on(INIT_EVENT, initializeMod);
+      });
       // Now that the handler is set up, we can emit the MODULE_REGISTERED event, which will cause the appInterface to
       // emit the INIT_EVENT with the appConfig
       appEventBus.emit(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
