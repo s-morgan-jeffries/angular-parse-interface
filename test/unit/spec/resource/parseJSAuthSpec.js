@@ -259,9 +259,16 @@ describe('Factory: parseJSAuth', function () {
         initializeMod(null, appConfig);
       });
 
-      it('should not modify the headers', function () {
+      it('should add a Content-Type header value of "text/plain"', function () {
+        headers = {};
+        transformRequest(data, headersGetter);
+        expect(headers['Content-Type']).toEqual('text/plain');
+      });
+
+      it('should not otherwise modify the headers', function () {
         var origHeaders = angular.copy(headers);
-        transformedData = transformRequest(data, headersGetter);
+        transformRequest(data, headersGetter);
+        delete headers['Content-Type'];
         expect(headers).toEqual(origHeaders);
       });
 

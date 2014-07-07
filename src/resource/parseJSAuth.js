@@ -59,10 +59,10 @@ angular.module('angularParseInterface')
       });
 
       // The transformRequest function
-      return function (data/*, headersGetter*/) {
+      return function (data, headersGetter) {
         // Get the current value of the session token
-        var sessionToken = modStorage.sessionToken;
-
+        var headers = headersGetter(),
+          sessionToken = modStorage.sessionToken;
         // Only add auth keys if we're using the JS API
         if (useJsApi) {
           // Set the application ID and JS key values
@@ -70,13 +70,14 @@ angular.module('angularParseInterface')
           data._JavaScriptKey = JS_KEY;
           data._InstallationId = INSTALLATION_ID;
           data._ClientVersion = CLIENT_VERSION;
-          // t0d0: Figure out where to add pseudomethods
-//          _method: "GET"
 
           // If the session token has a reasonably existy value, set the _SessionToken key
           if (sessionToken && sessionToken.length) {
             data._SessionToken = sessionToken;
           }
+
+          // Set the Content-Type to text/plain to prevent a preflight
+          headers['Content-Type'] = 'text/plain';
         }
         // Return the data unmodified
         return data;
