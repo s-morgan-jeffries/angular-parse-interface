@@ -46,7 +46,7 @@ describe('Factory: parseResourceActions', function () {
       describe('get', function () {
 
         beforeEach(function () {
-          action = mainAction.actionConfigs.get;
+          action = mainAction.baseActions.get;
         });
 
         it('should have a method of GET', function () {
@@ -81,7 +81,7 @@ describe('Factory: parseResourceActions', function () {
       describe('delete', function () {
 
         beforeEach(function () {
-          action = mainAction.actionConfigs.delete;
+          action = mainAction.baseActions.delete;
         });
 
         it('should have a method of DELETE', function () {
@@ -103,7 +103,7 @@ describe('Factory: parseResourceActions', function () {
       describe('POST', function () {
 
         beforeEach(function () {
-          action = mainAction.actionConfigs.POST;
+          action = mainAction.baseActions.POST;
         });
 
         it('should have a method of POST', function () {
@@ -222,7 +222,7 @@ describe('Factory: parseResourceActions', function () {
       describe('PUT', function () {
 
         beforeEach(function () {
-          action = mainAction.actionConfigs.PUT;
+          action = mainAction.baseActions.PUT;
         });
 
         it('should have a method of PUT', function () {
@@ -381,7 +381,7 @@ describe('Factory: parseResourceActions', function () {
         var data;
 
         beforeEach(function () {
-          action = mainAction.actionConfigs.query;
+          action = mainAction.baseActions.query;
           data = {
             results: [
               {a: 1, b: 2},
@@ -437,7 +437,7 @@ describe('Factory: parseResourceActions', function () {
       describe('count', function () {
 
         beforeEach(function () {
-          action = mainAction.actionConfigs.count;
+          action = mainAction.baseActions.count;
         });
 
         it('should have a method of GET', function () {
@@ -520,7 +520,7 @@ describe('Factory: parseResourceActions', function () {
       describe('save', function () {
 
         beforeEach(function () {
-          action = mainAction.actionConfigs.save;
+          action = mainAction.baseActions.save;
         });
 
         it('should have a method property', function () {
@@ -532,7 +532,7 @@ describe('Factory: parseResourceActions', function () {
       describe('create', function () {
 
         beforeEach(function () {
-          action = mainAction.actionConfigs.create;
+          action = mainAction.baseActions.create;
         });
 
         it('should have a method of POST', function () {
@@ -544,7 +544,7 @@ describe('Factory: parseResourceActions', function () {
       describe('update', function () {
 
         beforeEach(function () {
-          action = mainAction.actionConfigs.update;
+          action = mainAction.baseActions.update;
         });
 
         it('should have a method of PUT', function () {

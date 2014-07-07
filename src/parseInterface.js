@@ -33,6 +33,9 @@ angular
         appResource,
         appInterface;
 
+      // Create a local copy to prevent any unpleasant side effects
+      appConfig = angular.copy(appConfig);
+
       // Create an application-specific event bus
       appEventBus = new ParseAppEventBus();
 
@@ -54,13 +57,13 @@ angular
         throw new Error('appConfig must have either a "REST_KEY" or a "JS_KEY" property');
       }
 
+      //t0d0: Update this so you can switch between local, session, and volatile storage
       // Get or create appLocalStorage object
       appLocalStorage = clientLocalStorage.parseApp[appId] = (clientLocalStorage.parseApp[appId] || {});
 
       // Get or create appSessionStorage object
       appSessionStorage = clientSessionStorage.parseApp[appId] = (clientSessionStorage.parseApp[appId] || {});
 
-      //t0d0: Update this so it's using localStorage
       // Installation ID used by JS SDK
       if (!appLocalStorage.INSTALLATION_ID || appLocalStorage.INSTALLATION_ID === '') {
         // It wasn't in localStorage, so create a new one.

@@ -51,7 +51,7 @@ describe('Factory: parseResource', function () {
     });
   });
 
-  describe('createCoreAppResourceFactory function', function () {
+  describe('_createCoreAppResourceFactory function', function () {
     var appConfig, appStorage, appEventBus;
 
     beforeEach(function () {
@@ -61,17 +61,17 @@ describe('Factory: parseResource', function () {
     });
 
     it('should be a function', function () {
-      expect(parseResource.createCoreAppResourceFactory).toBeFunction();
+      expect(parseResource._createCoreAppResourceFactory).toBeFunction();
     });
 
     it('should call parseRequestHeaders\' getTransformRequest function with appEventBus and appStorage', function () {
       spyOn(mocks.parseRESTAuth, 'getTransformRequest').andCallThrough();
-      parseResource.createCoreAppResourceFactory(appEventBus, appStorage);
+      parseResource._createCoreAppResourceFactory(appEventBus, appStorage);
       expect(mocks.parseRESTAuth.getTransformRequest).toHaveBeenCalledWith(appEventBus, appStorage);
     });
 
     it('should return a function', function () {
-      var returnVal = parseResource.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
+      var returnVal = parseResource._createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
       expect(returnVal).toBeFunction();
     });
 
@@ -82,7 +82,7 @@ describe('Factory: parseResource', function () {
         url = 'a/url/for/you';
         defaultParams = {};
         actions = {};
-        coreAppResourceFactory = parseResource.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
+        coreAppResourceFactory = parseResource._createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
       });
 
       it('should call the getTransformFunctions method from the parseDataEncoding module', function () {
@@ -397,10 +397,11 @@ describe('Factory: parseResource', function () {
       expect(parseResource.createAppResourceFactory).toBeFunction();
     });
 
-    it('should call the createCoreAppResourceFactory', function () {
-      spyOn(parseResource, 'createCoreAppResourceFactory').andCallThrough();
+    it('should call the _createCoreAppResourceFactory', function () {
+      spyOn(parseResource, '_createCoreAppResourceFactory').andCallThrough();
+//      console.log(parseResource);
       parseResource.createAppResourceFactory(appEventBus, appStorage);
-      expect(parseResource.createCoreAppResourceFactory).toHaveBeenCalledWith(appEventBus, appStorage);
+      expect(parseResource._createCoreAppResourceFactory).toHaveBeenCalledWith(appEventBus, appStorage);
     });
 
     it('should return a function', function () {
@@ -416,7 +417,7 @@ describe('Factory: parseResource', function () {
         defaultParams = {};
         actions = {
           firstAction: {
-            actionConfigs: {
+            baseActions: {
               create: {
                 method: 'POST'
               }
@@ -424,14 +425,14 @@ describe('Factory: parseResource', function () {
             decorator: jasmine.createSpy()
           },
           secondAction: {
-            actionConfigs: {
+            baseActions: {
               update: {
                 method: 'PUT'
               }
             }
           }
         };
-        spyOn(parseResource, 'createCoreAppResourceFactory').andReturn(mocks.coreAppResourceFactory);
+        spyOn(parseResource, '_createCoreAppResourceFactory').andReturn(mocks.coreAppResourceFactory);
         appResourceFactory = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
       });
 
@@ -449,19 +450,31 @@ describe('Factory: parseResource', function () {
         expect(defaultParamsArg).toEqual(defaultParams);
       });
 
-      it('should pass all the actionConfigs from actions to coreAppResourceFactory', function () {
-        var expectedActions, actualActions;
-        expectedActions = {
-          create: {
-            method: 'POST'
+      it('should pass namespaced versions of all the baseActions from actions to coreAppResourceFactory', function () {
+        var expectedBaseActionNames, actualBaseActions;
+        actions = {
+          firstAction: {
+            baseActions: {
+              create: {
+                method: 'POST'
+              }
+            },
+            decorator: jasmine.createSpy()
           },
-          update: {
-            method: 'PUT'
+          secondAction: {
+            baseActions: {
+              update: {
+                method: 'PUT'
+              }
+            }
           }
         };
+        expectedBaseActionNames = ['RESTcreate', 'RESTupdate', 'JScreate', 'JSupdate'];
         Resource = appResourceFactory(url, defaultParams, actions);
-        actualActions = mocks.coreAppResourceFactory.argsForCall[0][2];
-        expect(actualActions).toEqual(expectedActions);
+        actualBaseActions = mocks.coreAppResourceFactory.argsForCall[0][2];
+        angular.forEach(expectedBaseActionNames, function (expectedBaseActionName) {
+          expect(actualBaseActions[expectedBaseActionName]).toBeDefined();
+        });
       });
 
       it('should call the decorator for any action that has one', function () {

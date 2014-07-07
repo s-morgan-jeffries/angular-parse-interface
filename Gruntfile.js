@@ -164,6 +164,8 @@ module.exports = function (grunt) {
     karma: {
       options: {
         files: [
+          // Add polyfill for bind, which is missing from PhantomJS
+          '../bindPolyfill.js',
           // Add jasmine-matchers
           '../../node_modules/jasmine-expect/dist/jasmine-matchers.js',
           // This is obviously the core angular module

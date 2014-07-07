@@ -95,7 +95,7 @@ describe('Factory: parseInterface', function () {
   describe('createAppInterface', function () {
     var appInterface,
       appConfig,
-//      clientStorage,
+      internalAppConfig,
       clientLocalStorage,
       clientSessionStorage;
 
@@ -115,6 +115,32 @@ describe('Factory: parseInterface', function () {
       expect(mocks.appEventBus.ctx).toEqual({});
     });
 
+    it('should respond to a MODULE_REGISTERED event by emitting a namespaced MODULE_INIT event with appConfig', function () {
+      var expectOnEvent = mocks.PARSE_APP_EVENTS.MODULE_REGISTERED,
+        actualOnEvent,
+        mockEvent = {},
+        modName = 'foo',
+        eventHandler,
+        actualEmitEvent,
+        expectedEmitEvent = mocks.PARSE_APP_EVENTS.MODULE_INIT + '.' + modName;
+      appInterface = parseInterface.createAppInterface(appConfig);
+      expect(mocks.appEventBus.on).toHaveBeenCalled();
+      actualOnEvent = mocks.appEventBus.on.argsForCall[0][0];
+      expect(actualOnEvent).toEqual(expectOnEvent);
+
+      eventHandler = mocks.appEventBus.on.argsForCall[0][1];
+      expect(mocks.appEventBus.emit).not.toHaveBeenCalled();
+      eventHandler(mockEvent, modName);
+      actualEmitEvent = mocks.appEventBus.emit.argsForCall[0][0];
+      internalAppConfig = mocks.appEventBus.emit.argsForCall[0][1];
+      expect(mocks.appEventBus.emit).toHaveBeenCalled();
+      expect(actualEmitEvent).toEqual(expectedEmitEvent);
+      angular.forEach(appConfig, function (v, k) {
+        expect(internalAppConfig[k]).toBeDefined();
+        expect(internalAppConfig[k]).toEqual(appConfig[k]);
+      });
+    });
+
     it('should error if appConfig does not have an APPLICATION_ID property', function () {
       var create = function () {
           parseInterface.createAppInterface(badConfig);
@@ -127,13 +153,19 @@ describe('Factory: parseInterface', function () {
 
     it('should set appConfig.currentAPI to "REST" if appConfig has a REST_KEY', function () {
       parseInterface.createAppInterface(appConfig);
-      expect(appConfig.currentAPI).toEqual('REST');
+      var registrationHandler = mocks.appEventBus.on.argsForCall[0][1];
+      registrationHandler();
+      internalAppConfig = mocks.appEventBus.emit.argsForCall[0][1];
+      expect(internalAppConfig.currentAPI).toEqual('REST');
     });
 
     it('should set appConfig.currentAPI to "JS" if appConfig has a JS_KEY but no REST_KEY', function () {
       delete appConfig.REST_KEY;
       parseInterface.createAppInterface(appConfig);
-      expect(appConfig.currentAPI).toEqual('JS');
+      var registrationHandler = mocks.appEventBus.on.argsForCall[0][1];
+      registrationHandler();
+      internalAppConfig = mocks.appEventBus.emit.argsForCall[0][1];
+      expect(internalAppConfig.currentAPI).toEqual('JS');
     });
 
     it('should error if appConfig is missing both JS_KEY and REST_KEY properties', function () {
@@ -161,27 +193,12 @@ describe('Factory: parseInterface', function () {
       expect(appSessionStorage).toBeObject();
     });
 
-    it('should respond to a MODULE_REGISTERED event by emitting a namespaced MODULE_INIT event with appConfig', function () {
-      var expectOnEvent = mocks.PARSE_APP_EVENTS.MODULE_REGISTERED,
-        actualOnEvent,
-        mockEvent = {},
-        modName = 'foo',
-        eventHandler,
-        expectedEmitEvent = mocks.PARSE_APP_EVENTS.MODULE_INIT + '.' + modName;
-      appInterface = parseInterface.createAppInterface(appConfig);
-      expect(mocks.appEventBus.on).toHaveBeenCalled();
-      actualOnEvent = mocks.appEventBus.on.argsForCall[0][0];
-      expect(actualOnEvent).toEqual(expectOnEvent);
-
-      eventHandler = mocks.appEventBus.on.argsForCall[0][1];
-      expect(mocks.appEventBus.emit).not.toHaveBeenCalled();
-      eventHandler(mockEvent, modName);
-      expect(mocks.appEventBus.emit).toHaveBeenCalledWith(expectedEmitEvent, appConfig);
-    });
-
     it('should set the CLIENT_VERSION key on appConfig to the current JS SDK version', function () {
       appInterface = parseInterface.createAppInterface(appConfig);
-      expect(appConfig.CLIENT_VERSION).toEqual(JS_SDK_VERSION);
+      var registrationHandler = mocks.appEventBus.on.argsForCall[0][1];
+      registrationHandler();
+      internalAppConfig = mocks.appEventBus.emit.argsForCall[0][1];
+      expect(internalAppConfig.CLIENT_VERSION).toEqual(JS_SDK_VERSION);
     });
 
     it('should set the INSTALLATION_ID key on appConfig to the value stored in appLocalStorage if it exists', function () {
@@ -192,17 +209,23 @@ describe('Factory: parseInterface', function () {
       appLocalStorage = clientLocalStorage.parseApp[appId] = {};
       appLocalStorage.INSTALLATION_ID = installationId;
       appInterface = parseInterface.createAppInterface(appConfig, clientLocalStorage);
-      expect(appConfig.INSTALLATION_ID).toEqual(installationId);
+      var registrationHandler = mocks.appEventBus.on.argsForCall[0][1];
+      registrationHandler();
+      internalAppConfig = mocks.appEventBus.emit.argsForCall[0][1];
+      expect(internalAppConfig.INSTALLATION_ID).toEqual(installationId);
     });
 
     it('should create a new INSTALLATION_ID if it does not exist and add it both to appConfig and to appLocalStorage', function () {
       var appId = appConfig.APPLICATION_ID,
         appLocalStorage;
       appInterface = parseInterface.createAppInterface(appConfig, clientLocalStorage);
+      var registrationHandler = mocks.appEventBus.on.argsForCall[0][1];
+      registrationHandler();
+      internalAppConfig = mocks.appEventBus.emit.argsForCall[0][1];
       appLocalStorage = clientLocalStorage.parseApp[appId];
-      expect(appConfig.INSTALLATION_ID).toBeNonEmptyString();
+      expect(internalAppConfig.INSTALLATION_ID).toBeNonEmptyString();
       expect(appLocalStorage.INSTALLATION_ID).toBeNonEmptyString();
-      expect(appConfig.INSTALLATION_ID).toEqual(appLocalStorage.INSTALLATION_ID);
+      expect(internalAppConfig.INSTALLATION_ID).toEqual(appLocalStorage.INSTALLATION_ID);
     });
 
     it('should create a new appResource', function () {
@@ -221,6 +244,10 @@ describe('Factory: parseInterface', function () {
 
       beforeEach(function () {
         appInterface = parseInterface.createAppInterface(appConfig);
+        var registrationHandler = mocks.appEventBus.on.argsForCall[0][1];
+        registrationHandler();
+        internalAppConfig = mocks.appEventBus.emit.argsForCall[0][1];
+        mocks.appEventBus.emit.reset();
         appSessionStorage = clientSessionStorage.parseApp[appConfig.APPLICATION_ID];
       });
 
@@ -267,15 +294,15 @@ describe('Factory: parseInterface', function () {
           // This should have been emitted...
           expect(mocks.appEventBus.emit).toHaveBeenCalledWith(mocks.PARSE_APP_EVENTS.USE_JS_API);
           // ... and this should have been set
-          expect(appConfig.currentAPI).toEqual('JS');
+          expect(internalAppConfig.currentAPI).toEqual('JS');
         });
 
         it('should not do anything if the JS_KEY is not set on appConfig', function () {
-          delete appConfig.JS_KEY;
-          delete appConfig.currentAPI;
+          delete internalAppConfig.JS_KEY;
+          delete internalAppConfig.currentAPI;
           appInterface.useJsApi();
           expect(mocks.appEventBus.emit).not.toHaveBeenCalled();
-          expect(appConfig.currentAPI).toBeUndefined();
+          expect(internalAppConfig.currentAPI).toBeUndefined();
         });
 
       });
@@ -288,21 +315,21 @@ describe('Factory: parseInterface', function () {
 
         it('should trigger a USE_REST_API event on the appEventBus and set appConfig.currentAPI to "REST"', function () {
           // Delete this first
-          delete appConfig.currentAPI;
+          delete internalAppConfig.currentAPI;
           // Now call the method
           appInterface.useRestApi();
           // This should have been emitted...
           expect(mocks.appEventBus.emit).toHaveBeenCalledWith(mocks.PARSE_APP_EVENTS.USE_REST_API);
           // ... and this should have been set
-          expect(appConfig.currentAPI).toEqual('REST');
+          expect(internalAppConfig.currentAPI).toEqual('REST');
         });
 
         it('should not do anything if the REST_KEY is not set on appConfig', function () {
-          delete appConfig.REST_KEY;
-          delete appConfig.currentAPI;
+          delete internalAppConfig.REST_KEY;
+          delete internalAppConfig.currentAPI;
           appInterface.useRestApi();
           expect(mocks.appEventBus.emit).not.toHaveBeenCalled();
-          expect(appConfig.currentAPI).toBeUndefined();
+          expect(internalAppConfig.currentAPI).toBeUndefined();
         });
 
       });

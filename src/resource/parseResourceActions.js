@@ -45,7 +45,7 @@ angular.module('angularParseInterface')
     };
 
     actionLib.get = {
-      actionConfigs: {
+      baseActions: {
 //        get: (function () {
 //          var Resource;
 //
@@ -70,7 +70,7 @@ angular.module('angularParseInterface')
     // want to write extra tests right now. But this is a pin in it.
 
     actionLib.delete = {
-      actionConfigs: {
+      baseActions: {
         delete: {
           method: 'DELETE'
         }
@@ -79,7 +79,7 @@ angular.module('angularParseInterface')
 
     // A POST action for posting arbitrary data to the server
     actionLib.POST = {
-      actionConfigs: {
+      baseActions: {
         POST: {
           method: 'POST'
         }
@@ -135,7 +135,7 @@ angular.module('angularParseInterface')
     };
 
     actionLib.PUT = {
-      actionConfigs: {
+      baseActions: {
         PUT: {
           method: 'PUT'
         }
@@ -198,7 +198,7 @@ angular.module('angularParseInterface')
     };
 
     actionLib.query = {
-      actionConfigs: {
+      baseActions: {
         query: (function () {
           var Resource;
 
@@ -260,7 +260,7 @@ angular.module('angularParseInterface')
     // appropriate). Anyway, this action does the hard work of making those two interfaces work together. The save
     // action this creates can be used just like the ngResource save action.
     actionLib.save = {
-      actionConfigs: {
+      baseActions: {
         save: {
           method: 'POST'
         },
@@ -356,7 +356,17 @@ angular.module('angularParseInterface')
     };
 
     // t0d0: Modify this so it makes two versions (REST and JS) of each action
-      // But it's also going to have to know when to use which. Where should that happen?
+    // But it's also going to have to know when to use which. Where should that happen?
+    // Each action needs two versions: REST and JS. Those can be generated here pretty easily. After you generate them,
+    // though, you have to add a decorator that picks between them, and you can't build that here because the references
+    // aren't available yet.
+    //   Every action has be available to $resource at the time the Resource is created
+//    var wrappedActionLib = {};
+//    angular.forEach(actionLib, function (action, actionName) {
+//      var RESTAction = action,
+//        JSAction = angular.copy(action);
+//    });
+
     var parseResourceActions = {
       getActionConfig: function (actionName) {
         return angular.copy(actionLib[actionName]);
