@@ -89,6 +89,58 @@ describe('Factory: ParseAppEventBus', function () {
       });
     });
 
+    xdescribe('once method', function () {
+      var scope, events, eventName, handler;
+
+      beforeEach(function () {
+        scope = appEventBus._$scope;
+        events = appEventBus._events;
+        eventName = 'foo';
+        handler = jasmine.createSpy();
+      });
+
+      it('should create an array-valued property sharing the eventName\'s name on the _event object if it does not exist', function () {
+        expect(events[eventName]).toBeUndefined();
+        appEventBus.once(eventName, handler);
+        expect(events[eventName]).toBeDefined();
+        expect(events[eventName]).toBeArray();
+      });
+
+      it('should add an object with the handler and a deregistration function to the event handler array', function () {
+        var handlerArray, handlerObj;
+        appEventBus.once(eventName, handler);
+        handlerArray = events[eventName];
+        handlerObj = handlerArray[0];
+        expect(handlerObj.handler).toBe(handler);
+        expect(handlerObj.unregisterHandler).toBe(mocks.unregisterHandler);
+      });
+
+      it('should pass a function to its _$scope\'s $on method that calls both the original and the deregistration functions', function () {
+        var actualEventName,
+          wrappedHandler,
+          dummyArgs = [1, 'a', true, {a:1,b:2}];
+        // Create a spy for the unregisterHandler (the handler already is one)
+        spyOn(mocks, 'unregisterHandler');
+        // Call the method
+        appEventBus.once(eventName, handler);
+        // This should have been called...
+        expect(scope.$on).toHaveBeenCalled();
+        actualEventName = scope.$on.argsForCall[0][0];
+        // ... with this
+        expect(actualEventName).toEqual(eventName);
+        // Now grab the actual function that was passed to $on
+        wrappedHandler = scope.$on.argsForCall[0][1];
+        // Neither of these should have been called yet
+        expect(handler).not.toHaveBeenCalled();
+        expect(mocks.unregisterHandler).not.toHaveBeenCalled();
+        // Now call the wrapped handler
+        wrappedHandler(dummyArgs[0], dummyArgs[1], dummyArgs[2], dummyArgs[3]);
+        // Now they should have been called
+        expect(handler).toHaveBeenCalledWith(dummyArgs[0], dummyArgs[1], dummyArgs[2], dummyArgs[3]);
+        expect(mocks.unregisterHandler).toHaveBeenCalled();
+      });
+    });
+
     describe('off method', function () {
       var events, eventName, handler, handler2, unregisterHandler, unregisterHandler2;
 
