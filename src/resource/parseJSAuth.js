@@ -22,7 +22,8 @@ angular.module('angularParseInterface')
 
       // Register event handlers
       // This is the handler for the INIT_EVENT
-      var initializeMod = function (event, appConfig) {
+      // Register the handler for the INIT_EVENT
+      appEventBus.once(INIT_EVENT, function (event, appConfig) {
         // Get the APPLICATION_ID
         APPLICATION_ID = appConfig.APPLICATION_ID;
         // Get the JS_KEY
@@ -33,11 +34,7 @@ angular.module('angularParseInterface')
         CLIENT_VERSION = appConfig.CLIENT_VERSION;
         // Determine whether we're using the JS API
         useJsApi = appConfig.currentAPI === 'JS';
-        // Once this handler is called, it should unregister itself
-        appEventBus.off(INIT_EVENT, initializeMod);
-      };
-      // Register the handler for the INIT_EVENT
-      appEventBus.on(INIT_EVENT, initializeMod);
+      });
       // Now that the handler is set up, we can emit the MODULE_REGISTERED event, which will cause the appInterface to
       // emit the INIT_EVENT with the appConfig
       appEventBus.emit(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);

@@ -52,6 +52,7 @@ describe('Factory: parseJSAuth', function () {
       };
       appEventBus = {
         on: jasmine.createSpy(),
+        once: jasmine.createSpy(),
         off: jasmine.createSpy(),
         emit: jasmine.createSpy()
       };
@@ -77,34 +78,17 @@ describe('Factory: parseJSAuth', function () {
       expect(appEventBus.emit).toHaveBeenCalledWith(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
     });
 
-    describe('MODULE_INIT handler', function () {
+    it('should register a one-time event handler for a namespaced MODULE_INIT event', function () {
       var moduleName = 'parseJSAuth',
-        eventName = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName;
-
-      it('should be registered as an event handler for a namespaced MODULE_INIT event', function () {
-        var eventHasHandler = false;
-        transformRequest = parseJSAuth.getTransformRequest(appEventBus, appStorage);
-        expect(appEventBus.on).toHaveBeenCalled();
-        angular.forEach(appEventBus.on.argsForCall, function (args) {
-          eventHasHandler = eventHasHandler || (args[0] === eventName);
-          eventHasHandler = eventHasHandler && angular.isFunction(args[1]);
-        });
-        expect(eventHasHandler).toBeTrue();
+        eventName = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName,
+        eventHasHandler = false;
+      transformRequest = parseJSAuth.getTransformRequest(appEventBus, appStorage);
+      expect(appEventBus.once).toHaveBeenCalled();
+      angular.forEach(appEventBus.once.argsForCall, function (args) {
+        eventHasHandler = eventHasHandler || (args[0] === eventName);
+        eventHasHandler = eventHasHandler && angular.isFunction(args[1]);
       });
-
-      it('should cause itself to be deregistered as an event handler', function () {
-        var handler,
-          mockEvent = {};
-        transformRequest = parseJSAuth.getTransformRequest(appEventBus, appStorage);
-        angular.forEach(appEventBus.on.argsForCall, function (args) {
-          if (args[0] === eventName) {
-            handler = args[1];
-          }
-        });
-        expect(appEventBus.off).not.toHaveBeenCalled();
-        handler(mockEvent, appConfig);
-        expect(appEventBus.off).toHaveBeenCalledWith(eventName, handler);
-      });
+      expect(eventHasHandler).toBeTrue();
     });
 
     describe('SIGN_IN handler', function () {
@@ -255,7 +239,7 @@ describe('Factory: parseJSAuth', function () {
         modStorage = appStorage[moduleName] = {};
         modStorage.sessionToken = sessionToken;
         transformRequest = parseJSAuth.getTransformRequest(appEventBus, appStorage);
-        initializeMod = appEventBus.on.argsForCall[0][1];
+        initializeMod = appEventBus.once.argsForCall[0][1];
         initializeMod(null, appConfig);
       });
 
@@ -352,9 +336,10 @@ describe('Factory: parseJSAuth', function () {
 
       it('should not initially add auth data if appConfig.currentAPI is not set to "JS"', function () {
         // First, to show that the data are usually modified
+        appEventBus.once.reset();
         appEventBus.on.reset();
         transformRequest = parseJSAuth.getTransformRequest(appEventBus, appStorage);
-        initializeMod = appEventBus.on.argsForCall[0][1];
+        initializeMod = appEventBus.once.argsForCall[0][1];
         // Use JS for currentAPI
         appConfig.currentAPI = 'JS';
         initializeMod(null, appConfig);
@@ -366,9 +351,10 @@ describe('Factory: parseJSAuth', function () {
         expect(data).not.toEqual(origData);
 
         // Now, reinitialize the module
+        appEventBus.once.reset();
         appEventBus.on.reset();
         transformRequest = parseJSAuth.getTransformRequest(appEventBus, appStorage);
-        initializeMod = appEventBus.on.argsForCall[0][1];
+        initializeMod = appEventBus.once.argsForCall[0][1];
         // Instead of JS, we'll use REST here
         appConfig.currentAPI = 'REST';
         initializeMod(null, appConfig);
@@ -384,9 +370,10 @@ describe('Factory: parseJSAuth', function () {
         var handler;
 
         // First, to show that the data are usually modified
+        appEventBus.once.reset();
         appEventBus.on.reset();
         transformRequest = parseJSAuth.getTransformRequest(appEventBus, appStorage);
-        initializeMod = appEventBus.on.argsForCall[0][1];
+        initializeMod = appEventBus.once.argsForCall[0][1];
         // Use JS for currentAPI
         appConfig.currentAPI = 'JS';
         initializeMod(null, appConfig);
@@ -398,7 +385,7 @@ describe('Factory: parseJSAuth', function () {
         expect(data).not.toEqual(origData);
 
         // Now, call the handler for the USE_REST_API event
-        handler = appEventBus.on.argsForCall[3][1];
+        handler = appEventBus.on.argsForCall[2][1];
         handler();
         // Reset the data
         data = origData;
@@ -413,9 +400,10 @@ describe('Factory: parseJSAuth', function () {
         var handler;
 
         // First, to show that the data are usually modified
+        appEventBus.once.reset();
         appEventBus.on.reset();
         transformRequest = parseJSAuth.getTransformRequest(appEventBus, appStorage);
-        initializeMod = appEventBus.on.argsForCall[0][1];
+        initializeMod = appEventBus.once.argsForCall[0][1];
         // Use REST for currentAPI
         appConfig.currentAPI = 'REST';
         initializeMod(null, appConfig);
@@ -427,7 +415,7 @@ describe('Factory: parseJSAuth', function () {
         expect(data).toEqual(origData);
 
         // Now, call the handler for the USE_JS_API event
-        handler = appEventBus.on.argsForCall[4][1];
+        handler = appEventBus.on.argsForCall[3][1];
         handler();
         // Reset the data
         data = origData;
