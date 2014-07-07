@@ -240,16 +240,21 @@ angular.module('angularParseInterface')
           return function () {
             var queryParams,
               isCountQuery,
-              queryFx;
+              queryFx,
+              args = [].slice.call(arguments);
 
-            // Get the query parameters or an empty object
-            queryParams = angular.isObject(arguments[0]) ? arguments[0] : {};
+            // This needs to be an object for the JS API
+            if (!angular.isObject(args[0])) {
+              args.unshift({});
+            }
+            // Get the query parameters
+            queryParams = args[0];
             // Determine whether this is a count query based on whether the count parameter is set
             isCountQuery = angular.equals(queryParams.count, 1);
             // If it's a count query, use the count action; otherwise, use the query action
             queryFx = isCountQuery ? count : query;
             // Delegate to the appropriate function...
-            return queryFx.apply(this, arguments);
+            return queryFx.apply(this, args);
           };
         }());
       }
