@@ -1,64 +1,42 @@
 angular.module('angularParseInterface')
-  .factory('parseResource', function ($resource, parseRESTAuth, parseJSAuth, parseDataEncoding, parseResourceDecorator) {
+  .factory('parseResource', function ($resource, PARSE_APP_EVENTS, parseRESTAuth, parseJSAuth, parseDataEncoding, parseResourceDecorator) {
     'use strict';
 
     var parseResource = {};
-
-    // t0d0: Make this a module-level method
-    // This removes the namespacing from the baseActions. This is done so that the decorators, which aren't written
-    // with any assumptions about namespacing, will still work (otherwise they couldn't find the properties they
-    // reference).
-    var deNamespaceBaseActions = function (Resource, action) {
-      var nameSpace = action.nameSpace;
-      angular.forEach(action.baseActions, function (baseAction, namespacedActionName) {
-        var namespacedStaticName = namespacedActionName,
-          namespacedInstanceName = '$' + namespacedStaticName,
-          baseStaticName = namespacedActionName.slice(nameSpace.length),
-          baseInstanceName = '$' + baseStaticName,
-          staticAction = Resource[namespacedStaticName],
-          instanceAction = Resource.prototype[namespacedInstanceName];
-        delete Resource[namespacedStaticName];
-        delete Resource.prototype[namespacedInstanceName];
-        Resource[baseStaticName] = staticAction;
-        Resource.prototype[baseInstanceName] = instanceAction;
-      });
-    };
-
-    // t0d0: Make this a module-level method
-    // This deletes the action from Resource and its prototype and returns the static action
-    var deleteAndReturnAction = function (Resource, actionName) {
-      var instanceActionName = '$' + actionName,
-        staticAction = Resource[actionName];
-      delete Resource[actionName];
-      delete Resource.prototype[instanceActionName];
-      return staticAction;
-    };
-
-    // t0d0: Make this a module-level method
-    // Creates the named action on the prototype. This is copied with minimal modifications from
-    // angular-resource.js.
-    var createInstanceAction = function (Resource, actionName) {
-      Resource.prototype['$' + actionName] = function (params, success, error) {
-        if (angular.isFunction(params)) {
-          error = success;
-          success = params;
-          params = {};
-        }
-        var result = Resource[actionName].call(this, params, this, success, error);
-        return result.$promise || result;
-      };
-    };
 
     //   The purpose of this function is to modify the $resource service so that it adds appropriate headers and
     // encodes/decodes data in the correct format for Parse.
     parseResource.createAppResourceFactory = function (appEventBus, appStorage) {
       var coreAppResourceFactory = this._createCoreAppResourceFactory(appEventBus, appStorage),
-        generateAPIAction = this._generateAPIAction.bind(this);
+        generateAPIAction = this._generateAPIAction.bind(this),
+        deNamespaceBaseActions = this._deNamespaceBaseActions,
+        deleteAndReturnAction = this._deleteAndReturnAction,
+        destoryUndefinedActions = this._destoryUndefinedActions,
+        createInstanceAction = this._createInstanceAction,
+        apiNames = ['REST', 'JS'],
+        currentAPI,
+        moduleName = 'parseResource',
+      // Namespaced initialization event. The appInterface will emit this with the appConfig when the
+      // MODULE_REGISTERED event is emitted with our moduleName.
+        INIT_EVENT = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName;
 
-      var apiNames = ['REST', 'JS'];
-      var currentAPI = 'REST';
-
-      //t0d0: Add an initialization method
+      // Register event handlers
+      // Register the handler for the INIT_EVENT
+      appEventBus.once(INIT_EVENT, function (event, appConfig) {
+        // Determine which API we're using
+        currentAPI = appConfig.currentAPI;
+      });
+      // Now that the handler is set up, we can emit the MODULE_REGISTERED event, which will cause the appInterface to
+      // emit the INIT_EVENT with the appConfig
+      appEventBus.emit(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
+      // On a USE_REST_API event, set useRestApi to true
+      appEventBus.on(PARSE_APP_EVENTS.USE_REST_API, function () {
+        currentAPI = 'REST';
+      });
+      // On a USE_JS_API event, set useRestApi to false
+      appEventBus.on(PARSE_APP_EVENTS.USE_JS_API, function () {
+        currentAPI = 'JS';
+      });
 
       // Okay for now. What do you want this to do ultimately? You probably don't want to leave customActions in its
       // current state. For example, you probably want objects to have certain actions but not others.
@@ -79,6 +57,7 @@ angular.module('angularParseInterface')
         // Create the Resource
         Resource = coreAppResourceFactory(url, defaultParams, baseActions);
 
+        //t0d0: Add tests for this (specifically that it changes based on value of currentAPI)
         // This loops through each action for both APIs and creates API-specific versions of that action. It then
         // creates a non-namespaced version of the action that delegates to the correct API-specific version based on
         // which API we're using. At the end of this, all the namespaced properties should be deleted from both Resource
@@ -91,6 +70,8 @@ angular.module('angularParseInterface')
             if (angular.isFunction(apiAction.decorator)) {
               apiAction.decorator(Resource);
             }
+            // Check here whether the action has an instance action
+            action.hasInstanceAction = angular.isFunction(Resource.prototype['$' + actionName]);
             apiActions[apiName] = deleteAndReturnAction(Resource, actionName);
           });
           // Now you've got namespaced versions of your actions. This creates a new static method that delegates to
@@ -100,24 +81,21 @@ angular.module('angularParseInterface')
           };
         });
 
+        // t0d0: Test this
         // Now it's time for some cleanup. This loops through each of Resource's properties and tries to identify
         // actions (based on whether there's a $-prefixed version of the property on Resource.prototype. If it finds any
         // that aren't in the actions object, it deletes them from Resource and Resource.prototype.
-        angular.forEach(Resource, function (v, k) {
-          var isAction = function (name) {
-            return Resource.hasOwnProperty(name) && Resource.prototype.hasOwnProperty('$' + name);
-          };
-          if (isAction(k) && !actions[k]) {
-            delete Resource[k];
-            delete Resource.prototype['$' + k];
-          }
-        });
+        destoryUndefinedActions(Resource, actions);
 
+        // t0d0: Test this
+          // You should detect above whether a given action has an associated instance action
         // Just to be safe, let's reset the prototype...
         Resource.prototype = {};
         // ... and add the instance actions back in
         angular.forEach(actions, function (action, actionName) {
-          createInstanceAction(Resource, actionName);
+          if (action.hasInstanceAction) {
+            createInstanceAction(Resource, actionName);
+          }
         });
 
         // Apply the decorator
@@ -129,6 +107,7 @@ angular.module('angularParseInterface')
 
     parseResource._getPseudoMethodTransform = function (method) {
       return function (data/*, headersGetter */) {
+        data = data || {};
         data._method = method;
         return data;
       };
@@ -180,6 +159,65 @@ angular.module('angularParseInterface')
         generateAPIActionFx = generateJSAction;
       }
       return generateAPIActionFx(action, API);
+    };
+
+    // This removes the namespacing from the baseActions. This is done so that the decorators, which aren't written
+    // with any assumptions about namespacing, will still work (otherwise they couldn't find the properties they
+    // reference).
+    parseResource._deNamespaceBaseActions = function (Resource, action) {
+      var nameSpace = action.nameSpace;
+      angular.forEach(action.baseActions, function (baseAction, namespacedActionName) {
+        var namespacedStaticName = namespacedActionName,
+          baseStaticName = namespacedActionName.slice(nameSpace.length),
+          namespacedInstanceName = nameSpace + '$' + baseStaticName,
+          baseInstanceName = '$' + baseStaticName,
+          staticAction = Resource[namespacedStaticName],
+          instanceAction = Resource.prototype[namespacedInstanceName];
+        delete Resource[namespacedStaticName];
+        delete Resource.prototype[namespacedInstanceName];
+        Resource[baseStaticName] = staticAction;
+        if (instanceAction) {
+          Resource.prototype[baseInstanceName] = instanceAction;
+        }
+      });
+    };
+
+    // This deletes the action from Resource and its prototype and returns the static action
+    parseResource._deleteAndReturnAction = function (Resource, actionName) {
+      var instanceActionName = '$' + actionName,
+        staticAction = Resource[actionName];
+      delete Resource[actionName];
+      delete Resource.prototype[instanceActionName];
+      return staticAction;
+    };
+
+    // This loops through each of Resource's properties and tries to identify actions (based on whether there's a
+    // $-prefixed version of the property on Resource.prototype. If it finds any that aren't in the actions object, it
+    // deletes them from Resource and Resource.prototype.
+    parseResource._destoryUndefinedActions = function (Resource, actions) {
+      var isAction = function (name) {
+        return Resource.hasOwnProperty(name) && Resource.prototype.hasOwnProperty('$' + name);
+      };
+      angular.forEach(Resource, function (v, k) {
+        if (isAction(k) && !actions[k]) {
+          delete Resource[k];
+          delete Resource.prototype['$' + k];
+        }
+      });
+    };
+
+    // Creates the named action on the prototype. This is copied with minimal modifications from
+    // angular-resource.js.
+    parseResource._createInstanceAction = function (Resource, actionName) {
+      Resource.prototype['$' + actionName] = function (params, success, error) {
+        if (angular.isFunction(params)) {
+          error = success;
+          success = params;
+          params = {};
+        }
+        var result = Resource[actionName].call(this, params, this, success, error);
+        return result.$promise || result;
+      };
     };
 
     // This creates the core app resource. It's concerned with encoding/decoding of data and the addition of the
@@ -247,12 +285,14 @@ angular.module('angularParseInterface')
             }
             // This is for the actual data encoding
             transformReqArray.push(dataEncodingFunctions.transformRequest);
-            // And this is for stringifying the data
-            transformReqArray.push(stringifyData);
           }
           // Every request will add the auth transforms
           transformReqArray.push(addRESTAuth);
           transformReqArray.push(addJSAuth);
+          if (hasRequestBody(action)) {
+            // Lastly, this is for stringifying the data. Again, it's done conditionally.
+            transformReqArray.push(stringifyData);
+          }
         };
 
         var addTransformResponseFxs = function (action) {

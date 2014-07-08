@@ -2,9 +2,12 @@
 
 describe('Factory: parseResource', function () {
   var parseResource,
-    mocks;
+    mocks,
+    PARSE_APP_EVENTS,
+    moduleName;
 
   beforeEach(function () {
+    moduleName = 'parseResource';
     mocks = {};
     mocks.Resource = function () {};
     mocks.$resource = function () {
@@ -38,9 +41,18 @@ describe('Factory: parseResource', function () {
       }
     };
     mocks.parseResourceDecorator = jasmine.createSpy();
+    PARSE_APP_EVENTS = {
+      SIGN_IN: 'SIGN_IN',
+      SIGN_OUT: 'SIGN_OUT',
+      USE_JS_API: 'USE_JS_API',
+      USE_REST_API: 'USE_REST_API',
+      MODULE_REGISTERED: 'MODULE_REGISTERED',
+      MODULE_INIT: 'MODULE_INIT'
+    };
     module('angularParseInterface', function ($provide) {
       $provide.value('$resource', mocks.$resource);
       $provide.value('parseRESTAuth', mocks.parseRESTAuth);
+      $provide.value('PARSE_APP_EVENTS', PARSE_APP_EVENTS);
       $provide.value('parseJSAuth', mocks.parseJSAuth);
       $provide.value('parseDataEncoding', mocks.parseDataEncoding);
       $provide.value('parseResourceDecorator', mocks.parseResourceDecorator);
@@ -210,21 +222,21 @@ describe('Factory: parseResource', function () {
             postWoTR: {
               method: 'POST',
               // The dataEncoding transformRequest + the function to stringify the data + addRESTAuth
-              transformRequest: [mocks.dataEncodingFunctions.transformRequest, placeHolder, mocks.addRESTAuth, mocks.addJSAuth]
+              transformRequest: [mocks.dataEncodingFunctions.transformRequest, mocks.addRESTAuth, mocks.addJSAuth, placeHolder]
             },
             // POST with transformRequest function
             postWTRFx: {
               method: 'POST',
               // The preset transformRequest + the function to parse the JSON (if needed) + the dataEncoding
               // transformRequest + the function to stringify the data + addRESTAuth
-              transformRequest: [foo, placeHolder, mocks.dataEncodingFunctions.transformRequest, placeHolder, mocks.addRESTAuth, mocks.addJSAuth]
+              transformRequest: [foo, placeHolder, mocks.dataEncodingFunctions.transformRequest, mocks.addRESTAuth, mocks.addJSAuth, placeHolder]
             },
             // POST with transformRequest array
             postWTRAr: {
               method: 'POST',
               // The preset transformRequest + the function to parse the JSON (if needed) + the dataEncoding
               // transformRequest + the function to stringify the data + addRESTAuth
-              transformRequest: [foo, placeHolder, mocks.dataEncodingFunctions.transformRequest, placeHolder, mocks.addRESTAuth, mocks.addJSAuth]
+              transformRequest: [foo, placeHolder, mocks.dataEncodingFunctions.transformRequest, mocks.addRESTAuth, mocks.addJSAuth, placeHolder]
             }
           };
           Resource = coreAppResourceFactory(url, defaultParams, actions);
@@ -593,13 +605,235 @@ describe('Factory: parseResource', function () {
     });
   });
 
+  describe('_deNamespaceBaseActions function', function () {
+    var Resource, action, get, $get, query, create, $create;
+
+    beforeEach(function () {
+      get = function () {};
+      $get = function () {};
+      query = function () {};
+      create = function () {};
+      $create = function () {};
+      action = {
+        baseActions: {
+          FOOget: {
+            method: 'GET'
+          },
+          FOOquery: {
+            method: 'GET'
+          }
+        },
+        nameSpace: 'FOO'
+      };
+      Resource = function () {};
+      Resource.FOOget = get;
+      Resource.prototype.FOO$get = $get;
+      Resource.FOOquery = query;
+      Resource.BARcreate = create;
+      Resource.prototype.BAR$create = $create;
+    });
+
+    it('should delete the actions defined by the passed in action from both the Resource and its prototype', function () {
+      parseResource._deNamespaceBaseActions(Resource, action);
+      expect(Resource.FOOget).toBeUndefined();
+      expect(Resource.prototype.FOO$get).toBeUndefined();
+      expect(Resource.FOOquery).toBeUndefined();
+    });
+
+    it('should set a property matching non-namespaced static action name to the static action', function () {
+      parseResource._deNamespaceBaseActions(Resource, action);
+      expect(Resource.get).toBe(get);
+      expect(Resource.query).toBe(query);
+    });
+
+    it('should set a property matching non-namespaced instance action name to the instance action', function () {
+      parseResource._deNamespaceBaseActions(Resource, action);
+      expect(Resource.prototype.$get).toBe($get);
+    });
+
+    it('should not create the instance property unless the instance action exists', function () {
+      parseResource._deNamespaceBaseActions(Resource, action);
+      expect(Object.hasOwnProperty(Resource.prototype, '$query')).toBeFalse();
+    });
+
+    it('should not affect properties that do not share the action\'s namespace', function () {
+      parseResource._deNamespaceBaseActions(Resource, action);
+      expect(Resource.BARcreate).toBe(create);
+      expect(Resource.prototype.BAR$create).toBe($create);
+      expect(Resource.create).toBeUndefined();
+      expect(Resource.prototype.$create).toBeUndefined();
+    });
+  });
+
+  describe('_deleteAndReturnAction function', function () {
+    var Resource, actionName, foo;
+
+    beforeEach(function () {
+      actionName = 'foo';
+      Resource = function () {};
+      foo = function () {};
+      Resource.foo = foo;
+      Resource.prototype.$foo = function () {};
+    });
+
+    it('should delete the named action from the Resource and its prototype', function () {
+      expect(Resource.foo).toBeFunction();
+      expect(Resource.prototype.$foo).toBeFunction();
+      parseResource._deleteAndReturnAction(Resource, actionName);
+      expect(Resource.foo).toBeUndefined();
+      expect(Resource.prototype.$foo).toBeUndefined();
+    });
+
+    it('should returned the named static action from the Resource', function () {
+      var returnedAction = parseResource._deleteAndReturnAction(Resource, actionName);
+      expect(returnedAction).toBe(foo);
+    });
+  });
+
+  describe('_destoryUndefinedActions function', function () {
+    var Resource, actions, get, $get, query, save, $save, className;
+
+    beforeEach(function () {
+      get = function () {};
+      $get = function () {};
+      query = function () {};
+      save = function () {};
+      $save = function () {};
+      actions = {
+        get: {},
+        query: {}
+      };
+      Resource = function () {};
+      Resource.get = get;
+      Resource.prototype.$get = $get;
+      Resource.query = query;
+      Resource.save = save;
+      Resource.prototype.$save = $save;
+      Resource.className = className;
+      Resource.prototype.className = className;
+    });
+
+    it('should delete actions from a resource and its prototype that aren\'t defined in actions', function () {
+      parseResource._destoryUndefinedActions(Resource, actions);
+      expect(Resource.save).toBeUndefined();
+      expect(Resource.prototype.$save).toBeUndefined();
+    });
+
+    it('should not delete properties that do not match the action name pattern (Resource.name / Resource.prototype.$name)', function () {
+      parseResource._destoryUndefinedActions(Resource, actions);
+      expect(Resource.className).toEqual(className);
+      expect(Resource.prototype.className).toEqual(className);
+    });
+
+    it('should not delete actions that are defined in the actions object', function () {
+      parseResource._destoryUndefinedActions(Resource, actions);
+      expect(Resource.get).toBe(get);
+      expect(Resource.prototype.$get).toBe($get);
+      expect(Resource.query).toBe(query);
+    });
+  });
+
+  describe('_createInstanceAction function', function () {
+    var Resource, actionName, staticResult;
+
+    beforeEach(function () {
+      actionName = 'get';
+      Resource = function () {};
+      staticResult = {};
+      Resource.get = function () {
+        return staticResult;
+      };
+      spyOn(Resource, 'get').andCallThrough();
+    });
+
+    it('should create a function on the prototype whose name is the actionName prefixed by "$"', function () {
+      parseResource._createInstanceAction(Resource, actionName);
+      expect(Resource.prototype.$get).toBeFunction();
+    });
+
+    describe('instance action', function () {
+      var instance, params, onSuccess, onError, instanceResult;
+
+      beforeEach(function () {
+        parseResource._createInstanceAction(Resource, actionName);
+        instance = new Resource();
+        params = {
+          a: 1,
+          b: 2
+        };
+        onSuccess = function () {};
+        onError = function () {};
+      });
+
+      it('should call the action on the Resource', function () {
+        instance.$get();
+        expect(Resource.get).toHaveBeenCalled();
+      });
+
+      it('should pass its first object argument to the static action as the first argument', function () {
+        var paramsArg;
+        instance.$get(params, onSuccess, onError);
+        paramsArg = Resource.get.argsForCall[0][0];
+        expect(paramsArg).toBe(params);
+      });
+
+      it('should pass an empty object as the first argument to the static action if it does not receive a params argument', function () {
+        var paramsArg;
+        instance.$get(onSuccess, onError);
+        paramsArg = Resource.get.argsForCall[0][0];
+        expect(paramsArg).toEqual({});
+      });
+
+      it('should pass itself as the second argument to the static action', function () {
+        var dataArg;
+        instance.$get(onSuccess, onError);
+        dataArg = Resource.get.argsForCall[0][1];
+        expect(dataArg).toBe(instance);
+      });
+
+      it('should pass success and error callbacks to the static action', function () {
+        var successArg, errorArg;
+        // This should work
+        instance.$get(params, onSuccess, onError);
+        successArg = Resource.get.argsForCall[0][2];
+        errorArg = Resource.get.argsForCall[0][3];
+        expect(successArg).toBe(onSuccess);
+        expect(errorArg).toBe(onError);
+        // So should this
+        Resource.get.reset();
+        instance.$get(onSuccess, onError);
+        successArg = Resource.get.argsForCall[0][2];
+        errorArg = Resource.get.argsForCall[0][3];
+        expect(successArg).toBe(onSuccess);
+        expect(errorArg).toBe(onError);
+      });
+
+      it('should return the $promise from the static action if it exists', function () {
+        staticResult.$promise = {};
+        instanceResult = instance.$get();
+        expect(instanceResult).toBe(staticResult.$promise);
+      });
+
+      it('should return the actual result from the static action if the result does not have a $promise', function () {
+        staticResult = {};
+        instanceResult = instance.$get();
+        expect(instanceResult).toBe(staticResult);
+      });
+    });
+
+  });
+
   describe('createAppResourceFactory function', function () {
     var appConfig, appStorage, appEventBus, appResourceFactory;
 
     beforeEach(function () {
       appConfig = {};
       appStorage = {};
-      appEventBus = {};
+      appEventBus = {
+        on: jasmine.createSpy(),
+        once: jasmine.createSpy(),
+        emit: jasmine.createSpy()
+      };
     });
 
     it('should be a function', function () {
@@ -612,8 +846,50 @@ describe('Factory: parseResource', function () {
       expect(parseResource._createCoreAppResourceFactory).toHaveBeenCalledWith(appEventBus, appStorage);
     });
 
+
+    it('should emit a MODULE_REGISTERED event with its module name', function () {
+      parseResource.createAppResourceFactory(appEventBus, appStorage);
+      expect(appEventBus.emit).toHaveBeenCalledWith(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
+    });
+
+    it('should register a one-time event handler for a namespaced MODULE_INIT event', function () {
+      var eventName = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName,
+        eventHasHandler = false;
+      parseResource.createAppResourceFactory(appEventBus, appStorage);
+      expect(appEventBus.once).toHaveBeenCalled();
+      angular.forEach(appEventBus.once.argsForCall, function (args) {
+        eventHasHandler = eventHasHandler || (args[0] === eventName);
+        eventHasHandler = eventHasHandler && angular.isFunction(args[1]);
+      });
+      expect(eventHasHandler).toBeTrue();
+    });
+
+    it('should register an event handler for the USE_REST_API event', function () {
+      var eventName = PARSE_APP_EVENTS.USE_REST_API,
+        eventHasHandler = false;
+      parseResource.createAppResourceFactory(appEventBus, appStorage);
+      expect(appEventBus.on).toHaveBeenCalled();
+      angular.forEach(appEventBus.on.argsForCall, function (args) {
+        eventHasHandler = eventHasHandler || (args[0] === eventName);
+        eventHasHandler = eventHasHandler && angular.isFunction(args[1]);
+      });
+      expect(eventHasHandler).toBeTrue();
+    });
+
+    it('should register an event handler for the USE_JS_API event', function () {
+      var eventName = PARSE_APP_EVENTS.USE_JS_API,
+        eventHasHandler = false;
+      parseResource.createAppResourceFactory(appEventBus, appStorage);
+      expect(appEventBus.on).toHaveBeenCalled();
+      angular.forEach(appEventBus.on.argsForCall, function (args) {
+        eventHasHandler = eventHasHandler || (args[0] === eventName);
+        eventHasHandler = eventHasHandler && angular.isFunction(args[1]);
+      });
+      expect(eventHasHandler).toBeTrue();
+    });
+
     it('should return a function', function () {
-      appResourceFactory = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
+      appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
       expect(appResourceFactory).toBeFunction();
     });
 
@@ -641,7 +917,7 @@ describe('Factory: parseResource', function () {
           }
         };
         spyOn(parseResource, '_createCoreAppResourceFactory').andReturn(mocks.coreAppResourceFactory);
-        appResourceFactory = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
+        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
       });
 
       it('should call the coreAppResourceFactory function', function () {
