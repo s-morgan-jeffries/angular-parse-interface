@@ -5,8 +5,12 @@ describe('Factory: parseUser', function () {
     mockParseResourceActions,
     mockActionLib,
     PARSE_APP_EVENTS = {
-      SIGN_IN: 'signin',
-      SIGN_OUT: 'signout'
+      SIGN_IN: 'SIGN_IN',
+      SIGN_OUT: 'SIGN_OUT',
+      USE_JS_API: 'USE_JS_API',
+      USE_REST_API: 'USE_REST_API',
+      MODULE_REGISTERED: 'MODULE_REGISTERED',
+      MODULE_INIT: 'MODULE_INIT'
     };
 
   beforeEach(function () {
@@ -39,7 +43,8 @@ describe('Factory: parseUser', function () {
       username,
       password,
       email,
-      sessionToken = '!@#$%';
+      sessionToken = '!@#$%',
+      initializeMod;
 
     beforeEach(function () {
       mocks = {};
@@ -68,10 +73,16 @@ describe('Factory: parseUser', function () {
       spyOn(mocks, 'resourceFactory').andCallThrough();
       mocks.eventBus = {
         on: jasmine.createSpy(),
+        once: jasmine.createSpy(),
         emit: jasmine.createSpy()
       };
       mocks.appStorage = {};
+      mocks.appConfig = {
+        currentAPI: 'REST'
+      };
       User = parseUser.createUserModel(mocks.resourceFactory, mocks.appStorage, mocks.eventBus);
+      initializeMod = mocks.eventBus.once.argsForCall[0][1];
+      initializeMod(null, mocks.appConfig);
       username = 'JimJefferies';
       password = 'password';
       email = 'jim@gmail.com';
@@ -106,6 +117,45 @@ describe('Factory: parseUser', function () {
 
     it('should create a module-specific namespace for storage', function () {
       expect(mocks.appStorage.parseUser).toBeObject();
+    });
+
+    it('should emit a MODULE_REGISTERED event with its module name', function () {
+      var moduleName = 'parseUser';
+      expect(mocks.eventBus.emit).toHaveBeenCalledWith(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
+    });
+
+    it('should register a one-time event handler for a namespaced MODULE_INIT event', function () {
+      var moduleName = 'parseUser',
+        eventName = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName,
+        eventHasHandler = false;
+      expect(mocks.eventBus.once).toHaveBeenCalled();
+      angular.forEach(mocks.eventBus.once.argsForCall, function (args) {
+        eventHasHandler = eventHasHandler || (args[0] === eventName);
+        eventHasHandler = eventHasHandler && angular.isFunction(args[1]);
+      });
+      expect(eventHasHandler).toBeTrue();
+    });
+
+    it('should register an event handler for the USE_REST_API event', function () {
+      var eventName = PARSE_APP_EVENTS.USE_REST_API,
+        eventHasHandler = false;
+      expect(mocks.eventBus.on).toHaveBeenCalled();
+      angular.forEach(mocks.eventBus.on.argsForCall, function (args) {
+        eventHasHandler = eventHasHandler || (args[0] === eventName);
+        eventHasHandler = eventHasHandler && angular.isFunction(args[1]);
+      });
+      expect(eventHasHandler).toBeTrue();
+    });
+
+    it('should be registered as an event handler for the USE_JS_API event', function () {
+      var eventName = PARSE_APP_EVENTS.USE_JS_API,
+        eventHasHandler = false;
+      expect(mocks.eventBus.on).toHaveBeenCalled();
+      angular.forEach(mocks.eventBus.on.argsForCall, function (args) {
+        eventHasHandler = eventHasHandler || (args[0] === eventName);
+        eventHasHandler = eventHasHandler && angular.isFunction(args[1]);
+      });
+      expect(eventHasHandler).toBeTrue();
     });
 
     describe('User model', function () {
@@ -149,12 +199,118 @@ describe('Factory: parseUser', function () {
           User.signIn(username, password);
         });
 
-        it('should call the User\'s get method with the provided username, password, and email', function () {
-          expect(User.get).toHaveBeenCalledWith({
-            urlSegment1: 'login',
-            username: username,
-            password: password
+        describe('server request', function () {
+          var queryParams,
+            queryData;
+
+          it('should use the User\'s get method', function () {
+            expect(User.get).toHaveBeenCalled();
           });
+
+          it('should pass urlSegment1 == login as a query parameter to the get method', function () {
+            queryParams = User.get.argsForCall[0][0];
+            expect(queryParams.urlSegment1).toBeDefined();
+            expect(queryParams.urlSegment1).toEqual('login');
+          });
+
+          it('should pass the username and password as query parameters if appConfig.currentAPI is set to "REST"', function () {
+            // First, to show that the data are usually modified
+            mocks.eventBus.once.reset();
+            mocks.eventBus.on.reset();
+            mocks.Resource.get.reset();
+            User = parseUser.createUserModel(mocks.resourceFactory, mocks.appStorage, mocks.eventBus);
+            initializeMod = mocks.eventBus.once.argsForCall[0][1];
+            // Use JS for currentAPI
+            mocks.appConfig.currentAPI = 'REST';
+            initializeMod(null, mocks.appConfig);
+            // Call the function
+            User.signIn(username, password);
+            // SOMETHING
+            queryParams = User.get.argsForCall[0][0];
+            queryData = User.get.argsForCall[0][1] || {};
+            expect(queryParams.username).toBeDefined();
+            expect(queryParams.username).toEqual(username);
+            expect(queryData.username).toBeUndefined();
+            expect(queryParams.password).toBeDefined();
+            expect(queryParams.password).toEqual(password);
+            expect(queryData.password).toBeUndefined();
+          });
+
+          it('should pass the username and password as post data if appConfig.currentAPI is set to "JS"', function () {
+            // First, to show that the data are usually modified
+            mocks.eventBus.once.reset();
+            mocks.eventBus.on.reset();
+            mocks.Resource.get.reset();
+            User = parseUser.createUserModel(mocks.resourceFactory, mocks.appStorage, mocks.eventBus);
+            initializeMod = mocks.eventBus.once.argsForCall[0][1];
+            // Use JS for currentAPI
+            mocks.appConfig.currentAPI = 'JS';
+            initializeMod(null, mocks.appConfig);
+            // Call the function
+            User.signIn(username, password);
+            // SOMETHING
+            queryParams = User.get.argsForCall[0][0];
+            queryData = User.get.argsForCall[0][1] || {};
+            expect(queryData.username).toBeDefined();
+            expect(queryData.username).toEqual(username);
+            expect(queryParams.username).toBeUndefined();
+            expect(queryData.password).toBeDefined();
+            expect(queryData.password).toEqual(password);
+            expect(queryParams.password).toBeUndefined();
+          });
+
+          it('should pass the username and password as query parameters after receiving a USE_REST_API event, even if appConfig.currentAPI was initially set to "JS"', function () {
+            var handler;
+            mocks.eventBus.once.reset();
+            mocks.eventBus.on.reset();
+            mocks.Resource.get.reset();
+            User = parseUser.createUserModel(mocks.resourceFactory, mocks.appStorage, mocks.eventBus);
+            initializeMod = mocks.eventBus.once.argsForCall[0][1];
+            // Use REST for currentAPI
+            mocks.appConfig.currentAPI = 'JS';
+            initializeMod(null, mocks.appConfig);
+            // Now, call the handler for the USE_JS_API event
+            handler = mocks.eventBus.on.argsForCall[0][1];
+            handler();
+            // Call the function
+            User.signIn(username, password);
+            // SOMETHING
+            queryParams = User.get.argsForCall[0][0];
+            queryData = User.get.argsForCall[0][1] || {};
+            expect(queryParams.username).toBeDefined();
+            expect(queryParams.username).toEqual(username);
+            expect(queryData.username).toBeUndefined();
+            expect(queryParams.password).toBeDefined();
+            expect(queryParams.password).toEqual(password);
+            expect(queryData.password).toBeUndefined();
+          });
+
+          it('should pass the username and password as post data after receiving a USE_JS_API event, even if appConfig.currentAPI was initially set to "REST"', function () {
+            var handler;
+            mocks.eventBus.once.reset();
+            mocks.eventBus.on.reset();
+            mocks.Resource.get.reset();
+            User = parseUser.createUserModel(mocks.resourceFactory, mocks.appStorage, mocks.eventBus);
+            initializeMod = mocks.eventBus.once.argsForCall[0][1];
+            // Use REST for currentAPI
+            mocks.appConfig.currentAPI = 'REST';
+            initializeMod(null, mocks.appConfig);
+            // Now, call the handler for the USE_JS_API event
+            handler = mocks.eventBus.on.argsForCall[1][1];
+            handler();
+            // Call the function
+            User.signIn(username, password);
+            // SOMETHING
+            queryParams = User.get.argsForCall[0][0];
+            queryData = User.get.argsForCall[0][1] || {};
+            expect(queryData.username).toBeDefined();
+            expect(queryData.username).toEqual(username);
+            expect(queryParams.username).toBeUndefined();
+            expect(queryData.password).toBeDefined();
+            expect(queryData.password).toEqual(password);
+            expect(queryParams.password).toBeUndefined();
+          });
+
         });
 
         it('should emit a SIGN_IN event with the sessionToken', function () {
@@ -170,6 +326,7 @@ describe('Factory: parseUser', function () {
         it('should cache the user in its modStorage', function () {
           expect(modStorage.user).toBe(mocks.user);
         });
+
       });
 
       describe('signOut method', function () {

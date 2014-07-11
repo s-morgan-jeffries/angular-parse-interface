@@ -1,3 +1,4 @@
+//t0d0: Make sure this works with JS API
 angular
   .module('angularParseInterface')
   .factory('parseUser', function (parseResourceActions, PARSE_APP_EVENTS) {
@@ -6,11 +7,36 @@ angular
     var parseUser = {};
 
     var userDecorator = function (User, eventBus, storage) {
+      var useRestApi = false,
+        moduleName = 'parseUser',
+      // Namespaced initialization event. The appInterface will emit this with the appConfig when the
+      // MODULE_REGISTERED event is emitted with our moduleName.
+        INIT_EVENT = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName;
+
       // Set the className to _User (Parse uses leading underscore names for certain built-in classes)
       User.className = '_User';
       // These should never be sent with PUT requests
       // backburner: Maybe remove sessionToken from request blacklist (it should be deleted, anyway)
       User._addRequestBlacklistProps('emailVerified');
+
+      // Register event handlers
+      // This is the handler for the INIT_EVENT
+      // Register the handler for the INIT_EVENT
+      eventBus.once(INIT_EVENT, function (event, appConfig) {
+        // Determine whether we're using the JS API
+        useRestApi = appConfig.currentAPI === 'REST';
+      });
+      // Now that the handler is set up, we can emit the MODULE_REGISTERED event, which will cause the appInterface to
+      // emit the INIT_EVENT with the appConfig
+      eventBus.emit(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
+      // On a USE_REST_API event, set useRestApi to true
+      eventBus.on(PARSE_APP_EVENTS.USE_REST_API, function () {
+        useRestApi = true;
+      });
+      // On a USE_JS_API event, set useRestApi to false
+      eventBus.on(PARSE_APP_EVENTS.USE_JS_API, function () {
+        useRestApi = false;
+      });
 
       // This both creates a user and signs in
       User.signUp = function (username, password, email) {
@@ -43,7 +69,12 @@ angular
         // backburner: Figure out a cleaner, more intuitive way of representing arbitrary HTTP requests
         // Maybe you should have a way for Resources to send arbitrary requests (e.g. custom actions with capitalized
         // HTTP verb names) in addition to the convenience methods.
-        var user = this.get({urlSegment1: 'login', username: username, password: password});
+        var user;
+        if (useRestApi) {
+          user = this.get({urlSegment1: 'login', username: username, password: password});
+        } else {
+          user = this.get({urlSegment1: 'login'}, {username: username, password: password});
+        }
         // After we get the user back, we'll basically do exactly what we did in the signUp method.
         user.$promise.then(function () {
           var data = {
