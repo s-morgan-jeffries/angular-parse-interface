@@ -1,3 +1,4 @@
+// d0ne: Verify this works with JS API
 angular
   .module('angularParseInterface')
   .factory('parseCloudCode', function (parseResourceActions/*, $log*/) {

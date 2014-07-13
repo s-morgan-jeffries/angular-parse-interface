@@ -243,12 +243,7 @@ angular.module('angularParseInterface')
               queryFx,
               args = [].slice.call(arguments);
 
-            // This needs to be an object for the JS API
-//            if (!angular.isObject(args[0])) {
-//              args.unshift({});
-//            }
             // Get the query parameters or an empty object
-//            queryParams = args[0];
             queryParams = angular.isObject(args[0]) ? args[0] : {};
             // Determine whether this is a count query based on whether the count parameter is set
             isCountQuery = angular.equals(queryParams.count, 1);
@@ -360,18 +355,6 @@ angular.module('angularParseInterface')
         }());
       }
     };
-
-    // t0d0: Modify this so it makes two versions (REST and JS) of each action
-    // But it's also going to have to know when to use which. Where should that happen?
-    // Each action needs two versions: REST and JS. Those can be generated here pretty easily. After you generate them,
-    // though, you have to add a decorator that picks between them, and you can't build that here because the references
-    // aren't available yet.
-    //   Every action has be available to $resource at the time the Resource is created
-//    var wrappedActionLib = {};
-//    angular.forEach(actionLib, function (action, actionName) {
-//      var RESTAction = action,
-//        JSAction = angular.copy(action);
-//    });
 
     var parseResourceActions = {
       getActionConfig: function (actionName) {

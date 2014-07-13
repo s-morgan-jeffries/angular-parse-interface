@@ -1,4 +1,3 @@
-//t0d0: Make sure this works with JS API
 angular
   .module('angularParseInterface')
   .factory('parseUser', function (parseResourceActions, PARSE_APP_EVENTS) {
@@ -16,7 +15,6 @@ angular
       // Set the className to _User (Parse uses leading underscore names for certain built-in classes)
       User.className = '_User';
       // These should never be sent with PUT requests
-      // backburner: Maybe remove sessionToken from request blacklist (it should be deleted, anyway)
       User._addRequestBlacklistProps('emailVerified');
 
       // Register event handlers
@@ -66,7 +64,6 @@ angular
 
       // This is for signing in (duh)
       User.signIn = function (username, password) {
-        // backburner: Figure out a cleaner, more intuitive way of representing arbitrary HTTP requests
         // Maybe you should have a way for Resources to send arbitrary requests (e.g. custom actions with capitalized
         // HTTP verb names) in addition to the convenience methods.
         var user;
@@ -103,21 +100,13 @@ angular
       // This is for retrieving the current user
       User.current = function () {
         // Check the cache
-        var user = storage.user;
+        var user = storage.user,
+          Self = this;
         // If there's nothing there...
         if (!user) {
-          // Get the current user from the server. Again, this is not 100% clear to me (I have to *think* about how this
-          // maps to the URL in Parse's documentation), so it would be nice if there were a better way to make arbitrary
-          // requests like this.
-          user = this.get({urlSegment2: 'me'});
-          // Once we get a response...
-          user.$promise.then(function () {
-            // In this case, we're only deleting the sessionToken. Not sure if Parse sends us a new one, but since the
-            // old one (which must have been used to make this request) never expires, it's fine.
-            delete user.sessionToken;
-          });
-          // Cache the user
-          storage.user = user;
+          eventBus.emit(PARSE_APP_EVENTS.SIGN_OUT);
+        } else {
+          user = new Self(user);
         }
         return user;
       };

@@ -69,14 +69,13 @@ describe('Factory: parseRESTHeaders', function () {
     });
 
     it('should emit a MODULE_REGISTERED event with its module name', function () {
-      var moduleName = 'parseRESTAuth';
+//      var moduleName = 'parseRESTAuth';
       transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
       expect(appEventBus.emit).toHaveBeenCalledWith(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
     });
 
     it('should register a one-time event handler for a namespaced MODULE_INIT event', function () {
-      var moduleName = 'parseRESTAuth',
-        eventName = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName,
+      var eventName = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName,
         eventHasHandler = false;
       transformRequest = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
       expect(appEventBus.once).toHaveBeenCalled();

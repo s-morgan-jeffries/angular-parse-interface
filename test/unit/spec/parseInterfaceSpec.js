@@ -276,7 +276,7 @@ describe('Factory: parseInterface', function () {
       });
 
       it('should have an eventFactory property', function () {
-        expect(mocks.parseEvent.createEventFactory).toHaveBeenCalledWith(mocks.appResource);
+        expect(mocks.parseEvent.createEventFactory).toHaveBeenCalledWith(mocks.appResource, mocks.appEventBus);
         expect(appInterface.eventFactory).toBe(mocks.eventFactory);
       });
 

@@ -57,7 +57,7 @@ angular
         throw new Error('appConfig must have either a "REST_KEY" or a "JS_KEY" property');
       }
 
-      //t0d0: Update this so you can switch between local, session, and volatile storage
+      //backburner: Update this so you can switch between local, session, and volatile storage
       // Get or create appLocalStorage object
       appLocalStorage = clientLocalStorage.parseApp[appId] = (clientLocalStorage.parseApp[appId] || {});
 
@@ -112,7 +112,7 @@ angular
       // A factory that generates role objects that can be used for setting permissions
       appInterface.roleFactory = parseRole.createRoleFactory(appResource, appInterface.User);
       // A factory that generates custom event objects
-      appInterface.eventFactory = parseEvent.createEventFactory(appResource);
+      appInterface.eventFactory = parseEvent.createEventFactory(appResource, appEventBus);
       // This allows you to switch to using the JS API at runtime.
       appInterface.useJsApi = function () {
         if (appConfig.JS_KEY) {

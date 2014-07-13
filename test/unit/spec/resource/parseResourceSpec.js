@@ -495,7 +495,7 @@ describe('Factory: parseResource', function () {
     });
   });
 
-  describe('_generateRESTAction function', function () {
+  describe('_generateRESTActionConfig function', function () {
     it('should delegate to the _namespaceBaseActions function', function () {
       var action = {
           baseActions: {
@@ -507,12 +507,12 @@ describe('Factory: parseResource', function () {
         },
         nameSpace = 'foo';
       spyOn(parseResource, '_namespaceBaseActions');
-      parseResource._generateRESTAction(action, nameSpace);
+      parseResource._generateRESTActionConfig(action, nameSpace);
       expect(parseResource._namespaceBaseActions).toHaveBeenCalledWith(action, nameSpace);
     });
   });
 
-  describe('_generateJSAction function', function () {
+  describe('_generateJSActionConfig function', function () {
     var action, nameSpace, transformFunction;
 
     beforeEach(function () {
@@ -534,24 +534,24 @@ describe('Factory: parseResource', function () {
 
     it('should call the _namespaceBaseActions function with the same arguments it received', function () {
       spyOn(parseResource, '_namespaceBaseActions').andCallThrough();
-      parseResource._generateJSAction(action, nameSpace);
+      parseResource._generateJSActionConfig(action, nameSpace);
       expect(parseResource._namespaceBaseActions).toHaveBeenCalledWith(action, nameSpace);
     });
 
     it('should set the method to POST for any non-POST actions', function () {
-      var transformedAction = parseResource._generateJSAction(action, nameSpace);
+      var transformedAction = parseResource._generateJSActionConfig(action, nameSpace);
       angular.forEach(transformedAction.baseActions, function (baseAction) {
         expect(baseAction.method).toEqual('POST');
       });
     });
 
     it('should call the _getPseudoMethodTransform function with the method name of any non-POST actions', function () {
-      parseResource._generateJSAction(action, nameSpace);
+      parseResource._generateJSActionConfig(action, nameSpace);
       expect(parseResource._getPseudoMethodTransform).toHaveBeenCalledWith('GET');
     });
 
     it('should create a transformRequest array for any non-POST actions if it doesn\'t exist', function () {
-      var transformedAction = parseResource._generateJSAction(action, nameSpace);
+      var transformedAction = parseResource._generateJSActionConfig(action, nameSpace);
       expect(transformedAction.baseActions[nameSpace + 'get'].transformRequest).toBeArray();
     });
 
@@ -570,13 +570,13 @@ describe('Factory: parseResource', function () {
         },
         decorator: function () {}
       };
-      transformedAction = parseResource._generateJSAction(action, nameSpace);
+      transformedAction = parseResource._generateJSActionConfig(action, nameSpace);
       lastTransformRequest = transformedAction.baseActions[nameSpace + 'get'].transformRequest.pop();
       expect(lastTransformRequest).toBe(transformFunction);
     });
   });
 
-  describe('_generateAPIAction function', function () {
+  describe('_generateAPIActionConfig function', function () {
     var action, API;
 
     beforeEach(function () {
@@ -590,18 +590,133 @@ describe('Factory: parseResource', function () {
       };
     });
 
-    it('should call _generateRESTAction with both its arguments when its second argument is "REST"', function () {
+    it('should call _generateRESTActionConfig with both its arguments when its second argument is "REST"', function () {
       API = 'REST';
-      spyOn(parseResource, '_generateRESTAction');
-      parseResource._generateAPIAction(action, API);
-      expect(parseResource._generateRESTAction).toHaveBeenCalledWith(action, API);
+      spyOn(parseResource, '_generateRESTActionConfig');
+      parseResource._generateAPIActionConfig(action, API);
+      expect(parseResource._generateRESTActionConfig).toHaveBeenCalledWith(action, API);
     });
 
-    it('should call _generateJSAction with both its arguments when its second argument is "JS"', function () {
+    it('should call _generateJSActionConfig with both its arguments when its second argument is "JS"', function () {
       API = 'JS';
-      spyOn(parseResource, '_generateJSAction');
-      parseResource._generateAPIAction(action, API);
-      expect(parseResource._generateJSAction).toHaveBeenCalledWith(action, API);
+      spyOn(parseResource, '_generateJSActionConfig');
+      parseResource._generateAPIActionConfig(action, API);
+      expect(parseResource._generateJSActionConfig).toHaveBeenCalledWith(action, API);
+    });
+  });
+
+  describe('_createApiSpecificConfigs function', function () {
+    var actions, origActions, apiNames, newActions, mockApiAction;
+
+    beforeEach(function () {
+      actions = {
+        save: {
+          baseActions: {
+            save: {
+              method: 'POST'
+            },
+            create: {
+              method: 'POST'
+            },
+            update: {
+              method: 'PUT'
+            }
+          },
+          decorator: function () {}
+        },
+        get: {
+          baseActions: {
+            get: {
+              method: 'GET'
+            }
+          }
+        }
+      };
+      origActions = angular.copy(actions);
+      mockApiAction = {
+        f: function () {}
+      };
+      apiNames = ['REST', 'JS'];
+      spyOn(parseResource, '_generateAPIActionConfig').andReturn(mockApiAction);
+      newActions = parseResource._createApiSpecificConfigs(actions, apiNames);
+    });
+
+    it('should call _generateAPIActionConfig for each API for each actoin', function () {
+      angular.forEach(origActions, function (action) {
+        angular.forEach(apiNames, function (apiName) {
+          expect(parseResource._generateAPIActionConfig).toHaveBeenCalledWith(action, apiName);
+        });
+      });
+    });
+
+    it('should return a new actions object with the same properties as the original actions object', function () {
+      expect(newActions).toBeObject();
+      expect(newActions).not.toBe(actions);
+    });
+
+    describe('newActions object', function () {
+      it('should have a key for every key in the original actions object', function () {
+        angular.forEach(actions, function (v, k) {
+          expect(newActions[k]).toBeDefined();
+        });
+      });
+
+      it('should store the return value from _generateAPIActionConfig in each action\'s apiActions[apiName] property', function () {
+        angular.forEach(newActions, function (action) {
+          angular.forEach(apiNames, function (apiName) {
+            expect(action.apiActions[apiName]).toBe(mockApiAction);
+          });
+        });
+      });
+    });
+  });
+
+  describe('_generateBaseActions function', function () {
+    var actions, baseActions;
+
+    beforeEach(function () {
+      actions = {
+        save: {
+          apiActions: {
+            JS: {
+              baseActions: {
+                JSsave: {
+                  f: function () {}
+                },
+                JScreate: {
+                  f: function () {}
+                },
+                JSupdate: {
+                  f: function () {}
+                }
+              }
+            },
+            REST: {
+              baseActions: {
+                RESTsave: {
+                  f: function () {}
+                },
+                RESTcreate: {
+                  f: function () {}
+                },
+                RESTupdate: {
+                  f: function () {}
+                }
+              }
+            }
+          }
+        }
+      };
+    });
+
+    it('should add the baseActions for each API for each action to baseActions', function () {
+      baseActions = parseResource._generateBaseActions(actions);
+      expect(baseActions.JSsave).toBe(actions.save.apiActions.JS.baseActions.JSsave);
+      expect(baseActions.JScreate).toBe(actions.save.apiActions.JS.baseActions.JScreate);
+      expect(baseActions.JSupdate).toBe(actions.save.apiActions.JS.baseActions.JSupdate);
+      expect(baseActions.RESTsave).toBe(actions.save.apiActions.REST.baseActions.RESTsave);
+      expect(baseActions.RESTcreate).toBe(actions.save.apiActions.REST.baseActions.RESTcreate);
+      expect(baseActions.RESTupdate).toBe(actions.save.apiActions.REST.baseActions.RESTupdate);
     });
   });
 
@@ -690,7 +805,63 @@ describe('Factory: parseResource', function () {
     });
   });
 
-  describe('_destoryUndefinedActions function', function () {
+  xdescribe('_createApiSpecificActions function', function () {
+    var Resource, actions, apiActions;
+
+    beforeEach(function () {
+      Resource = function () {};
+      actions = {
+        save: {
+          apiActions: {
+            REST: {
+              baseActions: {
+                RESTsave: {
+                  method: 'POST'
+                },
+                RESTcreate: {
+                  method: 'POST'
+                },
+                RESTupdate: {
+                  method: 'PUT'
+                }
+              },
+              decorator: function () {}
+            },
+            JS: {
+              baseActions: {
+                JSsave: {
+                  method: 'POST'
+                },
+                JScreate: {
+                  method: 'POST'
+                },
+                JSupdate: {
+                  method: 'PUT'
+                }
+              },
+              decorator: function () {}
+            }
+          }
+        }
+      };
+    });
+
+    it('should return an object', function () {
+      apiActions = parseResource._createApiSpecificActions(Resource, actions);
+      expect(apiActions).toBeObject();
+    });
+
+    describe('apiActions object', function () {
+      it('should have a key for every action in the actions configuration object', function () {
+        apiActions = parseResource._createApiSpecificActions(Resource, actions);
+        angular.forEach(actions, function (v, k) {
+          expect(apiActions[k]).toBeDefined();
+        });
+      });
+    });
+  });
+
+  describe('_destroyUndefinedActions function', function () {
     var Resource, actions, get, $get, query, save, $save, className;
 
     beforeEach(function () {
@@ -714,19 +885,19 @@ describe('Factory: parseResource', function () {
     });
 
     it('should delete actions from a resource and its prototype that aren\'t defined in actions', function () {
-      parseResource._destoryUndefinedActions(Resource, actions);
+      parseResource._destroyUndefinedActions(Resource, actions);
       expect(Resource.save).toBeUndefined();
       expect(Resource.prototype.$save).toBeUndefined();
     });
 
     it('should not delete properties that do not match the action name pattern (Resource.name / Resource.prototype.$name)', function () {
-      parseResource._destoryUndefinedActions(Resource, actions);
+      parseResource._destroyUndefinedActions(Resource, actions);
       expect(Resource.className).toEqual(className);
       expect(Resource.prototype.className).toEqual(className);
     });
 
     it('should not delete actions that are defined in the actions object', function () {
-      parseResource._destoryUndefinedActions(Resource, actions);
+      parseResource._destroyUndefinedActions(Resource, actions);
       expect(Resource.get).toBe(get);
       expect(Resource.prototype.$get).toBe($get);
       expect(Resource.query).toBe(query);
@@ -823,6 +994,42 @@ describe('Factory: parseResource', function () {
 
   });
 
+  describe('resetPrototype function', function () {
+    var Resource, origPrototype, actions;
+
+    beforeEach(function () {
+      origPrototype = {};
+      Resource = function () {};
+      Resource.prototype = origPrototype;
+      actions = {
+        get: {
+          a: function () {},
+          hasInstanceAction: true
+        },
+        POST: {
+          b: function () {}
+        }
+      };
+      spyOn(parseResource, '_createInstanceAction');
+    });
+
+    it('should overwrite the Resource\'s prototype', function () {
+      parseResource._resetPrototype(Resource, actions);
+      expect(Resource.prototype).not.toBe(origPrototype);
+    });
+
+    it('should create an instance action for any action where hasInstanceAction is true', function () {
+      parseResource._resetPrototype(Resource, actions);
+      expect(parseResource._createInstanceAction).toHaveBeenCalledWith(Resource, 'get');
+    });
+
+    it('should not create an instance action for any action where hasInstanceAction is falsy', function () {
+      parseResource._resetPrototype(Resource, actions);
+      expect(parseResource._createInstanceAction).not.toHaveBeenCalledWith(Resource, 'POST');
+    });
+
+  });
+
   describe('createAppResourceFactory function', function () {
     var appConfig, appStorage, appEventBus, appResourceFactory;
 
@@ -894,11 +1101,13 @@ describe('Factory: parseResource', function () {
     });
 
     describe('appResourceFactory function', function () {
-      var url, defaultParams, actions, Resource;
+      var url, defaultParams, actions, configuredActions, baseActions, Resource, apiNames;
 
       beforeEach(function () {
         url = 'a/url/for/you';
-        defaultParams = {};
+        defaultParams = {
+          f: function () {}
+        };
         actions = {
           firstAction: {
             baseActions: {
@@ -916,67 +1125,130 @@ describe('Factory: parseResource', function () {
             }
           }
         };
+        configuredActions = {
+          f: function () {}
+        };
+        baseActions = {
+          f: function () {}
+        };
+        apiNames = ['REST', 'JS'];
+        spyOn(parseResource, '_createApiSpecificConfigs').andReturn(configuredActions);
+        spyOn(parseResource, '_generateBaseActions').andReturn(baseActions);
+        // This isn't because we need a spy, it's only so we can return our mock object in place of the normal return object
         spyOn(parseResource, '_createCoreAppResourceFactory').andReturn(mocks.coreAppResourceFactory);
+        spyOn(parseResource, '_configureActions');
         appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
+      });
+
+      it('should call the createApiSpecificConfigs function', function () {
+        Resource = appResourceFactory(url, defaultParams, actions);
+        expect(parseResource._createApiSpecificConfigs).toHaveBeenCalledWith(actions, apiNames);
+      });
+
+      it('should call the generateBaseActions function', function () {
+        Resource = appResourceFactory(url, defaultParams, actions);
+        expect(parseResource._generateBaseActions).toHaveBeenCalledWith(configuredActions);
       });
 
       it('should call the coreAppResourceFactory function', function () {
         Resource = appResourceFactory(url, defaultParams, actions);
-        expect(mocks.coreAppResourceFactory).toHaveBeenCalled();
+        expect(mocks.coreAppResourceFactory).toHaveBeenCalledWith(url, defaultParams, baseActions);
       });
 
-      it('should pass the url and defaultParams to the coreAppResourceFactory unchanged', function () {
-        var urlArg, defaultParamsArg;
-        Resource = appResourceFactory(url, defaultParams, actions);
-        urlArg = mocks.coreAppResourceFactory.argsForCall[0][0];
-        defaultParamsArg = mocks.coreAppResourceFactory.argsForCall[0][1];
-        expect(urlArg).toEqual(url);
-        expect(defaultParamsArg).toEqual(defaultParams);
-      });
-
-      it('should pass namespaced versions of all the baseActions from actions to coreAppResourceFactory', function () {
-        var expectedBaseActionNames, actualBaseActions;
-        actions = {
-          firstAction: {
-            baseActions: {
-              create: {
-                method: 'POST'
-              }
-            },
-            decorator: jasmine.createSpy()
+      it('should call the configureActions function', function () {
+        // This initializes the module with the current API
+        var handler = appEventBus.once.argsForCall[0][1],
+          appConfig = {
+            currentAPI: 'REST'
           },
-          secondAction: {
-            baseActions: {
-              update: {
-                method: 'PUT'
-              }
-            }
-          }
-        };
-        expectedBaseActionNames = ['RESTcreate', 'RESTupdate', 'JScreate', 'JSupdate'];
+          moduleState = {
+            currentAPI: 'REST'
+          };
+        handler(null, appConfig);
+        // Now call the function
         Resource = appResourceFactory(url, defaultParams, actions);
-        actualBaseActions = mocks.coreAppResourceFactory.argsForCall[0][2];
-        angular.forEach(expectedBaseActionNames, function (expectedBaseActionName) {
-          expect(actualBaseActions[expectedBaseActionName]).toBeDefined();
-        });
+        expect(parseResource._configureActions).toHaveBeenCalledWith(Resource, configuredActions, moduleState);
       });
 
-      it('should call the decorator for any action that has one', function () {
-        Resource = appResourceFactory(url, defaultParams, actions);
-        expect(actions.firstAction.decorator).toHaveBeenCalledWith(Resource);
-      });
+//      it('should pass the url and defaultParams to the coreAppResourceFactory unchanged', function () {
+//        var urlArg, defaultParamsArg;
+//        spyOn(parseResource, '_createCoreAppResourceFactory').andReturn(mocks.coreAppResourceFactory);
+//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
+//        Resource = appResourceFactory(url, defaultParams, actions);
+//        urlArg = mocks.coreAppResourceFactory.argsForCall[0][0];
+//        defaultParamsArg = mocks.coreAppResourceFactory.argsForCall[0][1];
+//        expect(urlArg).toEqual(url);
+//        expect(defaultParamsArg).toEqual(defaultParams);
+//      });
 
-      it('it should remove any actions that weren\'t included in the actions object', function () {
-        mocks.Resource.foo = function () {};
-        mocks.Resource.prototype.$foo = function () {};
-        Resource = appResourceFactory(url, defaultParams, actions);
-        expect(Resource.foo).toBeUndefined();
-        expect(Resource.prototype.$foo).toBeUndefined();
-      });
+//      it('should pass namespaced versions of all the baseActions from actions to coreAppResourceFactory', function () {
+//        var expectedBaseActionNames, actualBaseActions;
+//        actions = {
+//          firstAction: {
+//            baseActions: {
+//              create: {
+//                method: 'POST'
+//              }
+//            },
+//            decorator: jasmine.createSpy()
+//          },
+//          secondAction: {
+//            baseActions: {
+//              update: {
+//                method: 'PUT'
+//              }
+//            }
+//          }
+//        };
+//        expectedBaseActionNames = ['RESTcreate', 'RESTupdate', 'JScreate', 'JSupdate'];
+//        spyOn(parseResource, '_createCoreAppResourceFactory').andReturn(mocks.coreAppResourceFactory);
+//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
+//        Resource = appResourceFactory(url, defaultParams, actions);
+//        actualBaseActions = mocks.coreAppResourceFactory.argsForCall[0][2];
+//        angular.forEach(expectedBaseActionNames, function (expectedBaseActionName) {
+//          expect(actualBaseActions[expectedBaseActionName]).toBeDefined();
+//        });
+//      });
+//
+//      it('should call the createApiSpecificActions function', function () {
+//        var resourceArg;
+//        spyOn(parseResource, '_createApiSpecificActions').andCallThrough();
+//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
+//        Resource = appResourceFactory(url, defaultParams, actions);
+//        expect(parseResource._createApiSpecificActions).toHaveBeenCalled();
+//        resourceArg = parseResource._createApiSpecificActions.argsForCall[0][0];
+//        expect(resourceArg).toBe(mocks.Resource);
+//      });
+//
+//      it('it should remove any actions that weren\'t included in the actions object', function () {
+//        spyOn(parseResource, '_destroyUndefinedActions').andCallThrough();
+//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
+//        mocks.Resource.foo = function () {};
+//        mocks.Resource.prototype.$foo = function () {};
+//        Resource = appResourceFactory(url, defaultParams, actions);
+//        expect(parseResource._destroyUndefinedActions).toHaveBeenCalledWith(Resource, actions);
+//      });
+//
+//      it('should reset the prototype and regenerate the actions', function () {
+//        var resourceArg;
+//        spyOn(parseResource, '_resetPrototype').andCallThrough();
+//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
+//        Resource = appResourceFactory(url, defaultParams, actions);
+//        expect(parseResource._resetPrototype).toHaveBeenCalled();
+//        resourceArg = parseResource._resetPrototype.argsForCall[0][0];
+//        expect(resourceArg).toBe(mocks.Resource);
+//      });
 
       it('it should call parseResourceDecorator with the Resource', function () {
+//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
         Resource = appResourceFactory(url, defaultParams, actions);
         expect(mocks.parseResourceDecorator).toHaveBeenCalledWith(Resource);
+      });
+
+      it('should return the Resource', function () {
+//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
+        Resource = appResourceFactory(url, defaultParams, actions);
+        expect(Resource).toBe(mocks.Resource);
       });
     });
   });

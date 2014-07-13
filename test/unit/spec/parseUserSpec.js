@@ -30,6 +30,7 @@ describe('Factory: parseUser', function () {
     module('angularParseInterface', function ($provide) {
       $provide.value('PARSE_APP_EVENTS', PARSE_APP_EVENTS);
       $provide.value('parseResourceActions', mockParseResourceActions);
+      $provide.value('$log', console);
     });
     inject(function ($injector) {
       parseUser = $injector.get('parseUser');
@@ -56,7 +57,12 @@ describe('Factory: parseUser', function () {
         },
         sessionToken: sessionToken
       };
-      mocks.Resource = function () {};
+      mocks.Resource = function (obj) {
+        var self = this;
+        angular.forEach(obj, function (v, k) {
+          self[k] = v;
+        });
+      };
       mocks.Resource._setClassName = jasmine.createSpy();
       mocks.Resource._addRequestBlacklistProps = jasmine.createSpy();
       mocks.Resource.save = function () {
@@ -343,23 +349,40 @@ describe('Factory: parseUser', function () {
       });
 
       describe('current method', function () {
-        it('should return the user from its modStorage if it\'s set', function () {
-          modStorage.user = 'a user';
+        it('should return a new User initialized with modStorage.user if it\'s defined', function () {
+          var expectedUser;
+          modStorage.user = {foo: 'bar'};
+          expectedUser = new User(modStorage.user);
           user = User.current();
-          expect(user).toBe(modStorage.user);
+          expect(user).toEqual(expectedUser);
+          expect(user instanceof User).toBeTrue();
+          expect(user.foo).toEqual(modStorage.user.foo);
         });
 
-        it('should call the User\'s get method with the correct arguments', function () {
+        xit('should return an instance of User or undefined', function () {
+          modStorage.user = {username: username};
+          user = User.current();
+          expect(user instanceof User).toBeTrue();
+        });
+
+        it('should return undefined and trigger a SIGN_OUT event if modStorage.user is undefined', function () {
+          delete modStorage.user;
+          user = User.current();
+          expect(user).toBeUndefined();
+          expect(mocks.eventBus.emit).toHaveBeenCalledWith(PARSE_APP_EVENTS.SIGN_OUT);
+        });
+
+        xit('should call the User\'s get method with the correct arguments', function () {
           user = User.current();
           expect(User.get).toHaveBeenCalledWith({urlSegment2: 'me'});
         });
 
-        it('should delete the sessionToken from the user', function () {
+        xit('should delete the sessionToken from the user', function () {
           user = User.current();
           expect(user.sessionToken).toBeUndefined();
         });
 
-        it('should cache the user in its modStorage', function () {
+        xit('should cache the user in its modStorage', function () {
           user = User.current();
           expect(modStorage.user).toBe(user);
         });

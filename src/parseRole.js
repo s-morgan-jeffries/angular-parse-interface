@@ -1,3 +1,4 @@
+//d0ne: Make sure this works with JS API
 angular
   .module('angularParseInterface')
   .factory('parseRole', function ($q, parseResourceActions, parseQueryBuilder) {
@@ -47,12 +48,14 @@ angular
             $promise: deferred.promise,
             $resolved: false
           };
+//        roleFacade.role = role;
 
         var onQuerySuccess = function (data) {
           var savedRole;
           if (data.length === 1) {
             savedRole = data[0];
             angular.forEach(savedRole, function (v, k) {
+//              console.log(k);
               role[k] = v;
             });
           }
