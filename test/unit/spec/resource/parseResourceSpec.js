@@ -805,7 +805,7 @@ describe('Factory: parseResource', function () {
     });
   });
 
-  xdescribe('_createApiSpecificActions function', function () {
+  describe('_createApiSpecificActions function', function () {
     var Resource, actions, apiActions;
 
     beforeEach(function () {
@@ -825,7 +825,7 @@ describe('Factory: parseResource', function () {
                   method: 'PUT'
                 }
               },
-              decorator: function () {}
+              decorator: jasmine.createSpy()
             },
             JS: {
               baseActions: {
@@ -839,23 +839,51 @@ describe('Factory: parseResource', function () {
                   method: 'PUT'
                 }
               },
-              decorator: function () {}
+              decorator: jasmine.createSpy()
             }
           }
         }
       };
+      spyOn(parseResource, '_deNamespaceBaseActions');
+      spyOn(parseResource, '_deleteAndReturnAction').andCallFake(function () {
+        return {
+          Resource: arguments[0],
+          actionName: arguments[1]
+        };
+      });
     });
 
-    it('should return an object', function () {
+    it('should de-namespace all the base actions associated with each action for each API', function () {
       apiActions = parseResource._createApiSpecificActions(Resource, actions);
-      expect(apiActions).toBeObject();
+      angular.forEach(actions, function (action) {
+        angular.forEach(action.apiActions, function (thisApiAction) {
+          expect(parseResource._deNamespaceBaseActions).toHaveBeenCalledWith(Resource, thisApiAction);
+        });
+      });
     });
 
-    describe('apiActions object', function () {
-      it('should have a key for every action in the actions configuration object', function () {
-        apiActions = parseResource._createApiSpecificActions(Resource, actions);
-        angular.forEach(actions, function (v, k) {
-          expect(apiActions[k]).toBeDefined();
+    it('should call the decorator for each API-specific action that has one', function () {
+      apiActions = parseResource._createApiSpecificActions(Resource, actions);
+      expect(actions.save.apiActions.REST.decorator).toHaveBeenCalledWith(Resource);
+      expect(actions.save.apiActions.JS.decorator).toHaveBeenCalledWith(Resource);
+    });
+
+    it('should set hasInstanceAction to true for any action where the Resource\'s prototype has a function property whose name matches the instance action pattern', function () {
+      Resource.prototype.$save = function () {};
+      apiActions = parseResource._createApiSpecificActions(Resource, actions);
+      expect(actions.save.hasInstanceAction).toBeTrue();
+    });
+
+    it('should call _deleteAndReturnAction for each API for each action and store the result in the object it returns', function () {
+      apiActions = parseResource._createApiSpecificActions(Resource, actions);
+      angular.forEach(actions, function (action, actionName) {
+        angular.forEach(action.apiActions, function (thisApiAction, apiName) {
+          var expectedReturnVal = {
+            Resource: Resource,
+            actionName: actionName
+          };
+          expect(parseResource._deleteAndReturnAction).toHaveBeenCalledWith(Resource, actionName);
+          expect(apiActions[actionName][apiName]).toEqual(expectedReturnVal);
         });
       });
     });
@@ -1030,6 +1058,75 @@ describe('Factory: parseResource', function () {
 
   });
 
+  describe('configureActions function', function () {
+    var Resource, actions, moduleState, apiActions;
+
+    beforeEach(function () {
+      Resource = function () {};
+      actions = {
+        get: {
+          a: function () {},
+          thisMatters: false
+        }
+      };
+      moduleState = {
+        currentAPI: 'REST'
+      };
+      apiActions = {
+        get: {
+          JS: jasmine.createSpy(),
+          REST: jasmine.createSpy()
+        }
+      };
+      spyOn(parseResource, '_createApiSpecificActions').andReturn(apiActions);
+      spyOn(parseResource, '_destroyUndefinedActions');
+      spyOn(parseResource, '_resetPrototype');
+      parseResource._configureActions(Resource, actions, moduleState);
+    });
+
+    it('should call the createApiSpecificActions function', function () {
+      expect(parseResource._createApiSpecificActions).toHaveBeenCalledWith(Resource, actions);
+    });
+
+    it('should create a static action on Resource for every action in the actions configuration object', function () {
+      expect(Resource.get).toBeFunction();
+    });
+
+    describe('configured static action', function () {
+      var arg1, arg2;
+
+      beforeEach(function () {
+        arg1 = {
+          f: function () {}
+        };
+        arg2 = {
+          f: function () {}
+        };
+      });
+
+      it('should call the JS-specific action if moduleState.currentAPI is set to JS', function () {
+        moduleState.currentAPI = 'JS';
+        Resource.get(arg1, arg2);
+        expect(apiActions.get.JS).toHaveBeenCalledWith(arg1, arg2);
+      });
+
+      it('should call the REST-specific action if moduleState.currentAPI is set to REST', function () {
+        moduleState.currentAPI = 'REST';
+        Resource.get(arg1, arg2);
+        expect(apiActions.get.REST).toHaveBeenCalledWith(arg1, arg2);
+      });
+    });
+
+    it('should call the destroyUndefinedActions function', function () {
+      expect(parseResource._destroyUndefinedActions).toHaveBeenCalledWith(Resource, actions);
+    });
+
+    it('should call the resetPrototype function', function () {
+      expect(parseResource._resetPrototype).toHaveBeenCalledWith(Resource, actions);
+    });
+
+  });
+
   describe('createAppResourceFactory function', function () {
     var appConfig, appStorage, appEventBus, appResourceFactory;
 
@@ -1170,77 +1267,7 @@ describe('Factory: parseResource', function () {
         expect(parseResource._configureActions).toHaveBeenCalledWith(Resource, configuredActions, moduleState);
       });
 
-//      it('should pass the url and defaultParams to the coreAppResourceFactory unchanged', function () {
-//        var urlArg, defaultParamsArg;
-//        spyOn(parseResource, '_createCoreAppResourceFactory').andReturn(mocks.coreAppResourceFactory);
-//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
-//        Resource = appResourceFactory(url, defaultParams, actions);
-//        urlArg = mocks.coreAppResourceFactory.argsForCall[0][0];
-//        defaultParamsArg = mocks.coreAppResourceFactory.argsForCall[0][1];
-//        expect(urlArg).toEqual(url);
-//        expect(defaultParamsArg).toEqual(defaultParams);
-//      });
-
-//      it('should pass namespaced versions of all the baseActions from actions to coreAppResourceFactory', function () {
-//        var expectedBaseActionNames, actualBaseActions;
-//        actions = {
-//          firstAction: {
-//            baseActions: {
-//              create: {
-//                method: 'POST'
-//              }
-//            },
-//            decorator: jasmine.createSpy()
-//          },
-//          secondAction: {
-//            baseActions: {
-//              update: {
-//                method: 'PUT'
-//              }
-//            }
-//          }
-//        };
-//        expectedBaseActionNames = ['RESTcreate', 'RESTupdate', 'JScreate', 'JSupdate'];
-//        spyOn(parseResource, '_createCoreAppResourceFactory').andReturn(mocks.coreAppResourceFactory);
-//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
-//        Resource = appResourceFactory(url, defaultParams, actions);
-//        actualBaseActions = mocks.coreAppResourceFactory.argsForCall[0][2];
-//        angular.forEach(expectedBaseActionNames, function (expectedBaseActionName) {
-//          expect(actualBaseActions[expectedBaseActionName]).toBeDefined();
-//        });
-//      });
-//
-//      it('should call the createApiSpecificActions function', function () {
-//        var resourceArg;
-//        spyOn(parseResource, '_createApiSpecificActions').andCallThrough();
-//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
-//        Resource = appResourceFactory(url, defaultParams, actions);
-//        expect(parseResource._createApiSpecificActions).toHaveBeenCalled();
-//        resourceArg = parseResource._createApiSpecificActions.argsForCall[0][0];
-//        expect(resourceArg).toBe(mocks.Resource);
-//      });
-//
-//      it('it should remove any actions that weren\'t included in the actions object', function () {
-//        spyOn(parseResource, '_destroyUndefinedActions').andCallThrough();
-//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
-//        mocks.Resource.foo = function () {};
-//        mocks.Resource.prototype.$foo = function () {};
-//        Resource = appResourceFactory(url, defaultParams, actions);
-//        expect(parseResource._destroyUndefinedActions).toHaveBeenCalledWith(Resource, actions);
-//      });
-//
-//      it('should reset the prototype and regenerate the actions', function () {
-//        var resourceArg;
-//        spyOn(parseResource, '_resetPrototype').andCallThrough();
-//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
-//        Resource = appResourceFactory(url, defaultParams, actions);
-//        expect(parseResource._resetPrototype).toHaveBeenCalled();
-//        resourceArg = parseResource._resetPrototype.argsForCall[0][0];
-//        expect(resourceArg).toBe(mocks.Resource);
-//      });
-
       it('it should call parseResourceDecorator with the Resource', function () {
-//        appResourceFactory = parseResource.createAppResourceFactory(appEventBus, appStorage);
         Resource = appResourceFactory(url, defaultParams, actions);
         expect(mocks.parseResourceDecorator).toHaveBeenCalledWith(Resource);
       });

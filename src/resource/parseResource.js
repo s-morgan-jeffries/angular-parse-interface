@@ -302,7 +302,6 @@ angular.module('angularParseInterface')
       return staticAction;
     };
 
-    //t0d0: Test this
     // This loops through each action for both APIs and creates API-specific versions of that action. It then
     // creates a non-namespaced version of the action that delegates to the correct API-specific version based on
     // which API we're using. At the end of this, all the namespaced properties should be deleted from both Resource
@@ -374,7 +373,6 @@ angular.module('angularParseInterface')
       });
     };
 
-    //t0d0: Test this
     parseResource._configureActions = function (Resource, actions, moduleState) {
       var apiActions = this._createApiSpecificActions(Resource, actions);
 
