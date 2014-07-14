@@ -1,6 +1,7 @@
 angular
   .module('angularParseInterface', [
-    'ngResource'
+    'ngResource',
+    'ngStorage'
   ])
 ;
 
@@ -18,12 +19,57 @@ angular
     // Create a new isolated scope for the event bus
     var ParseAppEventBus = function ParseAppEventBus() {
       this._$scope = $rootScope.$new(true);
+      this._events = {};
     };
 
     // Register an event handler
-    ParseAppEventBus.prototype.on = function (event, handler) {
+    ParseAppEventBus.prototype.on = function (eventName, handler) {
       // Delegate to the scope's $on method
-      this._$scope.$on(event, handler);
+      var unregisterHandler = this._$scope.$on(eventName, handler);
+      // Add the handler and deregistration function to the event handlers array
+      var eventHandlers = this._events[eventName] = (this._events[eventName] || []);
+      eventHandlers.push({
+        handler: handler,
+        unregisterHandler: unregisterHandler
+      });
+    };
+
+    // Unregister an event handler
+    ParseAppEventBus.prototype.off = function (eventName, handler) {
+      var eventHandlers = (this._events[eventName] || []),
+        updatedEventHandlers = [];
+      // Loop through all the eventHandlers
+      angular.forEach(eventHandlers, function (handlerObj) {
+        // If there's no handler (i.e. we're unregistering all handlers for this event) or we've found the handler
+        if (!handler || (handlerObj.handler === handler)) {
+          // Unregister the handler on the _$scope
+          handlerObj.unregisterHandler();
+        } else {
+          // If neither of the above is true, add this to the new eventHandlers array
+          updatedEventHandlers.push(handlerObj);
+        }
+      });
+      // Set the handlersArray to the updated value or, if the new array is empty, to undefined
+      this._events[eventName] = updatedEventHandlers.length ? updatedEventHandlers : undefined;
+    };
+
+    // Calls the handler function the first time the named event is emitted
+    ParseAppEventBus.prototype.once = function (eventName, handler) {
+      var eventBus = this;
+      // Make a wrapped handler function that will call the handler and then unregister it
+      var wrappedHandler = function () {
+        handler.apply(handler, arguments);
+        eventBus.off(eventName, handler);
+      };
+      // Delegate to the scope's $on method
+      var unregisterHandler = this._$scope.$on(eventName, wrappedHandler);
+      // Add the handler and deregistration function to the event handlers array (using the original function allows
+      // consumers to use the off function in the expected way)
+      var eventHandlers = this._events[eventName] = (this._events[eventName] || []);
+      eventHandlers.push({
+        handler: handler,
+        unregisterHandler: unregisterHandler
+      });
     };
 
     // Trigger an event
@@ -36,10 +82,15 @@ angular
     return ParseAppEventBus;
   })
   // A map of event names to the strings that are used on the event bus
-  .value('EVENTS', {
-    SIGN_IN: 'signin',
-    SIGN_OUT: 'signout'
+  .value('PARSE_APP_EVENTS', {
+    SIGN_IN: 'SIGN_IN',
+    SIGN_OUT: 'SIGN_OUT',
+    USE_JS_API: 'USE_JS_API',
+    USE_REST_API: 'USE_REST_API',
+    MODULE_REGISTERED: 'MODULE_REGISTERED',
+    MODULE_INIT: 'MODULE_INIT'
   });
+// d0ne: Verify this works with JS API
 angular
   .module('angularParseInterface')
   .factory('parseCloudCode', function (parseResourceActions/*, $log*/) {
@@ -96,12 +147,84 @@ angular
   });
 angular
   .module('angularParseInterface')
-  .factory('parseEvent', function () {
+  .factory('parseEvent', function ($q, parseResourceActions, PARSE_APP_EVENTS) {
     'use strict';
 
-    // See here:
-    // https://www.parse.com/docs/rest#analytics-custom
     var parseEvent = {};
+
+    // Currently a do-little function. But because I'm going to have to pack a lot of functionality into the basic
+    // ParseResource (because some things just can't be added later), this might be necessary for removing some
+    // functionality (e.g. making arbitrary HTTP requests).
+    parseEvent._parseEventDecorator = function (ParseEvent, eventName) {
+      ParseEvent.className = eventName;
+    };
+
+    parseEvent._encodeDate = function (date) {
+      if (date instanceof Date) {
+        return {
+          __type: 'Date',
+          iso: date.toISOString()
+        };
+      }
+    };
+
+    parseEvent.createEventFactory = function (appResourceFactory, appEventBus) {
+      var parseEventDecorator = this._parseEventDecorator,
+        encodeDate = parseEvent._encodeDate,
+        useJsApi = false,
+        moduleName = 'parseEvent',
+        // Namespaced initialization event. The appInterface will emit this with the appConfig when the
+        // MODULE_REGISTERED event is emitted with our moduleName.
+        INIT_EVENT = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName;
+
+      // Register event handlers
+      // This is the handler for the INIT_EVENT
+      // Register the handler for the INIT_EVENT
+      appEventBus.once(INIT_EVENT, function (event, appConfig) {
+        // Determine whether we're using the JS API
+        useJsApi = appConfig.currentAPI === 'JS';
+      });
+      // Now that the handler is set up, we can emit the MODULE_REGISTERED event, which will cause the appInterface to
+      // emit the INIT_EVENT with the appConfig
+      appEventBus.emit(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
+      // On a USE_REST_API event, set useJsApi to false
+      appEventBus.on(PARSE_APP_EVENTS.USE_REST_API, function () {
+        useJsApi = false;
+      });
+      // On a USE_JS_API event, set useJsApi to true
+      appEventBus.on(PARSE_APP_EVENTS.USE_JS_API, function () {
+        useJsApi = true;
+      });
+
+      // The objectFactory function that will be returned
+      return function (eventName/*, defaultParams, customActions*/) {
+        // Parse's URL scheme for Objects
+        var url = '/events/' + eventName,
+          defaultParams = {},
+        // Custom actions from the action library
+          customActions = {
+            POST: parseResourceActions.getActionConfig('POST')
+          },
+          ParseEvent;
+
+        ParseEvent = appResourceFactory(url, defaultParams, customActions);
+
+        parseEventDecorator(ParseEvent, eventName);
+
+        //t0d0: Add tests for this
+        return function logEvent(data, time) {
+          var postData = {
+            dimensions: data
+          };
+          if (time) {
+            postData.at = encodeDate(time);
+          }
+          if (useJsApi) {
+            return ParseEvent.POST(postData);
+          }
+        };
+      };
+    };
 
     return parseEvent;
   });
@@ -122,61 +245,135 @@ angular
   });
 angular
   .module('angularParseInterface')
-  .factory('parseInterface', function (ParseAppEventBus,
+  .factory('parseInterface', function (parseStorage,
+                                       ParseAppEventBus,
+                                       PARSE_APP_EVENTS,
                                        parseResource,
                                        parseObjectFactory,
                                        parseUser,
                                        parseQueryBuilder,
                                        parseCloudCode,
-                                       parseRole) {
+                                       parseRole,
+                                       parseEvent) {
     'use strict';
+
+    // Version string (JS SDK uses this)
+    // KEEP THIS IN SYNC WITH THE VALUE IN parseInterfaceSpec.js
+    var JS_SDK_VERSION = 'js1.2.18';
+
+    var clientLocalStorage = parseStorage.localStorage;
+    clientLocalStorage.parseApp = clientLocalStorage.parseApp || {};
+
+    var clientSessionStorage = parseStorage.sessionStorage;
+    clientSessionStorage.parseApp = clientSessionStorage.parseApp || {};
 
     var parseInterface = {};
 
     // The only API entry point
-    parseInterface.createAppInterface = function (appConfig, clientStorage) {
+    parseInterface.createAppInterface = function (appConfig) {
       var appId,
-        appStorage,
+        appLocalStorage,
+        appSessionStorage,
         appEventBus,
         appResource,
         appInterface;
 
-      // Throw error if we're missing required properties from appConfig
-      if (!('applicationId' in appConfig)) {
-        throw new Error('appConfig must have an "applicationId" property');
-      }
-      appId = appConfig.applicationId;
-      if (!('restKey' in appConfig)) {
-        throw new Error('appConfig must have a "restKey" property');
-      }
-
-      // Get or create appStorage object
-      clientStorage = clientStorage || {};
-      clientStorage.parseApp = clientStorage.parseApp || {};
-      appStorage = clientStorage.parseApp[appId] = (clientStorage.parseApp[appId] || {});
+      // Create a local copy to prevent any unpleasant side effects
+      appConfig = angular.copy(appConfig);
 
       // Create an application-specific event bus
       appEventBus = new ParseAppEventBus();
 
+      // Throw error if we're missing an application ID
+      if (!(appConfig.APPLICATION_ID)) {
+        throw new Error('appConfig must have an "APPLICATION_ID" property');
+      }
+      // ... otherwise, capture the application ID for use below
+      appId = appConfig.APPLICATION_ID;
+
+      if (appConfig.REST_KEY) {
+        // If there's a REST key, use the REST API by default
+        appConfig.currentAPI = 'REST';
+      } else if (appConfig.JS_KEY) {
+        // Otherwise, if there's a JS key, use the JS API by default
+        appConfig.currentAPI = 'JS';
+      } else {
+        // Otherwise, throw an error
+        throw new Error('appConfig must have either a "REST_KEY" or a "JS_KEY" property');
+      }
+
+      //backburner: Update this so you can switch between local, session, and volatile storage
+      // Get or create appLocalStorage object
+      appLocalStorage = clientLocalStorage.parseApp[appId] = (clientLocalStorage.parseApp[appId] || {});
+
+      // Get or create appSessionStorage object
+      appSessionStorage = clientSessionStorage.parseApp[appId] = (clientSessionStorage.parseApp[appId] || {});
+
+      // Installation ID used by JS SDK
+      if (!appLocalStorage.INSTALLATION_ID || appLocalStorage.INSTALLATION_ID === '') {
+        // It wasn't in localStorage, so create a new one.
+        var hexOctet = function () {
+          return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        };
+        // This is how the Parse JS SDK does it
+        appLocalStorage.INSTALLATION_ID = (
+          hexOctet() + hexOctet() + '-' +
+          hexOctet() + '-' +
+          hexOctet() + '-' +
+          hexOctet() + '-' +
+          hexOctet() + hexOctet() + hexOctet());
+      }
+      // Now set INSTALLATION_ID on appConfig
+      appConfig.INSTALLATION_ID = appLocalStorage.INSTALLATION_ID;
+
+      // Version string
+      appConfig.CLIENT_VERSION = JS_SDK_VERSION;
+
+      // We need a way to pass initial configuration info to the rest of the app. Rather than pass the appConfig to the
+      // different modules, I'm using an event bus. Once a module is up and running, it should trigger a
+      // MODULE_REGISTERED event and pass its name as data.
+      appEventBus.on(PARSE_APP_EVENTS.MODULE_REGISTERED, function (e, modName) {
+        var eventName = PARSE_APP_EVENTS.MODULE_INIT + '.' + modName;
+        // The response is to emit a namespaced event with the appConfig.
+        appEventBus.emit(eventName, appConfig);
+      });
+
       // Create an application-specific resource factory (analogous to $resource). This will add headers to all requests
       // that are specific to this application, including a sessionToken when appropriate. It will also encode and
       // decode data with the correct format for Parse's API.
-      appResource = parseResource.createAppResourceFactory(appConfig, appStorage, appEventBus);
+      appResource = parseResource.createAppResourceFactory(appEventBus, appSessionStorage);
 
       // Compose the application interface
       appInterface = {};
-        // An object factory. This takes a className argument and returns a Resource mapped to a Parse Object
+      // An object factory. This takes a className argument and returns a Resource mapped to a Parse Object
       appInterface.objectFactory = parseObjectFactory.createObjectFactory(appResource);
-        // A User model. It has the same capabilities as other Resources, as well as some additional user-specific
-        // methods.
-      appInterface.User = parseUser.createUserModel(appResource, appStorage, appEventBus);
-        // A constructor that takes a Resource and returns a query builder.
+      // A User model. It has the same capabilities as other Resources, as well as some additional user-specific
+      // methods.
+      appInterface.User = parseUser.createUserModel(appResource, appSessionStorage, appEventBus);
+      // A constructor that takes a Resource and returns a query builder.
       appInterface.Query = parseQueryBuilder.Query;
-        // A factory that generates functions that call cloud functions
+      // A factory that generates functions that call cloud functions
       appInterface.getCloudCaller = parseCloudCode.createCallerFactory(appResource);
-        // t0d0: Add test for this
+      // A factory that generates role objects that can be used for setting permissions
       appInterface.roleFactory = parseRole.createRoleFactory(appResource, appInterface.User);
-
+      // A factory that generates custom event objects
+      appInterface.eventFactory = parseEvent.createEventFactory(appResource, appEventBus);
+      // This allows you to switch to using the JS API at runtime.
+      appInterface.useJsApi = function () {
+        if (appConfig.JS_KEY) {
+          // For any modules that haven't yet registered
+          appConfig.currentAPI = 'JS';
+          appEventBus.emit(PARSE_APP_EVENTS.USE_JS_API);
+        }
+      };
+      // This allows you to switch to using the REST API at runtime.
+      appInterface.useRestApi = function () {
+        if (appConfig.REST_KEY) {
+          // For any modules that haven't yet registered
+          appConfig.currentAPI = 'REST';
+          appEventBus.emit(PARSE_APP_EVENTS.USE_REST_API);
+        }
+      };
 
       return appInterface;
     };
@@ -531,6 +728,9 @@ angular
       params.className = this._Resource.className;
       return params;
     };
+    // backburner: Update Query.prototype.exec so it can take callback functinos
+    // backburner: Rename Query.prototype.exec to find
+    // backburner: Refactor Query.prototype.count so it executes the query
     Query.prototype.exec = function () {
       var params = this._yieldParams();
       delete params.className;
@@ -540,6 +740,7 @@ angular
 
     return parseQueryBuilder;
   });
+//d0ne: Make sure this works with JS API
 angular
   .module('angularParseInterface')
   .factory('parseRole', function ($q, parseResourceActions, parseQueryBuilder) {
@@ -589,12 +790,14 @@ angular
             $promise: deferred.promise,
             $resolved: false
           };
+//        roleFacade.role = role;
 
         var onQuerySuccess = function (data) {
           var savedRole;
           if (data.length === 1) {
             savedRole = data[0];
             angular.forEach(savedRole, function (v, k) {
+//              console.log(k);
               role[k] = v;
             });
           }
@@ -695,17 +898,54 @@ angular
   });
 angular
   .module('angularParseInterface')
-  .factory('parseUser', function (parseResourceActions, EVENTS) {
+  .factory('parseStorage', function ($localStorage, $sessionStorage) {
+    'use strict';
+
+    var parseStorage = {};
+
+    parseStorage.localStorage = $localStorage;
+
+    parseStorage.sessionStorage = $sessionStorage;
+
+    return parseStorage;
+  });
+angular
+  .module('angularParseInterface')
+  .factory('parseUser', function (parseResourceActions, PARSE_APP_EVENTS) {
     'use strict';
 
     var parseUser = {};
 
     var userDecorator = function (User, eventBus, storage) {
+      var useRestApi = false,
+        moduleName = 'parseUser',
+      // Namespaced initialization event. The appInterface will emit this with the appConfig when the
+      // MODULE_REGISTERED event is emitted with our moduleName.
+        INIT_EVENT = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName;
+
       // Set the className to _User (Parse uses leading underscore names for certain built-in classes)
       User.className = '_User';
       // These should never be sent with PUT requests
-      // backburner: Maybe remove sessionToken from request blacklist (it should be deleted, anyway)
       User._addRequestBlacklistProps('emailVerified');
+
+      // Register event handlers
+      // This is the handler for the INIT_EVENT
+      // Register the handler for the INIT_EVENT
+      eventBus.once(INIT_EVENT, function (event, appConfig) {
+        // Determine whether we're using the JS API
+        useRestApi = appConfig.currentAPI === 'REST';
+      });
+      // Now that the handler is set up, we can emit the MODULE_REGISTERED event, which will cause the appInterface to
+      // emit the INIT_EVENT with the appConfig
+      eventBus.emit(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
+      // On a USE_REST_API event, set useRestApi to true
+      eventBus.on(PARSE_APP_EVENTS.USE_REST_API, function () {
+        useRestApi = true;
+      });
+      // On a USE_JS_API event, set useRestApi to false
+      eventBus.on(PARSE_APP_EVENTS.USE_JS_API, function () {
+        useRestApi = false;
+      });
 
       // This both creates a user and signs in
       User.signUp = function (username, password, email) {
@@ -725,7 +965,7 @@ angular
           // Emit a SIGN_IN event with the sessionToken as data. Currently (as of this writing), the coreAppResourceFactory
           // uses this to keep track of the sessionToken, but this prevents us from having to hard-code that. The point
           // is that something else is keeping track of it.
-          eventBus.emit(EVENTS.SIGN_IN, data);
+          eventBus.emit(PARSE_APP_EVENTS.SIGN_IN, data);
         });
         // jshint boss:true
         // Cache the user in storage and return it
@@ -735,10 +975,14 @@ angular
 
       // This is for signing in (duh)
       User.signIn = function (username, password) {
-        // backburner: Figure out a cleaner, more intuitive way of representing arbitrary HTTP requests
         // Maybe you should have a way for Resources to send arbitrary requests (e.g. custom actions with capitalized
         // HTTP verb names) in addition to the convenience methods.
-        var user = this.get({urlSegment1: 'login', username: username, password: password});
+        var user;
+        if (useRestApi) {
+          user = this.get({urlSegment1: 'login', username: username, password: password});
+        } else {
+          user = this.get({urlSegment1: 'login'}, {username: username, password: password});
+        }
         // After we get the user back, we'll basically do exactly what we did in the signUp method.
         user.$promise.then(function () {
           var data = {
@@ -747,7 +991,7 @@ angular
           // Delete the sessionToken from the user
           delete user.sessionToken;
           // Emit a SIGN_IN event with the sessionToken as data.
-          eventBus.emit(EVENTS.SIGN_IN, data);
+          eventBus.emit(PARSE_APP_EVENTS.SIGN_IN, data);
         });
         // jshint boss:true
         // Cache the user in storage and return it
@@ -761,27 +1005,19 @@ angular
         // Delete the user from the cache
         delete storage.user;
         // Emit a SIGN_OUT event, in case anyone else is interested (hint: they are)
-        eventBus.emit(EVENTS.SIGN_OUT);
+        eventBus.emit(PARSE_APP_EVENTS.SIGN_OUT);
       };
 
       // This is for retrieving the current user
       User.current = function () {
         // Check the cache
-        var user = storage.user;
+        var user = storage.user,
+          Self = this;
         // If there's nothing there...
         if (!user) {
-          // Get the current user from the server. Again, this is not 100% clear to me (I have to *think* about how this
-          // maps to the URL in Parse's documentation), so it would be nice if there were a better way to make arbitrary
-          // requests like this.
-          user = this.get({urlSegment2: 'me'});
-          // Once we get a response...
-          user.$promise.then(function () {
-            // In this case, we're only deleting the sessionToken. Not sure if Parse sends us a new one, but since the
-            // old one (which must have been used to make this request) never expires, it's fine.
-            delete user.sessionToken;
-          });
-          // Cache the user
-          storage.user = user;
+          eventBus.emit(PARSE_APP_EVENTS.SIGN_OUT);
+        } else {
+          user = new Self(user);
         }
         return user;
       };
@@ -1269,28 +1505,139 @@ angular.module('angularParseInterface')
     return parseDataEncoding;
   });
 angular.module('angularParseInterface')
-  .factory('parseRequestHeaders', function (EVENTS) {
+  .factory('parseJSAuth', function (PARSE_APP_EVENTS) {
     'use strict';
 
     // The service has only one method, getTransformRequest. It returns a transformRequest function that will add the
     // correct headers to the request but will not otherwise modify the headers or data
-    var parseRequestHeaders = {};
+    var parseJSAuth = {};
 
-    parseRequestHeaders.getTransformRequest = function (appConfig, appStorage, appEventBus) {
-      // Capture the application ID and REST API key
-      var appId = appConfig.applicationId,
-        restKey = appConfig.restKey,
-        // Create module-specific namespace for storage
-        modStorage = appStorage.parseRequestHeaders = (appStorage.parseRequestHeaders || {});
+    parseJSAuth.getTransformRequest = function (appEventBus, appStorage) {
+      var APPLICATION_ID,
+        INSTALLATION_ID,
+        CLIENT_VERSION,
+        JS_KEY,
+      // Whether we're using the REST API
+        useJsApi = false,
+        moduleName = 'parseJSAuth',
+      // Namespaced initialization event. The appInterface will emit this with the appConfig when the
+      // MODULE_REGISTERED event is emitted with our moduleName.
+        INIT_EVENT = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName,
+      // Create module-specific namespace for storage
+        modStorage = appStorage[moduleName] = (appStorage[moduleName] || {});
 
       // Register event handlers
+      // This is the handler for the INIT_EVENT
+      // Register the handler for the INIT_EVENT
+      appEventBus.once(INIT_EVENT, function (event, appConfig) {
+        // Get the APPLICATION_ID
+        APPLICATION_ID = appConfig.APPLICATION_ID;
+        // Get the JS_KEY
+        JS_KEY = appConfig.JS_KEY;
+        // Installation ID set in parseInterface.js
+        INSTALLATION_ID = appConfig.INSTALLATION_ID;
+        // Version string set in parseInterface.js
+        CLIENT_VERSION = appConfig.CLIENT_VERSION;
+        // Determine whether we're using the JS API
+        useJsApi = appConfig.currentAPI === 'JS';
+      });
+      // Now that the handler is set up, we can emit the MODULE_REGISTERED event, which will cause the appInterface to
+      // emit the INIT_EVENT with the appConfig
+      appEventBus.emit(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
       // On a SIGN_IN event, cache the sessionToken
-      appEventBus.on(EVENTS.SIGN_IN, function (e, data) {
+      appEventBus.on(PARSE_APP_EVENTS.SIGN_IN, function (e, data) {
         modStorage.sessionToken = data.sessionToken;
       });
       // On a SIGN_OUT event, delete the sessionToken from the cache
-      appEventBus.on(EVENTS.SIGN_OUT, function (/*e, data*/) {
+      appEventBus.on(PARSE_APP_EVENTS.SIGN_OUT, function (/*e, data*/) {
         delete modStorage.sessionToken;
+      });
+      // On a USE_REST_API event, set useJsApi to false
+      appEventBus.on(PARSE_APP_EVENTS.USE_REST_API, function () {
+        useJsApi = false;
+      });
+      // On a USE_JS_API event, set useJsApi to true
+      appEventBus.on(PARSE_APP_EVENTS.USE_JS_API, function () {
+        useJsApi = true;
+      });
+
+      // The transformRequest function
+      return function (data, headersGetter) {
+        // Get the current value of the session token
+        var headers = headersGetter(),
+          sessionToken = modStorage.sessionToken;
+        // Only add auth keys if we're using the JS API
+        if (useJsApi) {
+          // Set the application ID and JS key values
+          data._ApplicationId = APPLICATION_ID;
+          data._JavaScriptKey = JS_KEY;
+          data._InstallationId = INSTALLATION_ID;
+          data._ClientVersion = CLIENT_VERSION;
+
+          // If the session token has a reasonably existy value, set the _SessionToken key
+          if (sessionToken && sessionToken.length) {
+            data._SessionToken = sessionToken;
+          }
+
+          // Set the Content-Type to text/plain to prevent a preflight
+          headers['Content-Type'] = 'text/plain';
+        }
+        // Return the data unmodified
+        return data;
+      };
+    };
+
+    return parseJSAuth;
+  });
+angular.module('angularParseInterface')
+  .factory('parseRESTAuth', function (PARSE_APP_EVENTS) {
+    'use strict';
+
+    // The service has only one method, getTransformRequest. It returns a transformRequest function that will add the
+    // correct headers to the request but will not otherwise modify the headers or data
+    var parseRESTAuth = {};
+
+    parseRESTAuth.getTransformRequest = function (appEventBus, appStorage) {
+      var APPLICATION_ID,
+        REST_KEY,
+        // Whether we're using the REST API
+        useRestApi = false,
+        moduleName = 'parseRESTAuth',
+        // Namespaced initialization event. The appInterface will emit this with the appConfig when the
+        // MODULE_REGISTERED event is emitted with our moduleName.
+        INIT_EVENT = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName,
+        // Create module-specific namespace for storage
+        modStorage = appStorage[moduleName] = (appStorage[moduleName] || {});
+
+
+      // Register event handlers
+      // Register a one-time handler for the INIT_EVENT
+      appEventBus.once(INIT_EVENT, function (event, appConfig) {
+        // Get the APPLICATION_ID
+        APPLICATION_ID = appConfig.APPLICATION_ID;
+        // Get the REST_KEY
+        REST_KEY = appConfig.REST_KEY;
+        // Determine whether we're using the REST API
+        useRestApi = appConfig.currentAPI === 'REST';
+      });
+      // Now that the handler is set up, we can emit the MODULE_REGISTERED event, which will cause the appInterface to
+      // emit the INIT_EVENT with the appConfig
+      appEventBus.emit(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
+      // On a SIGN_IN event, cache the sessionToken
+      appEventBus.on(PARSE_APP_EVENTS.SIGN_IN, function (e, data) {
+        modStorage.sessionToken = data.sessionToken;
+      });
+      // On a SIGN_OUT event, delete the sessionToken from the cache
+      appEventBus.on(PARSE_APP_EVENTS.SIGN_OUT, function (/*e, data*/) {
+        delete modStorage.sessionToken;
+      });
+      // On a USE_REST_API event, set useRestApi to true
+      appEventBus.on(PARSE_APP_EVENTS.USE_REST_API, function () {
+        useRestApi = true;
+      });
+      // On a USE_JS_API event, set useRestApi to false
+      appEventBus.on(PARSE_APP_EVENTS.USE_JS_API, function () {
+        useRestApi = false;
       });
 
       // The transformRequest function
@@ -1299,67 +1646,76 @@ angular.module('angularParseInterface')
           // Get the current value of the session token
           sessionToken = modStorage.sessionToken;
 
-        // Set the application ID and REST key headers
-        headers['X-Parse-Application-Id'] = appId;
-        headers['X-Parse-REST-API-Key'] = restKey;
+        // Only add the headers if we're using the REST API
+        if (useRestApi) {
+          // Set the application ID and REST key headers
+          headers['X-Parse-Application-Id'] = APPLICATION_ID;
+          headers['X-Parse-REST-API-Key'] = REST_KEY;
 
-        // If the session token has a reasonably existy value, set the session token header
-        if (sessionToken && sessionToken.length) {
-          headers['X-Parse-Session-Token'] = sessionToken;
+          // If the session token has a reasonably existy value, set the session token header
+          if (sessionToken && sessionToken.length) {
+            headers['X-Parse-Session-Token'] = sessionToken;
+          }
         }
         // Return the data unmodified
         return data;
       };
     };
 
-    return parseRequestHeaders;
+    return parseRESTAuth;
   });
 angular.module('angularParseInterface')
-  .factory('parseResource', function ($resource, parseRequestHeaders, parseDataEncoding, parseResourceDecorator) {
+  .factory('parseResource', function ($resource, PARSE_APP_EVENTS, parseRESTAuth, parseJSAuth, parseDataEncoding, parseResourceDecorator) {
     'use strict';
 
     var parseResource = {};
 
     //   The purpose of this function is to modify the $resource service so that it adds appropriate headers and
     // encodes/decodes data in the correct format for Parse.
-    parseResource.createAppResourceFactory = function (appConfig, appStorage, appEventBus) {
-      var coreAppResourceFactory = this.createCoreAppResourceFactory(appConfig, appStorage, appEventBus);
+    parseResource.createAppResourceFactory = function (appEventBus, appStorage) {
+      var coreAppResourceFactory = this._createCoreAppResourceFactory(appEventBus, appStorage),
+        createApiSpecificConfigs = this._createApiSpecificConfigs.bind(this),
+        generateBaseActions = this._generateBaseActions,
+        configureActions = this._configureActions.bind(this),
+        apiNames = ['REST', 'JS'],
+        moduleState = {},
+        moduleName = 'parseResource',
+      // Namespaced initialization event. The appInterface will emit this with the appConfig when the
+      // MODULE_REGISTERED event is emitted with our moduleName.
+        INIT_EVENT = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName;
+
+      // Register event handlers
+      // Register the handler for the INIT_EVENT
+      appEventBus.once(INIT_EVENT, function (event, appConfig) {
+        // Determine which API we're using
+        moduleState.currentAPI = appConfig.currentAPI;
+      });
+      // Now that the handler is set up, we can emit the MODULE_REGISTERED event, which will cause the appInterface to
+      // emit the INIT_EVENT with the appConfig
+      appEventBus.emit(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
+      // On a USE_REST_API event, set useRestApi to true
+      appEventBus.on(PARSE_APP_EVENTS.USE_REST_API, function () {
+        moduleState.currentAPI = 'REST';
+      });
+      // On a USE_JS_API event, set useRestApi to false
+      appEventBus.on(PARSE_APP_EVENTS.USE_JS_API, function () {
+        moduleState.currentAPI = 'JS';
+      });
 
       // Okay for now. What do you want this to do ultimately? You probably don't want to leave customActions in its
       // current state. For example, you probably want objects to have certain actions but not others.
       return function appResourceFactory(url, defaultParams, actions) {
         var Resource,
-          actionConfigs = {};
+          baseActions;
 
-        // Add actions
-//        console.log(url);
-//        console.log(actions);
-        angular.forEach(actions, function (action) {
-          // Extend the customActions with any actions defined on the actionAdder (will work even if that property
-          // isn't defined)
-          angular.extend(actionConfigs, action.actionConfigs);
-        });
+        actions = createApiSpecificConfigs(actions, apiNames);
+
+        baseActions = generateBaseActions(actions);
 
         // Create the Resource
-        Resource = coreAppResourceFactory(url, defaultParams, actionConfigs);
+        Resource = coreAppResourceFactory(url, defaultParams, baseActions);
 
-        // Decorate with decorators
-        angular.forEach(actions, function (action) {
-          if (angular.isFunction(action.decorator)) {
-            action.decorator(Resource);
-          }
-        });
-
-        // Remove any actions that weren't part of the actionAdders object
-        angular.forEach(Resource, function (v, k) {
-          var isAction = function (name) {
-            return Resource.hasOwnProperty(name) && Resource.prototype.hasOwnProperty('$' + name);
-          };
-          if (isAction(k) && !actions[k]) {
-            delete Resource[k];
-            delete Resource.prototype['$' + k];
-          }
-        });
+        configureActions(Resource, actions, moduleState);
 
         // Apply the decorator
         parseResourceDecorator(Resource);
@@ -1368,12 +1724,93 @@ angular.module('angularParseInterface')
       };
     };
 
+    parseResource._getPseudoMethodTransform = function (method) {
+      return function (data/*, headersGetter */) {
+        data = data || {};
+        data._method = method;
+        return data;
+      };
+    };
+
+    // This should generate a set of namespaced actions
+    parseResource._namespaceBaseActions = function (action, nameSpace) {
+      var namespacedAction = angular.copy(action);
+      namespacedAction.nameSpace = nameSpace;
+      angular.forEach(action.baseActions, function (baseAction, baseActionName) {
+        var newBaseActionName = nameSpace + baseActionName;
+        delete namespacedAction.baseActions[baseActionName];
+        namespacedAction.baseActions[newBaseActionName] = angular.copy(baseAction);
+      });
+      return namespacedAction;
+    };
+
+    // Generates a REST API-specific version of an action
+    parseResource._generateRESTActionConfig = function (action, nameSpace) {
+      var namespaceBaseActions = this._namespaceBaseActions;
+      return namespaceBaseActions(action, nameSpace);
+    };
+
+    // Generates a JS API-specific version of an action
+    parseResource._generateJSActionConfig = function (action, nameSpace) {
+      var namespaceBaseActions = this._namespaceBaseActions,
+        getPseudoMethodTransform = this._getPseudoMethodTransform,
+        jsAction = namespaceBaseActions(action, nameSpace);
+      angular.forEach(jsAction.baseActions, function (subAction/*, subActionName*/) {
+        if (subAction.method !== 'POST') {
+          var addPseudoMethod = getPseudoMethodTransform(subAction.method);
+          subAction.method = 'POST';
+          subAction.transformRequest = subAction.transformRequest || [];
+          // Add the addPseudoMethod function to the transformRequest array
+          subAction.transformRequest.push(addPseudoMethod);
+        }
+      });
+      return jsAction;
+    };
+
+    // Delegates to API-specific methods for generating API-specific actions from actions
+    parseResource._generateAPIActionConfig = function (action, API) {
+      var generateRESTActionConfig = this._generateRESTActionConfig.bind(this),
+        generateJSActionConfig = this._generateJSActionConfig.bind(this),
+        generateAPIActionFx;
+      if (API === 'REST') {
+        generateAPIActionFx = generateRESTActionConfig;
+      } else if (API === 'JS') {
+        generateAPIActionFx = generateJSActionConfig;
+      }
+      return generateAPIActionFx(action, API);
+    };
+
+    parseResource._createApiSpecificConfigs = function (actions, apiNames) {
+      var newActions = {},
+        self = this;
+      // Configure actions for each API and generate baseActions that will be fed into coreAppResourceFactory
+      angular.forEach(actions, function (action, actionName) {
+        var origAction = angular.copy(action);
+        action.apiActions = {};
+        angular.forEach(apiNames, function (apiName) {
+          action.apiActions[apiName] = self._generateAPIActionConfig(origAction, apiName);
+        });
+        newActions[actionName] = action;
+      });
+      return newActions;
+    };
+
+    parseResource._generateBaseActions = function (actions) {
+      var baseActions = {};
+      angular.forEach(actions, function (action) {
+        angular.forEach(action.apiActions, function (apiActionConfig) {
+          angular.extend(baseActions, apiActionConfig.baseActions);
+        });
+      });
+      return baseActions;
+    };
+
     // This creates the core app resource. It's concerned with encoding/decoding of data and the addition of the
     // appropriate headers. A separate function deals with actions.
     // I'm not crazy about exposing this on the service when it's actually only used within this file, but it does make
     // it very testable. Also, I briefly toyed with combining this function with createAppResourceFactory, but it was an
     // inscrutable mess.
-    parseResource.createCoreAppResourceFactory = function (appConfig, appStorage, appEventBus) {
+    parseResource._createCoreAppResourceFactory = function (appEventBus, appStorage) {
 
       var hasRequestBody = function (action) {
         // For Parse, these are currently the only methods for which a request body has any meaning
@@ -1395,7 +1832,9 @@ angular.module('angularParseInterface')
         return data;
       };
 
-      var addRequestHeaders = parseRequestHeaders.getTransformRequest(appConfig, appStorage, appEventBus);
+      var addRESTAuth = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
+
+      var addJSAuth = parseJSAuth.getTransformRequest(appEventBus, appStorage);
 
       return function coreAppResourceFactory(url, defaultParams, actions) {
         var restApiBaseUrl = 'https://api.parse.com/1',
@@ -1431,11 +1870,14 @@ angular.module('angularParseInterface')
             }
             // This is for the actual data encoding
             transformReqArray.push(dataEncodingFunctions.transformRequest);
-            // And this is for stringifying the data
+          }
+          // Every request will add the auth transforms
+          transformReqArray.push(addRESTAuth);
+          transformReqArray.push(addJSAuth);
+          if (hasRequestBody(action)) {
+            // Lastly, this is for stringifying the data. Again, it's done conditionally.
             transformReqArray.push(stringifyData);
           }
-          // Every request will add headers
-          transformReqArray.push(addRequestHeaders);
         };
 
         var addTransformResponseFxs = function (action) {
@@ -1472,10 +1914,7 @@ angular.module('angularParseInterface')
         // In theory, this should be an error, but I'm going to leave it as is for now
         actions = actions || {};
 
-//        console.log(url);
-//        console.log(actions);
         angular.forEach(actions, function (action) {
-//          console.log(arguments[1]);
           addTransformRequestFxs(action);
           addTransformResponseFxs(action);
         });
@@ -1498,6 +1937,123 @@ angular.module('angularParseInterface')
         return Resource;
       };
     };
+
+    // This removes the namespacing from the baseActions. This is done so that the decorators, which aren't written
+    // with any assumptions about namespacing, will still work (otherwise they couldn't find the properties they
+    // reference).
+    parseResource._deNamespaceBaseActions = function (Resource, action) {
+      var nameSpace = action.nameSpace;
+      angular.forEach(action.baseActions, function (baseAction, namespacedActionName) {
+        var namespacedStaticName = namespacedActionName,
+          baseStaticName = namespacedActionName.slice(nameSpace.length),
+          namespacedInstanceName = nameSpace + '$' + baseStaticName,
+          baseInstanceName = '$' + baseStaticName,
+          staticAction = Resource[namespacedStaticName],
+          instanceAction = Resource.prototype[namespacedInstanceName];
+        delete Resource[namespacedStaticName];
+        delete Resource.prototype[namespacedInstanceName];
+        Resource[baseStaticName] = staticAction;
+        if (instanceAction) {
+          Resource.prototype[baseInstanceName] = instanceAction;
+        }
+      });
+    };
+
+    // This deletes the action from Resource and its prototype and returns the static action
+    parseResource._deleteAndReturnAction = function (Resource, actionName) {
+      var instanceActionName = '$' + actionName,
+        staticAction = Resource[actionName];
+      delete Resource[actionName];
+      delete Resource.prototype[instanceActionName];
+      return staticAction;
+    };
+
+    // This loops through each action for both APIs and creates API-specific versions of that action. It then
+    // creates a non-namespaced version of the action that delegates to the correct API-specific version based on
+    // which API we're using. At the end of this, all the namespaced properties should be deleted from both Resource
+    // and its prototype.
+    parseResource._createApiSpecificActions = function (Resource, actions) {
+      var apiActions = {},
+        self = this;
+      // Loop through each action
+      angular.forEach(actions, function (action, actionName) {
+        apiActions[actionName] = {};
+        // Loop through each API
+        angular.forEach(action.apiActions, function (thisApiAction, apiName) {
+          // This removes the namespacing of API-specific actions (e.g. RESTsave -> save)
+          self._deNamespaceBaseActions(Resource, thisApiAction);
+          // Apply the decorator if it exists. Assuming the action is configured correctly, it should only leave a
+          // single static action and, optionally, a single instance action. This is the API-specific version of the
+          // action.
+          if (angular.isFunction(thisApiAction.decorator)) {
+            thisApiAction.decorator(Resource);
+          }
+          // Check here whether the action has an instance action
+          action.hasInstanceAction = angular.isFunction(Resource.prototype['$' + actionName]);
+          // Delete the API-specific action from the Resource and store it in our data structure
+          apiActions[actionName][apiName] = self._deleteAndReturnAction(Resource, actionName);
+        });
+      });
+      return apiActions;
+    };
+
+    // This loops through each of Resource's properties and tries to identify actions (based on whether there's a
+    // $-prefixed version of the property on Resource.prototype. If it finds any that aren't in the actions object, it
+    // deletes them from Resource and Resource.prototype.
+    parseResource._destroyUndefinedActions = function (Resource, actions) {
+      var isAction = function (name) {
+        return Resource.hasOwnProperty(name) && Resource.prototype.hasOwnProperty('$' + name);
+      };
+      angular.forEach(Resource, function (v, k) {
+        if (isAction(k) && !actions[k]) {
+          delete Resource[k];
+          delete Resource.prototype['$' + k];
+        }
+      });
+    };
+
+    // Creates the named action on the prototype. This is copied with minimal modifications from
+    // angular-resource.js.
+    parseResource._createInstanceAction = function (Resource, actionName) {
+      Resource.prototype['$' + actionName] = function (params, success, error) {
+        if (angular.isFunction(params)) {
+          error = success;
+          success = params;
+          params = {};
+        }
+        var result = Resource[actionName].call(this, params, this, success, error);
+        return result.$promise || result;
+      };
+    };
+
+    parseResource._resetPrototype = function (Resource, actions) {
+      var self = this;
+      // You should detect above whether a given action has an associated instance action
+      // Just to be safe, let's reset the prototype...
+      Resource.prototype = {};
+      // ... and add the instance actions back in
+      angular.forEach(actions, function (action, actionName) {
+        if (action.hasInstanceAction) {
+          self._createInstanceAction(Resource, actionName);
+        }
+      });
+    };
+
+    parseResource._configureActions = function (Resource, actions, moduleState) {
+      var apiActions = this._createApiSpecificActions(Resource, actions);
+
+      angular.forEach(apiActions, function (apiAction, actionName) {
+        Resource[actionName] = function () {
+          return apiAction[moduleState.currentAPI].apply(this, arguments);
+        };
+      });
+      // Now it's time for some cleanup. This loops through each of Resource's properties and tries to identify
+      // actions (based on whether there's a $-prefixed version of the property on Resource.prototype. If it finds any
+      // that aren't in the actions object, it deletes them from Resource and Resource.prototype.
+      this._destroyUndefinedActions(Resource, actions);
+      this._resetPrototype(Resource, actions);
+    };
+
     return parseResource;
   });
 angular.module('angularParseInterface')
@@ -1547,7 +2103,7 @@ angular.module('angularParseInterface')
     };
 
     actionLib.get = {
-      actionConfigs: {
+      baseActions: {
 //        get: (function () {
 //          var Resource;
 //
@@ -1572,7 +2128,7 @@ angular.module('angularParseInterface')
     // want to write extra tests right now. But this is a pin in it.
 
     actionLib.delete = {
-      actionConfigs: {
+      baseActions: {
         delete: {
           method: 'DELETE'
         }
@@ -1581,7 +2137,7 @@ angular.module('angularParseInterface')
 
     // A POST action for posting arbitrary data to the server
     actionLib.POST = {
-      actionConfigs: {
+      baseActions: {
         POST: {
           method: 'POST'
         }
@@ -1637,7 +2193,7 @@ angular.module('angularParseInterface')
     };
 
     actionLib.PUT = {
-      actionConfigs: {
+      baseActions: {
         PUT: {
           method: 'PUT'
         }
@@ -1700,7 +2256,7 @@ angular.module('angularParseInterface')
     };
 
     actionLib.query = {
-      actionConfigs: {
+      baseActions: {
         query: (function () {
           var Resource;
 
@@ -1742,16 +2298,17 @@ angular.module('angularParseInterface')
           return function () {
             var queryParams,
               isCountQuery,
-              queryFx;
+              queryFx,
+              args = [].slice.call(arguments);
 
             // Get the query parameters or an empty object
-            queryParams = angular.isObject(arguments[0]) ? arguments[0] : {};
+            queryParams = angular.isObject(args[0]) ? args[0] : {};
             // Determine whether this is a count query based on whether the count parameter is set
             isCountQuery = angular.equals(queryParams.count, 1);
             // If it's a count query, use the count action; otherwise, use the query action
             queryFx = isCountQuery ? count : query;
             // Delegate to the appropriate function...
-            return queryFx.apply(this, arguments);
+            return queryFx.apply(this, args);
           };
         }());
       }
@@ -1762,7 +2319,7 @@ angular.module('angularParseInterface')
     // appropriate). Anyway, this action does the hard work of making those two interfaces work together. The save
     // action this creates can be used just like the ngResource save action.
     actionLib.save = {
-      actionConfigs: {
+      baseActions: {
         save: {
           method: 'POST'
         },
@@ -1851,11 +2408,6 @@ angular.module('angularParseInterface')
             isNew = !instance.objectId;
             saveFunc = isNew ? create : update;
             // Delegate to the original function...
-//            console.log('saving');
-//            console.log('params:');
-//            console.log(params);
-//            console.log('instance:');
-//            console.log(instance);
             return saveFunc.call(this, params, instance, wrappedSuccessFunc, wrappedErrorFunc);
           };
         }());
@@ -2005,6 +2557,7 @@ angular.module('angularParseInterface')
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//      Resource.prototype.constructor = Resource;
       // Instance methods
 //      Resource.prototype.isNew = function () {
 //        return !this.objectId;
@@ -2014,7 +2567,7 @@ angular.module('angularParseInterface')
         enumerable: true,
         configurable: false,
         get: function () {
-          return this.constructor.className;
+          return Resource.className;
         },
         set: function () {}
       });
