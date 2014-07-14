@@ -1,0 +1,1495 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for src/resource/parseResource.js</title>
+    <meta charset="utf-8">
+
+    <link rel="stylesheet" href="../../prettify.css">
+
+    <style>
+        body, html {
+            margin:0; padding: 0;
+        }
+        body {
+            font-family: Helvetica Neue, Helvetica,Arial;
+            font-size: 10pt;
+        }
+        div.header, div.footer {
+            background: #eee;
+            padding: 1em;
+        }
+        div.header {
+            z-index: 100;
+            position: fixed;
+            top: 0;
+            border-bottom: 1px solid #666;
+            width: 100%;
+        }
+        div.footer {
+            border-top: 1px solid #666;
+        }
+        div.body {
+            margin-top: 10em;
+        }
+        div.meta {
+            font-size: 90%;
+            text-align: center;
+        }
+        h1, h2, h3 {
+            font-weight: normal;
+        }
+        h1 {
+            font-size: 12pt;
+        }
+        h2 {
+            font-size: 10pt;
+        }
+        pre {
+            font-family: Consolas, Menlo, Monaco, monospace;
+            margin: 0;
+            padding: 0;
+            line-height: 14px;
+            font-size: 14px;
+            -moz-tab-size: 2;
+            -o-tab-size:  2;
+            tab-size: 2;
+        }
+
+        div.path { font-size: 110%; }
+        div.path a:link, div.path a:visited { color: #000; }
+        table.coverage { border-collapse: collapse; margin:0; padding: 0 }
+
+        table.coverage td {
+            margin: 0;
+            padding: 0;
+            color: #111;
+            vertical-align: top;
+        }
+        table.coverage td.line-count {
+            width: 50px;
+            text-align: right;
+            padding-right: 5px;
+        }
+        table.coverage td.line-coverage {
+            color: #777 !important;
+            text-align: right;
+            border-left: 1px solid #666;
+            border-right: 1px solid #666;
+        }
+
+        table.coverage td.text {
+        }
+
+        table.coverage td span.cline-any {
+            display: inline-block;
+            padding: 0 5px;
+            width: 40px;
+        }
+        table.coverage td span.cline-neutral {
+            background: #eee;
+        }
+        table.coverage td span.cline-yes {
+            background: #b5d592;
+            color: #999;
+        }
+        table.coverage td span.cline-no {
+            background: #fc8c84;
+        }
+
+        .cstat-yes { color: #111; }
+        .cstat-no { background: #fc8c84; color: #111; }
+        .fstat-no { background: #ffc520; color: #111 !important; }
+        .cbranch-no { background:  yellow !important; color: #111; }
+
+        .cstat-skip { background: #ddd; color: #111; }
+        .fstat-skip { background: #ddd; color: #111 !important; }
+        .cbranch-skip { background: #ddd !important; color: #111; }
+
+        .missing-if-branch {
+            display: inline-block;
+            margin-right: 10px;
+            position: relative;
+            padding: 0 4px;
+            background: black;
+            color: yellow;
+        }
+
+        .skip-if-branch {
+            display: none;
+            margin-right: 10px;
+            position: relative;
+            padding: 0 4px;
+            background: #ccc;
+            color: white;
+        }
+
+        .missing-if-branch .typ, .skip-if-branch .typ {
+            color: inherit !important;
+        }
+
+        .entity, .metric { font-weight: bold; }
+        .metric { display: inline-block; border: 1px solid #333; padding: 0.3em; background: white; }
+        .metric small { font-size: 80%; font-weight: normal; color: #666; }
+
+        div.coverage-summary table { border-collapse: collapse; margin: 3em; font-size: 110%; }
+        div.coverage-summary td, div.coverage-summary table  th { margin: 0; padding: 0.25em 1em; border-top: 1px solid #666; border-bottom: 1px solid #666; }
+        div.coverage-summary th { text-align: left; border: 1px solid #666; background: #eee; font-weight: normal; }
+        div.coverage-summary th.file { border-right: none !important; }
+        div.coverage-summary th.pic { border-left: none !important; text-align: right; }
+        div.coverage-summary th.pct { border-right: none !important; }
+        div.coverage-summary th.abs { border-left: none !important; text-align: right; }
+        div.coverage-summary td.pct { text-align: right; border-left: 1px solid #666; }
+        div.coverage-summary td.abs { text-align: right; font-size: 90%; color: #444; border-right: 1px solid #666; }
+        div.coverage-summary td.file { text-align: right; border-left: 1px solid #666; white-space: nowrap;  }
+        div.coverage-summary td.pic { min-width: 120px !important;  }
+        div.coverage-summary a:link { text-decoration: none; color: #000; }
+        div.coverage-summary a:visited { text-decoration: none; color: #333; }
+        div.coverage-summary a:hover { text-decoration: underline; }
+        div.coverage-summary tfoot td { border-top: 1px solid #666; }
+
+        div.coverage-summary .yui3-datatable-sort-indicator, div.coverage-summary .dummy-sort-indicator {
+            height: 10px;
+            width: 7px;
+            display: inline-block;
+            margin-left: 0.5em;
+        }
+        div.coverage-summary .yui3-datatable-sort-indicator {
+            background: url("http://yui.yahooapis.com/3.6.0/build/datatable-sort/assets/skins/sam/sort-arrow-sprite.png") no-repeat scroll 0 0 transparent;
+        }
+        div.coverage-summary .yui3-datatable-sorted .yui3-datatable-sort-indicator {
+            background-position: 0 -20px;
+        }
+        div.coverage-summary .yui3-datatable-sorted-desc .yui3-datatable-sort-indicator {
+            background-position: 0 -10px;
+        }
+
+        .high { background: #b5d592 !important; }
+        .medium { background: #ffe87c !important; }
+        .low { background: #fc8c84 !important; }
+
+        span.cover-fill, span.cover-empty {
+            display:inline-block;
+            border:1px solid #444;
+            background: white;
+            height: 12px;
+        }
+        span.cover-fill {
+            background: #ccc;
+            border-right: 1px solid #444;
+        }
+        span.cover-empty {
+            background: white;
+            border-left: none;
+        }
+        span.cover-full {
+            border-right: none !important;
+        }
+        pre.prettyprint {
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .com { color: #999 !important; }
+        .ignore-none { color: #999; font-weight: normal; }
+
+    </style>
+</head>
+<body>
+<div class="header high">
+    <h1>Code coverage report for <span class="entity">src/resource/parseResource.js</span></h1>
+    <h2>
+        
+        Statements: <span class="metric">94.86% <small>(166 / 175)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+        
+        Branches: <span class="metric">82% <small>(41 / 50)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+        
+        Functions: <span class="metric">91.3% <small>(42 / 46)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+        
+        Lines: <span class="metric">94.86% <small>(166 / 175)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        
+        Ignored: <span class="metric"><span class="ignore-none">none</span></span> &nbsp;&nbsp;&nbsp;&nbsp;
+    </h2>
+    <div class="path"><a href="../../index.html">All files</a> &#187; <a href="index.html">src/resource/</a> &#187; parseResource.js</div>
+</div>
+<div class="body">
+<pre><table class="coverage">
+<tr><td class="line-count">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389
+390
+391
+392</td><td class="line-coverage"><span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">9</span>
+<span class="cline-any cline-yes">9</span>
+<span class="cline-any cline-yes">9</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">27</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">27</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">27</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">39</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-yes">45</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">84</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">angular.module('angularParseInterface')
+  .factory('parseResource', function ($resource, PARSE_APP_EVENTS, parseRESTAuth, parseJSAuth, parseDataEncoding, parseResourceDecorator) {
+    'use strict';
+&nbsp;
+    var parseResource = {};
+&nbsp;
+    //   The purpose of this function is to modify the $resource service so that it adds appropriate headers and
+    // encodes/decodes data in the correct format for Parse.
+    parseResource.createAppResourceFactory = function (appEventBus, appStorage) {
+      var coreAppResourceFactory = this._createCoreAppResourceFactory(appEventBus, appStorage),
+        createApiSpecificConfigs = this._createApiSpecificConfigs.bind(this),
+        generateBaseActions = this._generateBaseActions,
+        configureActions = this._configureActions.bind(this),
+        apiNames = ['REST', 'JS'],
+        moduleState = {},
+        moduleName = 'parseResource',
+      // Namespaced initialization event. The appInterface will emit this with the appConfig when the
+      // MODULE_REGISTERED event is emitted with our moduleName.
+        INIT_EVENT = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName;
+&nbsp;
+      // Register event handlers
+      // Register the handler for the INIT_EVENT
+      appEventBus.once(INIT_EVENT, function (event, appConfig) {
+        // Determine which API we're using
+        moduleState.currentAPI = appConfig.currentAPI;
+      });
+      // Now that the handler is set up, we can emit the MODULE_REGISTERED event, which will cause the appInterface to
+      // emit the INIT_EVENT with the appConfig
+      appEventBus.emit(PARSE_APP_EVENTS.MODULE_REGISTERED, moduleName);
+      // On a USE_REST_API event, set useRestApi to true
+      appEventBus.on(PARSE_APP_EVENTS.USE_REST_API, <span class="fstat-no" title="function not covered" >function () {</span>
+<span class="cstat-no" title="statement not covered" >        moduleState.currentAPI = 'REST';</span>
+      });
+      // On a USE_JS_API event, set useRestApi to false
+      appEventBus.on(PARSE_APP_EVENTS.USE_JS_API, <span class="fstat-no" title="function not covered" >function () {</span>
+<span class="cstat-no" title="statement not covered" >        moduleState.currentAPI = 'JS';</span>
+      });
+&nbsp;
+      // Okay for now. What do you want this to do ultimately? You probably don't want to leave customActions in its
+      // current state. For example, you probably want objects to have certain actions but not others.
+      return function appResourceFactory(url, defaultParams, actions) {
+        var Resource,
+          baseActions;
+&nbsp;
+        actions = createApiSpecificConfigs(actions, apiNames);
+&nbsp;
+        baseActions = generateBaseActions(actions);
+&nbsp;
+        // Create the Resource
+        Resource = coreAppResourceFactory(url, defaultParams, baseActions);
+&nbsp;
+        configureActions(Resource, actions, moduleState);
+&nbsp;
+        // Apply the decorator
+        parseResourceDecorator(Resource);
+&nbsp;
+        return Resource;
+      };
+    };
+&nbsp;
+    parseResource._getPseudoMethodTransform = function (method) {
+      return function (data/*, headersGetter */) {
+        data = data || <span class="branch-1 cbranch-no" title="branch not covered" >{};</span>
+        data._method = method;
+        return data;
+      };
+    };
+&nbsp;
+    // This should generate a set of namespaced actions
+    parseResource._namespaceBaseActions = function (action, nameSpace) {
+      var namespacedAction = angular.copy(action);
+      namespacedAction.nameSpace = nameSpace;
+      angular.forEach(action.baseActions, function (baseAction, baseActionName) {
+        var newBaseActionName = nameSpace + baseActionName;
+        delete namespacedAction.baseActions[baseActionName];
+        namespacedAction.baseActions[newBaseActionName] = angular.copy(baseAction);
+      });
+      return namespacedAction;
+    };
+&nbsp;
+    // Generates a REST API-specific version of an action
+    parseResource._generateRESTActionConfig = function (action, nameSpace) {
+      var namespaceBaseActions = this._namespaceBaseActions;
+      return namespaceBaseActions(action, nameSpace);
+    };
+&nbsp;
+    // Generates a JS API-specific version of an action
+    parseResource._generateJSActionConfig = function (action, nameSpace) {
+      var namespaceBaseActions = this._namespaceBaseActions,
+        getPseudoMethodTransform = this._getPseudoMethodTransform,
+        jsAction = namespaceBaseActions(action, nameSpace);
+      angular.forEach(jsAction.baseActions, function (subAction/*, subActionName*/) {
+        if (subAction.method !== 'POST') {
+          var addPseudoMethod = getPseudoMethodTransform(subAction.method);
+          subAction.method = 'POST';
+          subAction.transformRequest = subAction.transformRequest || [];
+          // Add the addPseudoMethod function to the transformRequest array
+          subAction.transformRequest.push(addPseudoMethod);
+        }
+      });
+      return jsAction;
+    };
+&nbsp;
+    // Delegates to API-specific methods for generating API-specific actions from actions
+    parseResource._generateAPIActionConfig = function (action, API) {
+      var generateRESTActionConfig = this._generateRESTActionConfig.bind(this),
+        generateJSActionConfig = this._generateJSActionConfig.bind(this),
+        generateAPIActionFx;
+      if (API === 'REST') {
+        generateAPIActionFx = generateRESTActionConfig;
+      } else <span class="missing-if-branch" title="else path not taken" >E</span>if (API === 'JS') {
+        generateAPIActionFx = generateJSActionConfig;
+      }
+      return generateAPIActionFx(action, API);
+    };
+&nbsp;
+    parseResource._createApiSpecificConfigs = function (actions, apiNames) {
+      var newActions = {},
+        self = this;
+      // Configure actions for each API and generate baseActions that will be fed into coreAppResourceFactory
+      angular.forEach(actions, function (action, actionName) {
+        var origAction = angular.copy(action);
+        action.apiActions = {};
+        angular.forEach(apiNames, function (apiName) {
+          action.apiActions[apiName] = self._generateAPIActionConfig(origAction, apiName);
+        });
+        newActions[actionName] = action;
+      });
+      return newActions;
+    };
+&nbsp;
+    parseResource._generateBaseActions = function (actions) {
+      var baseActions = {};
+      angular.forEach(actions, function (action) {
+        angular.forEach(action.apiActions, function (apiActionConfig) {
+          angular.extend(baseActions, apiActionConfig.baseActions);
+        });
+      });
+      return baseActions;
+    };
+&nbsp;
+    // This creates the core app resource. It's concerned with encoding/decoding of data and the addition of the
+    // appropriate headers. A separate function deals with actions.
+    // I'm not crazy about exposing this on the service when it's actually only used within this file, but it does make
+    // it very testable. Also, I briefly toyed with combining this function with createAppResourceFactory, but it was an
+    // inscrutable mess.
+    parseResource._createCoreAppResourceFactory = function (appEventBus, appStorage) {
+&nbsp;
+      var hasRequestBody = function (action) {
+        // For Parse, these are currently the only methods for which a request body has any meaning
+        var requestBodyMethods = ['POST', 'PUT'];
+        return requestBodyMethods.indexOf(action.method) &gt;= 0;
+      };
+&nbsp;
+      var stringifyData = <span class="fstat-no" title="function not covered" >function (data) {</span>
+<span class="cstat-no" title="statement not covered" >        if (!angular.isString(data)) {</span>
+<span class="cstat-no" title="statement not covered" >          data = angular.toJson(data);</span>
+        }
+<span class="cstat-no" title="statement not covered" >        return data;</span>
+      };
+&nbsp;
+      var parseJSON = <span class="fstat-no" title="function not covered" >function (data) {</span>
+<span class="cstat-no" title="statement not covered" >        if (angular.isString(data)) {</span>
+<span class="cstat-no" title="statement not covered" >          data = angular.fromJson(data);</span>
+        }
+<span class="cstat-no" title="statement not covered" >        return data;</span>
+      };
+&nbsp;
+      var addRESTAuth = parseRESTAuth.getTransformRequest(appEventBus, appStorage);
+&nbsp;
+      var addJSAuth = parseJSAuth.getTransformRequest(appEventBus, appStorage);
+&nbsp;
+      return function coreAppResourceFactory(url, defaultParams, actions) {
+        var restApiBaseUrl = 'https://api.parse.com/1',
+          Resource;
+&nbsp;
+        var prependBaseUrl = function (url) {
+          return restApiBaseUrl.replace(/\/+$/, '') + '/' + url.replace(/^\/+/, '');
+        };
+&nbsp;
+        var dataEncodingFunctions = parseDataEncoding.getTransformFunctions();
+&nbsp;
+        var addTransformRequestFxs = function (action) {
+          var transformReqArray;
+          // If the action already has a transformRequest property, one of two things is true...
+          if (action.transformRequest) {
+            // ... either it's a function, and we need to put it in an array...
+            if (angular.isFunction(action.transformRequest)) {
+              action.transformRequest = [action.transformRequest];
+            }
+            // ... or it's already an array and we don't have to do anything with it.
+          } else {
+            // If it doesn't have a transformRequest property, we give it one and set it to an empty array
+            action.transformRequest = [];
+          }
+          // In any case, I'm giving it a shorter name
+          transformReqArray = action.transformRequest;
+          // Check to see if we need to modify the data (only if the action has a request body)
+          if (hasRequestBody(action)) {
+            // If there's anything in the array, it might jsonify the data.
+            if (transformReqArray.length) {
+              // This does a conditional transformation (only parses if the data is already a string).
+              transformReqArray.push(parseJSON);
+            }
+            // This is for the actual data encoding
+            transformReqArray.push(dataEncodingFunctions.transformRequest);
+          }
+          // Every request will add the auth transforms
+          transformReqArray.push(addRESTAuth);
+          transformReqArray.push(addJSAuth);
+          if (hasRequestBody(action)) {
+            // Lastly, this is for stringifying the data. Again, it's done conditionally.
+            transformReqArray.push(stringifyData);
+          }
+        };
+&nbsp;
+        var addTransformResponseFxs = function (action) {
+          var transformResArray;
+          // If the action already has a transformResponse property, one of two things is true...
+          if (action.transformResponse) {
+            // ... either it's a function, and we need to put it in an array...
+            if (angular.isFunction(action.transformResponse)) {
+              action.transformResponse = [action.transformResponse];
+            }
+            // ... or it's already an array and we don't have to do anything with it.
+          } else {
+            // If it doesn't have a transformResponse property, we give it one and set it to an empty array
+            action.transformResponse = [];
+          }
+          // In any case, I'm giving it a shorter name
+          transformResArray = action.transformResponse;
+          //   In contrast to encoding, decoding has to happen for every action, so we'll be responsible for the whole
+          // process. Another, more important contrast with encoding is that we'll want any transformations that were
+          // part of the custom action to be processed *last*. The reason for that is that consumers of this service
+          // will expect the data to be in its decoded form already. Unfortunately, this means we can't make our
+          // transformations fool-proof; since consumers will get at the data after we do, they'll either need to
+          // expect that it's JSONified or parsed, but not either/or. I'm going with parsed, because converting the
+          // data back to JSON seems stupid.
+          //   Since we're adding our transformRequest functions to the front of the queue, we'll need to work in
+          // reverse. The last step before we hand off the data is to decode it:
+          transformResArray.unshift(dataEncodingFunctions.transformResponse);
+          // The "first" step (the final step in this function) is parsing the JSON
+          transformResArray.unshift(parseJSON);
+        };
+&nbsp;
+        url = prependBaseUrl(url);
+        defaultParams = defaultParams || {};
+        // In theory, this should be an error, but I'm going to leave it as is for now
+        actions = actions || <span class="branch-1 cbranch-no" title="branch not covered" >{};</span>
+&nbsp;
+        angular.forEach(actions, function (action) {
+          addTransformRequestFxs(action);
+          addTransformResponseFxs(action);
+        });
+&nbsp;
+        // Create the Resource
+        Resource = $resource(url, defaultParams, actions);
+&nbsp;
+        // Funny story. I forgot how closures work when I first wrote these. Now I'm backtracking, and the result is a
+        // really clunky API.
+        dataEncodingFunctions.setResource(Resource);
+        // And then I decided to make a thing out of it. This will let you define custom actions from outside of this
+        // function, even if they require a reference to the Resource.
+        angular.forEach(actions, function (action) {
+          <span class="missing-if-branch" title="if path not taken" >I</span>if (action.setResource) {
+<span class="cstat-no" title="statement not covered" >            action.setResource(Resource);</span>
+          }
+        });
+&nbsp;
+        // Return the Resource
+        return Resource;
+      };
+    };
+&nbsp;
+    // This removes the namespacing from the baseActions. This is done so that the decorators, which aren't written
+    // with any assumptions about namespacing, will still work (otherwise they couldn't find the properties they
+    // reference).
+    parseResource._deNamespaceBaseActions = function (Resource, action) {
+      var nameSpace = action.nameSpace;
+      angular.forEach(action.baseActions, function (baseAction, namespacedActionName) {
+        var namespacedStaticName = namespacedActionName,
+          baseStaticName = namespacedActionName.slice(nameSpace.length),
+          namespacedInstanceName = nameSpace + '$' + baseStaticName,
+          baseInstanceName = '$' + baseStaticName,
+          staticAction = Resource[namespacedStaticName],
+          instanceAction = Resource.prototype[namespacedInstanceName];
+        delete Resource[namespacedStaticName];
+        delete Resource.prototype[namespacedInstanceName];
+        Resource[baseStaticName] = staticAction;
+        if (instanceAction) {
+          Resource.prototype[baseInstanceName] = instanceAction;
+        }
+      });
+    };
+&nbsp;
+    // This deletes the action from Resource and its prototype and returns the static action
+    parseResource._deleteAndReturnAction = function (Resource, actionName) {
+      var instanceActionName = '$' + actionName,
+        staticAction = Resource[actionName];
+      delete Resource[actionName];
+      delete Resource.prototype[instanceActionName];
+      return staticAction;
+    };
+&nbsp;
+    // This loops through each action for both APIs and creates API-specific versions of that action. It then
+    // creates a non-namespaced version of the action that delegates to the correct API-specific version based on
+    // which API we're using. At the end of this, all the namespaced properties should be deleted from both Resource
+    // and its prototype.
+    parseResource._createApiSpecificActions = function (Resource, actions) {
+      var apiActions = {},
+        self = this;
+      // Loop through each action
+      angular.forEach(actions, function (action, actionName) {
+        apiActions[actionName] = {};
+        // Loop through each API
+        angular.forEach(action.apiActions, function (thisApiAction, apiName) {
+          // This removes the namespacing of API-specific actions (e.g. RESTsave -&gt; save)
+          self._deNamespaceBaseActions(Resource, thisApiAction);
+          // Apply the decorator if it exists. Assuming the action is configured correctly, it should only leave a
+          // single static action and, optionally, a single instance action. This is the API-specific version of the
+          // action.
+          <span class="missing-if-branch" title="else path not taken" >E</span>if (angular.isFunction(thisApiAction.decorator)) {
+            thisApiAction.decorator(Resource);
+          }
+          // Check here whether the action has an instance action
+          action.hasInstanceAction = angular.isFunction(Resource.prototype['$' + actionName]);
+          // Delete the API-specific action from the Resource and store it in our data structure
+          apiActions[actionName][apiName] = self._deleteAndReturnAction(Resource, actionName);
+        });
+      });
+      return apiActions;
+    };
+&nbsp;
+    // This loops through each of Resource's properties and tries to identify actions (based on whether there's a
+    // $-prefixed version of the property on Resource.prototype. If it finds any that aren't in the actions object, it
+    // deletes them from Resource and Resource.prototype.
+    parseResource._destroyUndefinedActions = function (Resource, actions) {
+      var isAction = function (name) {
+        return Resource.hasOwnProperty(name) &amp;&amp; Resource.prototype.hasOwnProperty('$' + name);
+      };
+      angular.forEach(Resource, function (v, k) {
+        if (isAction(k) &amp;&amp; !actions[k]) {
+          delete Resource[k];
+          delete Resource.prototype['$' + k];
+        }
+      });
+    };
+&nbsp;
+    // Creates the named action on the prototype. This is copied with minimal modifications from
+    // angular-resource.js.
+    parseResource._createInstanceAction = function (Resource, actionName) {
+      Resource.prototype['$' + actionName] = function (params, success, error) {
+        if (angular.isFunction(params)) {
+          error = success;
+          success = params;
+          params = {};
+        }
+        var result = Resource[actionName].call(this, params, this, success, error);
+        return result.$promise || result;
+      };
+    };
+&nbsp;
+    parseResource._resetPrototype = function (Resource, actions) {
+      var self = this;
+      // You should detect above whether a given action has an associated instance action
+      // Just to be safe, let's reset the prototype...
+      Resource.prototype = {};
+      // ... and add the instance actions back in
+      angular.forEach(actions, function (action, actionName) {
+        if (action.hasInstanceAction) {
+          self._createInstanceAction(Resource, actionName);
+        }
+      });
+    };
+&nbsp;
+    parseResource._configureActions = function (Resource, actions, moduleState) {
+      var apiActions = this._createApiSpecificActions(Resource, actions);
+&nbsp;
+      angular.forEach(apiActions, function (apiAction, actionName) {
+        Resource[actionName] = function () {
+          return apiAction[moduleState.currentAPI].apply(this, arguments);
+        };
+      });
+      // Now it's time for some cleanup. This loops through each of Resource's properties and tries to identify
+      // actions (based on whether there's a $-prefixed version of the property on Resource.prototype. If it finds any
+      // that aren't in the actions object, it deletes them from Resource and Resource.prototype.
+      this._destroyUndefinedActions(Resource, actions);
+      this._resetPrototype(Resource, actions);
+    };
+&nbsp;
+    return parseResource;
+  });</pre></td></tr>
+</table></pre>
+
+</div>
+<div class="footer">
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon Jul 14 2014 03:23:21 GMT-0400 (EDT)</div>
+</div>
+
+<script src="../../prettify.js"></script>
+
+<script src="http://yui.yahooapis.com/3.6.0/build/yui/yui-min.js"></script>
+<script>
+
+    YUI().use('datatable', function (Y) {
+
+        var formatters = {
+          pct: function (o) {
+              o.className += o.record.get('classes')[o.column.key];
+              try {
+                  return o.value.toFixed(2) + '%';
+              } catch (ex) { return o.value + '%'; }
+          },
+          html: function (o) {
+              o.className += o.record.get('classes')[o.column.key];
+              return o.record.get(o.column.key + '_html');
+          }
+        },
+          defaultFormatter = function (o) {
+              o.className += o.record.get('classes')[o.column.key];
+              return o.value;
+          };
+
+        function getColumns(theadNode) {
+            var colNodes = theadNode.all('tr th'),
+                cols = [],
+                col;
+            colNodes.each(function (colNode) {
+                col = {
+                    key: colNode.getAttribute('data-col'),
+                    label: colNode.get('innerHTML') || ' ',
+                    sortable: !colNode.getAttribute('data-nosort'),
+                    className: colNode.getAttribute('class'),
+                    type: colNode.getAttribute('data-type'),
+                    allowHTML: colNode.getAttribute('data-html') === 'true' || colNode.getAttribute('data-fmt') === 'html'
+                };
+                col.formatter = formatters[colNode.getAttribute('data-fmt')] || defaultFormatter;
+                cols.push(col);
+            });
+            return cols;
+        }
+
+        function getRowData(trNode, cols) {
+            var tdNodes = trNode.all('td'),
+                    i,
+                    row = { classes: {} },
+                    node,
+                    name;
+            for (i = 0; i < cols.length; i += 1) {
+                name = cols[i].key;
+                node = tdNodes.item(i);
+                row[name] = node.getAttribute('data-value') || node.get('innerHTML');
+                row[name + '_html'] = node.get('innerHTML');
+                row.classes[name] = node.getAttribute('class');
+                //Y.log('Name: ' + name + '; Value: ' + row[name]);
+                if (cols[i].type === 'number') { row[name] = row[name] * 1; }
+            }
+            //Y.log(row);
+            return row;
+        }
+
+        function getData(tbodyNode, cols) {
+            var data = [];
+            tbodyNode.all('tr').each(function (trNode) {
+                data.push(getRowData(trNode, cols));
+            });
+            return data;
+        }
+
+        function replaceTable(node) {
+            if (!node) { return; }
+            var cols = getColumns(node.one('thead')),
+                data = getData(node.one('tbody'), cols),
+                table,
+                parent = node.get('parentNode');
+
+            table = new Y.DataTable({
+                columns: cols,
+                data: data,
+                sortBy: 'file'
+            });
+            parent.set('innerHTML', '');
+            table.render(parent);
+        }
+
+        Y.on('domready', function () {
+            replaceTable(Y.one('div.coverage-summary table'));
+            if (typeof prettyPrint === 'function') {
+                prettyPrint();
+            }
+        });
+    });
+</script>
+</body>
+</html>
