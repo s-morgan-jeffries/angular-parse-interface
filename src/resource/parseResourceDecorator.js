@@ -132,7 +132,7 @@ angular.module('angularParseInterface')
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      Resource.prototype.constructor = Resource;
+//      Resource.prototype.constructor = Resource;
       // Instance methods
 //      Resource.prototype.isNew = function () {
 //        return !this.objectId;
@@ -142,7 +142,7 @@ angular.module('angularParseInterface')
         enumerable: true,
         configurable: false,
         get: function () {
-          return this.constructor.className;
+          return Resource.className;
         },
         set: function () {}
       });

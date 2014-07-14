@@ -3,23 +3,33 @@ angular
   .factory('parseEvent', function ($q, parseResourceActions, PARSE_APP_EVENTS) {
     'use strict';
 
+    var parseEvent = {};
+
     // Currently a do-little function. But because I'm going to have to pack a lot of functionality into the basic
     // ParseResource (because some things just can't be added later), this might be necessary for removing some
     // functionality (e.g. making arbitrary HTTP requests).
-    var parseEventDecorator = function (ParseEvent, eventName) {
+    parseEvent._parseEventDecorator = function (ParseEvent, eventName) {
       ParseEvent.className = eventName;
     };
 
-    var parseEvent = {};
+    parseEvent._encodeDate = function (date) {
+      if (date instanceof Date) {
+        return {
+          __type: 'Date',
+          iso: date.toISOString()
+        };
+      }
+    };
 
     parseEvent.createEventFactory = function (appResourceFactory, appEventBus) {
-      var useJsApi = false,
+      var parseEventDecorator = this._parseEventDecorator,
+        encodeDate = parseEvent._encodeDate,
+        useJsApi = false,
         moduleName = 'parseEvent',
         // Namespaced initialization event. The appInterface will emit this with the appConfig when the
         // MODULE_REGISTERED event is emitted with our moduleName.
         INIT_EVENT = PARSE_APP_EVENTS.MODULE_INIT + '.' + moduleName;
 
-      //t0d0: Add tests for this
       // Register event handlers
       // This is the handler for the INIT_EVENT
       // Register the handler for the INIT_EVENT
@@ -53,15 +63,6 @@ angular
         ParseEvent = appResourceFactory(url, defaultParams, customActions);
 
         parseEventDecorator(ParseEvent, eventName);
-
-        var encodeDate = function (date) {
-          if (date instanceof Date) {
-            return {
-              __type: 'Date',
-              iso: date.toISOString()
-            };
-          }
-        };
 
         //t0d0: Add tests for this
         return function logEvent(data, time) {
